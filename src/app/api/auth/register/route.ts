@@ -44,10 +44,10 @@ export async function POST(req: NextRequest) {
             },
             { status: 201 }
         );
-    } catch (error) {
+    } catch (error: any) {
         console.error("Register error:", error);
         return NextResponse.json(
-            { error: "Qeydiyyat zamanı xəta baş verdi" },
+            { error: error?.message || "Qeydiyyat zamanı xəta baş verdi" },
             { status: 500 }
         );
     }
