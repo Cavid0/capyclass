@@ -23,7 +23,7 @@ export default function ClassroomPage() {
 
     const fetchClassroom = useCallback(async (isPolling = false) => {
         try {
-            const res = await fetch(`/api/classrooms/${params.id}`);
+            const res = await fetch(`/api/classrooms/${params.id}`, { cache: "no-store" });
             if (!res.ok) {
                 if (res.status === 403 || res.status === 404) router.push("/dashboard");
                 return;
@@ -47,7 +47,7 @@ export default function ClassroomPage() {
 
     const fetchTasks = useCallback(async () => {
         try {
-            const res = await fetch(`/api/classrooms/${params.id}/tasks`);
+            const res = await fetch(`/api/classrooms/${params.id}/tasks`, { cache: "no-store" });
             if (res.ok) {
                 const data = await res.json();
                 if (Array.isArray(data)) setTasks(data);
@@ -381,6 +381,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 Yalnız oxu
                             </div>
                             <CodeEditor
+                                key={`${activeWorkspaceData.id}-${activeWorkspaceData.updatedAt}`}
                                 language={activeWorkspaceData.language}
                                 value={activeWorkspaceData.code}
                                 readOnly
