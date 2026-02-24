@@ -1,0 +1,88 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  TEACHER
+  STUDENT
+}
+
+enum WorkspaceStatus {
+  PENDING
+  PASS
+  FAIL
+}
+
+model User {
+  id             String       @id @default(cuid())
+  name           String
+  email          String       @unique
+  hashedPassword String
+  role           Role         @default(STUDENT)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
+
+  classrooms   Classroom[]  @relation("TeacherClassrooms")
+  enrollments  Enrollment[]
+  workspaces   Workspace[]
+}
+
+model Classroom {
+  id          String       @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String       @unique
+  teacherId   String
+  createdAt   DateTime     @default(now())
+  updatedAt   DateTime     @updatedAt
+
+  teacher     User         @relation("TeacherClassrooms", fields: [teacherId], references: [id])
+  enrollments Enrollment[]
+  workspaces  Workspace[]
+}
+
+model Enrollment {
+  id          String   @id @default(cuid())
+  studentId   String
+  classroomId String
+  joinedAt    DateTime @default(now())
+
+  student   User      @relation(fields: [studentId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+
+  @@unique([studentId, classroomId])
+}
+
+model Workspace {
+  id          String          @id @default(cuid())
+  code        String          @default("")
+  language    String          @default("javascript")
+  status      WorkspaceStatus @default(PENDING)
+  studentId   String
+  classroomId String
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  student   User         @relation(fields: [studentId], references: [id])
+  classroom Classroom    @relation(fields: [classroomId], references: [id])
+  feedbacks AIFeedback[]
+
+  @@unique([studentId, classroomId])
+}
+
+model AIFeedback {
+  id          String   @id @default(cuid())
+  workspaceId String
+  summary     String
+  errors      String   @default("[]")
+  suggestions String   @default("[]")
+  status      WorkspaceStatus
+  createdAt   DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id])
+}
