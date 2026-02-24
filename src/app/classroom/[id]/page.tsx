@@ -1,9 +1,9 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Code2, ChevronLeft, Activity, Cpu } from "lucide-react";
+import { Users, Code2, ChevronLeft, Activity, Cpu, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { AIFeedback } from "@/components/ai/AIFeedback";
@@ -17,13 +17,10 @@ export default function ClassroomPage() {
     const [classroom, setClassroom] = useState<any>(null);
     const [loading, setLoading] = useState(true);
     const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
+    const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+    const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
-    useEffect(() => {
-        if (status === "authenticated") fetchClassroom();
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status]);
-
-    const fetchClassroom = async () => {
+    const fetchClassroom = useCallback(async (isPolling = false) => {
         try {
             const res = await fetch(`/api/classrooms/${params.id}`);
             if (!res.ok) {
@@ -32,12 +29,30 @@ export default function ClassroomPage() {
             }
             const data = await res.json();
             setClassroom(data);
+            setLastRefresh(new Date());
         } catch (error) {
             console.error(error);
         } finally {
-            setLoading(false);
+            if (!isPolling) setLoading(false);
         }
-    };
+    }, [params.id, router]);
+
+    useEffect(() => {
+        if (status === "authenticated") fetchClassroom();
+    }, [status, fetchClassroom]);
+
+    // Auto-poll every 5 seconds for teacher to see student updates
+    useEffect(() => {
+        if (status === "authenticated" && (session?.user as any)?.role === "TEACHER") {
+            intervalRef.current = setInterval(() => {
+                fetchClassroom(true);
+            }, 5000);
+
+            return () => {
+                if (intervalRef.current) clearInterval(intervalRef.current);
+            };
+        }
+    }, [status, session, fetchClassroom]);
 
     if (loading || status === "loading") {
         return (
@@ -72,6 +87,18 @@ export default function ClassroomPage() {
 
                 {isTeacher && (
                     <div className="flex items-center gap-4">
+                        <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
+                            <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
+                            CANLI
+                        </div>
+                        <button
+                            onClick={() => fetchClassroom(true)}
+                            title="Yenilə"
+                            className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white transition-colors"
+                        >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                        </button>
+                        <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
                             <span>{classroom.workspaces?.length || 0} tələbə</span>
