@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -170,6 +170,36 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDesc, setTaskDesc] = useState("");
     const [creatingTask, setCreatingTask] = useState(false);
+
+    // Notifications for when a student saves code
+    const prevWorkspacesRef = useRef<any[]>([]);
+    const [notifications, setNotifications] = useState<{ id: string, message: string, workspaceId: string }[]>([]);
+
+    useEffect(() => {
+        const prev = prevWorkspacesRef.current;
+        if (prev.length > 0) {
+            const newUpdates = workspaces.filter((w: any) => {
+                const oldW = prev.find((p: any) => p.id === w.id);
+                // Notification triggers if updatedAt timestamp changed
+                return oldW && new Date(w.updatedAt).getTime() > new Date(oldW.updatedAt).getTime();
+            });
+
+            if (newUpdates.length > 0) {
+                const newNotifs = newUpdates.map((w: any) => ({
+                    id: Math.random().toString(),
+                    message: `${w.student.name} "${w.title}" faylını yadda saxladı`,
+                    workspaceId: w.id
+                }));
+
+                setNotifications(prevNotifs => [...prevNotifs, ...newNotifs]);
+
+                setTimeout(() => {
+                    setNotifications(prevNotifs => prevNotifs.filter(n => !newNotifs.find((nn: any) => nn.id === n.id)));
+                }, 5000);
+            }
+        }
+        prevWorkspacesRef.current = workspaces;
+    }, [workspaces]);
 
     const handleCreateTask = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -421,6 +451,23 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                     </div>
                 </div>
             )}
+
+            {/* Notifications */}
+            <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
+                {notifications.map(n => (
+                    <div
+                        key={n.id}
+                        className="bg-[var(--bg-card)] border border-[var(--border-color)] text-white text-sm px-4 py-3 rounded-lg shadow-xl cursor-pointer hover:bg-[var(--bg-elevated)] transition-all flex items-center gap-3 animate-in slide-in-from-bottom-5"
+                        onClick={() => onSelectWorkspace(n.workspaceId)}
+                    >
+                        <div className="w-8 h-8 rounded-full bg-blue-500/20 text-blue-400 flex items-center justify-center shrink-0">
+                            <Bell className="w-4 h-4" />
+                        </div>
+                        <p>{n.message}</p>
+                    </div>
+                ))}
+            </div>
+
         </div>
     );
 }
