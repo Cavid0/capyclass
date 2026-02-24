@@ -186,8 +186,7 @@ export default function DashboardPage() {
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                         {filteredClasses.map((item) => {
-                            const classroom = isTeacher ? item : item.classroom;
-                            const title = classroom.name;
+                            const title = item.name;
 
                             return (
                                 <div key={item.id} className="glass-card flex flex-col group hover:shadow-lg transition-all">
@@ -226,29 +225,29 @@ export default function DashboardPage() {
                                             </div>
                                         ) : (
                                             <div className="mt-4 text-xs text-[var(--text-secondary)]">
-                                                Müəllim: {item.classroom?.teacher?.name || "Bilinmir"}
+                                                Müəllim: {item.teacherName || "Bilinmir"}
                                             </div>
                                         )}
                                     </div>
 
                                     <div className="p-3 bg-[var(--bg-secondary)] flex items-center justify-between gap-3 text-sm rounded-b-lg">
-                                        {isTeacher && classroom.inviteCode ? (
+                                        {isTeacher && item.inviteCode ? (
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
-                                                    copyToClipboard(classroom.inviteCode!);
+                                                    copyToClipboard(item.inviteCode!);
                                                 }}
                                                 className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-hover)] transition-colors text-xs"
                                             >
-                                                {copiedCode === classroom.inviteCode ? (
+                                                {copiedCode === item.inviteCode ? (
                                                     <><Check className="w-3.5 h-3.5 text-emerald-500" /> Kopyalandı</>
                                                 ) : (
-                                                    <><Copy className="w-3.5 h-3.5" /> Dəvət: <b>{classroom.inviteCode}</b></>
+                                                    <><Copy className="w-3.5 h-3.5" /> Dəvət: <b>{item.inviteCode}</b></>
                                                 )}
                                             </button>
                                         ) : <div />}
 
-                                        <Link href={`/classroom/${classroom.id}`}>
+                                        <Link href={`/classroom/${item.id}`}>
                                             <button className="secondary-btn px-4 py-1.5 text-xs">
                                                 Daxil ol
                                             </button>
