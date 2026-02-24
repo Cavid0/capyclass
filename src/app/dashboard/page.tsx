@@ -33,9 +33,14 @@ export default function DashboardPage() {
         try {
             const res = await fetch("/api/classrooms");
             const data = await res.json();
-            setClassrooms(data);
+            if (Array.isArray(data)) {
+                setClassrooms(data);
+            } else {
+                setClassrooms([]);
+            }
         } catch (error) {
             console.error(error);
+            setClassrooms([]);
         } finally {
             setLoading(false);
         }
@@ -99,8 +104,8 @@ export default function DashboardPage() {
 
     // Derived state
     const isTeacher = (session?.user as any)?.role === "TEACHER";
-    const filteredClasses = classrooms.filter(c =>
-        (c.name || c.classroom?.name).toLowerCase().includes(search.toLowerCase())
+    const filteredClasses = (classrooms || []).filter(c =>
+        (c.name || c.classroom?.name || "").toLowerCase().includes(search.toLowerCase())
     );
 
     if (status === "unauthenticated") return null;
