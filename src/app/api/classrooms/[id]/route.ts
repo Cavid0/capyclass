@@ -40,15 +40,19 @@ export async function GET(
                 where: { classroomId },
                 include: {
                     student: { select: { id: true, name: true, email: true } },
-                    feedbacks: {
-                        orderBy: { createdAt: "desc" },
-                        take: 1,
-                    },
                 },
                 orderBy: { updatedAt: "desc" },
             });
 
-            return NextResponse.json({ classroom, workspaces });
+            // Also get all enrolled students (some might not have workspaces yet)
+            const enrollments = await prisma.enrollment.findMany({
+                where: { classroomId },
+                include: {
+                    student: { select: { id: true, name: true, email: true } },
+                },
+            });
+
+            return NextResponse.json({ classroom, workspaces, enrollments });
         } else {
             // Student: must be enrolled
             const enrollment = await prisma.enrollment.findUnique({
@@ -64,20 +68,13 @@ export async function GET(
                 return NextResponse.json({ error: "Bu sinifə qoşulmamısınız" }, { status: 403 });
             }
 
-            // Only return student's own workspace
-            const workspace = await prisma.workspace.findUnique({
+            // Return all student's workspaces in this classroom
+            const workspaces = await prisma.workspace.findMany({
                 where: {
-                    studentId_classroomId: {
-                        studentId: userId,
-                        classroomId,
-                    },
+                    studentId: userId,
+                    classroomId,
                 },
-                include: {
-                    feedbacks: {
-                        orderBy: { createdAt: "desc" },
-                        take: 5,
-                    },
-                },
+                orderBy: { updatedAt: "desc" },
             });
 
             return NextResponse.json({
@@ -87,7 +84,7 @@ export async function GET(
                     description: classroom.description,
                     teacherName: classroom.teacher.name,
                 },
-                workspace,
+                workspaces,
             });
         }
     } catch (error) {

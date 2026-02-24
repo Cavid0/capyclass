@@ -4,13 +4,10 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, Activity, Cpu, RefreshCw,
-    Plus, ClipboardList, Clock, FileCode, Save, Loader2,
-    CheckCircle, AlertCircle, Send
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
-import { AIFeedback } from "@/components/ai/AIFeedback";
 import { cn } from "@/lib/utils";
 
 export default function ClassroomPage() {
@@ -21,7 +18,7 @@ export default function ClassroomPage() {
     const [classroom, setClassroom] = useState<any>(null);
     const [tasks, setTasks] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
-    const [selectedWorkspace, setSelectedWorkspace] = useState<string | null>(null);
+    const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
     const fetchClassroom = useCallback(async (isPolling = false) => {
@@ -32,18 +29,21 @@ export default function ClassroomPage() {
                 return;
             }
             const data = await res.json();
-            // Flatten: API returns { classroom: {...}, workspaces/workspace }
             setClassroom({
                 ...data.classroom,
                 workspaces: data.workspaces || [],
-                workspace: data.workspace || null,
+                enrollments: data.enrollments || [],
             });
+            // If student and no workspace selected, select first one if exists
+            if (data.workspaces && data.workspaces.length > 0 && !selectedWorkspaceId && data.classroom?.teacherId !== (session?.user as any)?.id) {
+                setSelectedWorkspaceId(data.workspaces[0].id);
+            }
         } catch (error) {
             console.error(error);
         } finally {
             if (!isPolling) setLoading(false);
         }
-    }, [params.id, router]);
+    }, [params.id, router, selectedWorkspaceId, session]);
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -86,7 +86,6 @@ export default function ClassroomPage() {
 
     const role = (session?.user as any)?.role;
     const isTeacher = role === "TEACHER";
-    const myWorkspace = !isTeacher ? classroom.workspace : null;
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
@@ -121,7 +120,7 @@ export default function ClassroomPage() {
                         <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
-                            <span>{classroom.workspaces?.length || 0} tələbə</span>
+                            <span>{classroom.enrollments?.length || 0} tələbə</span>
                         </div>
                         <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded">
@@ -137,18 +136,18 @@ export default function ClassroomPage() {
                     <TeacherView
                         classroom={classroom}
                         tasks={tasks}
-                        selectedWorkspace={selectedWorkspace}
-                        onSelectWorkspace={(id: string) => {
-                            if (selectedWorkspace === id) setSelectedWorkspace(null);
-                            else setSelectedWorkspace(id);
-                        }}
+                        selectedWorkspaceId={selectedWorkspaceId}
+                        onSelectWorkspace={setSelectedWorkspaceId}
                         onTaskCreated={fetchTasks}
                     />
                 ) : (
                     <StudentView
-                        workspace={myWorkspace}
+                        classroomId={classroom.id}
+                        workspaces={classroom.workspaces || []}
                         tasks={tasks}
-                        classroomName={classroom.name}
+                        selectedWorkspaceId={selectedWorkspaceId}
+                        onSelectWorkspace={setSelectedWorkspaceId}
+                        onWorkspaceCreated={fetchClassroom}
                     />
                 )}
             </div>
@@ -159,10 +158,14 @@ export default function ClassroomPage() {
 // =============================================================
 // TEACHER VIEW
 // =============================================================
-function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, onTaskCreated }: any) {
+function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated }: any) {
     const workspaces = classroom.workspaces || [];
-    const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspace);
+    const enrollments = classroom.enrollments || [];
+
+    const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspaceId);
+
     const [activeTab, setActiveTab] = useState<"students" | "tasks">("students");
+    const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDesc, setTaskDesc] = useState("");
@@ -196,7 +199,7 @@ function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, o
             {/* Sidebar */}
             <div className={cn(
                 "w-full md:w-80 border-r border-[var(--border-color)] flex flex-col h-full bg-[var(--bg-secondary)] shrink-0 transition-all",
-                selectedWorkspace ? "hidden md:flex" : "flex"
+                selectedWorkspaceId ? "hidden md:flex" : "flex"
             )}>
                 {/* Tabs */}
                 <div className="flex border-b border-[var(--border-color)]">
@@ -210,7 +213,7 @@ function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, o
                         )}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        Tələbələr ({workspaces.length})
+                        Tələbələr ({enrollments.length})
                     </button>
                     <button
                         onClick={() => setActiveTab("tasks")}
@@ -227,52 +230,70 @@ function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, o
                 </div>
 
                 {/* Tab Content */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto custom-scrollbar">
                     {activeTab === "students" ? (
-                        <div className="p-2 space-y-1">
-                            {workspaces.length === 0 ? (
+                        <div className="p-2 space-y-2">
+                            {enrollments.length === 0 ? (
                                 <div className="text-center p-6 text-[var(--text-secondary)] text-sm">
                                     Sinfə hələ heç kim qoşulmayıb
                                 </div>
                             ) : (
-                                workspaces.map((w: any) => (
-                                    <button
-                                        key={w.id}
-                                        onClick={() => onSelectWorkspace(w.id)}
-                                        className={cn(
-                                            "w-full text-left p-3 rounded-lg transition-all border",
-                                            selectedWorkspace === w.id
-                                                ? "bg-[var(--bg-elevated)] border-[var(--border-hover)] shadow-lg"
-                                                : "bg-transparent border-transparent hover:bg-[var(--bg-card)] hover:border-[var(--border-color)]"
-                                        )}
-                                    >
-                                        <div className="flex justify-between items-center mb-1.5">
-                                            <div className="flex items-center gap-2">
-                                                <div className="w-6 h-6 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[10px] font-bold text-white">
-                                                    {w.student.name?.charAt(0)?.toUpperCase()}
+                                enrollments.map((en: any) => {
+                                    const studentWorkspaces = workspaces.filter((w: any) => w.studentId === en.studentId);
+                                    const isExpanded = expandedStudent === en.studentId;
+
+                                    return (
+                                        <div key={en.id} className="border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-card)]">
+                                            <button
+                                                onClick={() => setExpandedStudent(isExpanded ? null : en.studentId)}
+                                                className="w-full text-left p-3 hover:bg-[var(--bg-elevated)] transition-colors flex items-center justify-between"
+                                            >
+                                                <div className="flex items-center gap-2">
+                                                    <div className="w-6 h-6 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center text-[10px] font-bold text-white">
+                                                        {en.student.name?.charAt(0)?.toUpperCase()}
+                                                    </div>
+                                                    <span className="text-sm font-medium text-white">
+                                                        {en.student.name}
+                                                    </span>
                                                 </div>
-                                                <span className={cn(
-                                                    "text-sm font-medium",
-                                                    selectedWorkspace === w.id ? "text-white" : "text-[var(--text-secondary)]"
-                                                )}>
-                                                    {w.student.name}
-                                                </span>
-                                            </div>
-                                            <span className={cn(
-                                                "text-[10px] px-2 py-0.5 rounded-full font-medium",
-                                                w.status === "PASS" ? "text-emerald-400 bg-emerald-900/30" :
-                                                    w.status === "FAIL" ? "text-rose-400 bg-rose-900/30" :
-                                                        "text-yellow-400 bg-yellow-900/30"
-                                            )}>
-                                                {w.status === "PASS" ? "✓ Keçdi" : w.status === "FAIL" ? "✗ Kəsildi" : "◌ Gözləyir"}
-                                            </span>
+                                                <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded">
+                                                    {studentWorkspaces.length} fayl
+                                                </div>
+                                            </button>
+
+                                            {isExpanded && (
+                                                <div className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-1.5 space-y-1">
+                                                    {studentWorkspaces.length === 0 ? (
+                                                        <div className="text-xs text-[var(--text-secondary)] p-2 text-center">
+                                                            Hələ fayl yaradılmayıb
+                                                        </div>
+                                                    ) : (
+                                                        studentWorkspaces.map((w: any) => (
+                                                            <button
+                                                                key={w.id}
+                                                                onClick={() => onSelectWorkspace(w.id)}
+                                                                className={cn(
+                                                                    "w-full text-left p-2 rounded-md text-xs transition-colors flex items-center justify-between",
+                                                                    selectedWorkspaceId === w.id
+                                                                        ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
+                                                                        : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-secondary)] border border-transparent"
+                                                                )}
+                                                            >
+                                                                <span className="flex items-center gap-1.5 truncate">
+                                                                    <FileCode className="w-3.5 h-3.5 shrink-0" />
+                                                                    <span className="truncate">{w.title}</span>
+                                                                </span>
+                                                                <span className="text-[9px] opacity-70 ml-2 shrink-0">
+                                                                    {new Date(w.updatedAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+                                                                </span>
+                                                            </button>
+                                                        ))
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
-                                        <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 ml-8">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(w.updatedAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
-                                        </div>
-                                    </button>
-                                ))
+                                    );
+                                })
                             )}
                         </div>
                     ) : (
@@ -309,53 +330,37 @@ function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, o
 
             {/* Main Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg-primary)]">
-                {selectedWorkspace && activeWorkspaceData ? (
+                {selectedWorkspaceId && activeWorkspaceData ? (
                     <div className="flex-1 flex flex-col h-full">
                         <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center gap-4 px-4 shrink-0">
-                            <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)]">
+                            <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] hover:text-white">
                                 <ChevronLeft className="w-4 h-4" />
                             </button>
-                            <div className="w-6 h-6 rounded-md bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center text-[10px] font-bold text-white">
-                                {activeWorkspaceData.student.name?.charAt(0)?.toUpperCase()}
+                            <div className="flex items-center gap-2">
+                                <span className="text-sm text-white font-medium">{activeWorkspaceData.student.name}</span>
+                                <span className="text-[var(--text-secondary)]">/</span>
+                                <span className="text-sm text-[var(--text-secondary)] flex items-center gap-1.5 border border-[var(--border-color)] bg-[var(--bg-card)] px-2 py-0.5 rounded">
+                                    <FileCode className="w-3.5 h-3.5" />
+                                    {activeWorkspaceData.title}
+                                </span>
                             </div>
-                            <span className="text-sm text-white font-medium">{activeWorkspaceData.student.name}</span>
-                            <span className="text-xs text-[var(--text-secondary)]">— Tələbə kodu</span>
-                            <span className={cn(
-                                "text-[10px] px-2 py-0.5 rounded-full font-medium ml-auto",
-                                activeWorkspaceData.status === "PASS" ? "text-emerald-400 bg-emerald-900/30" :
-                                    activeWorkspaceData.status === "FAIL" ? "text-rose-400 bg-rose-900/30" :
-                                        "text-yellow-400 bg-yellow-900/30"
-                            )}>
-                                {activeWorkspaceData.status}
-                            </span>
                         </div>
 
-                        <div className="flex-1 flex flex-col lg:flex-row overflow-hidden">
-                            <div className="flex-1 border-r border-[var(--border-color)] bg-[#0e0e0e] relative h-1/2 lg:h-full">
-                                <div className="absolute top-2 right-4 z-10 bg-[#1e1e1e] border border-[var(--border-color)] px-2 py-1 rounded text-[10px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
-                                    <FileCode className="w-3 h-3" /> Yalnız oxu
-                                </div>
-                                <CodeEditor
-                                    language="javascript"
-                                    value={activeWorkspaceData.code}
-                                    readOnly
-                                />
+                        <div className="flex-1 border-r border-[var(--border-color)] bg-[#0e0e0e] relative h-full">
+                            <div className="absolute top-2 right-4 z-10 bg-[#1e1e1e] border border-[var(--border-color)] px-2 py-1 rounded text-[10px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+                                Yalnız oxu
                             </div>
-                            <div className="w-full lg:w-96 flex flex-col h-1/2 lg:h-full bg-[var(--bg-secondary)] overflow-y-auto">
-                                <div className="p-4 border-b border-[var(--border-color)] flex items-center gap-2 sticky top-0 bg-[var(--bg-secondary)] backdrop-blur-md z-10">
-                                    <Activity className="w-4 h-4 text-[var(--text-secondary)]" />
-                                    <h3 className="text-sm font-semibold text-white">AI Rəy</h3>
-                                </div>
-                                <div className="p-4">
-                                    <AIFeedback feedback={activeWorkspaceData.feedbacks?.[0]} />
-                                </div>
-                            </div>
+                            <CodeEditor
+                                language={activeWorkspaceData.language}
+                                value={activeWorkspaceData.code}
+                                readOnly
+                            />
                         </div>
                     </div>
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)]">
-                        <Cpu className="w-12 h-12 mb-4 opacity-20" />
-                        <p className="text-sm">Ətraflı baxmaq üçün soldan tələbə seçin</p>
+                        <Folder className="w-12 h-12 mb-4 opacity-20" />
+                        <p className="text-sm">Ətraflı baxmaq üçün soldan tələbənin faylını seçin</p>
                     </div>
                 )}
             </div>
@@ -423,173 +428,129 @@ function TeacherView({ classroom, tasks, selectedWorkspace, onSelectWorkspace, o
 // =============================================================
 // STUDENT VIEW
 // =============================================================
-function StudentView({ workspace, tasks, classroomName }: any) {
-    const [code, setCode] = useState(workspace?.code || "// Kodunuzu bura yazın\nconsole.log('Salam!');");
-    const [feedback, setFeedback] = useState<any>(workspace?.feedbacks?.[0] || null);
-    const [analyzing, setAnalyzing] = useState(false);
-    const [saved, setSaved] = useState(false);
-    const [language, setLanguage] = useState("javascript");
-    const [activePanel, setActivePanel] = useState<"tasks" | "ai">("tasks");
+function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: any) {
+    const activeWorkspace = workspaces.find((w: any) => w.id === selectedWorkspaceId);
 
-    const handleSaveAndAnalyze = async () => {
-        if (!workspace) return;
-        setAnalyzing(true);
+    const [code, setCode] = useState("");
+    const [language, setLanguage] = useState("javascript");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<"files" | "tasks">("tasks");
+    const [creatingFile, setCreatingFile] = useState(false);
+
+    // Sync editor when active workspace changes
+    useEffect(() => {
+        if (activeWorkspace) {
+            setCode(activeWorkspace.code);
+            setLanguage(activeWorkspace.language || "javascript");
+        } else {
+            setCode("");
+        }
+    }, [activeWorkspace?.id, activeWorkspace]);
+
+    const handleCreateFile = async () => {
+        const title = prompt("Yeni faylın / reponun adı:");
+        if (!title?.trim()) return;
+
+        setCreatingFile(true);
+        try {
+            const res = await fetch(`/api/classrooms/${classroomId}/workspaces`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title }),
+            });
+            if (res.ok) {
+                const newWs = await res.json();
+                onWorkspaceCreated();
+                onSelectWorkspace(newWs.id);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCreatingFile(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!activeWorkspace) return;
+        setSaving(true);
         setSaved(false);
         try {
-            const res = await fetch(`/api/workspaces/${workspace.id}/save`, {
+            const res = await fetch(`/api/workspaces/${activeWorkspace.id}/save`, {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ code, language }),
             });
-            const data = await res.json();
-            if (res.ok && data.feedback) {
-                setFeedback(data.feedback);
+            if (res.ok) {
                 setSaved(true);
-                setActivePanel("ai");
                 setTimeout(() => setSaved(false), 3000);
             }
         } catch (error) {
             console.error(error);
         } finally {
-            setAnalyzing(false);
-        }
-    };
-
-    const handleSaveOnly = async () => {
-        if (!workspace) return;
-        setSaved(false);
-        try {
-            await fetch(`/api/workspaces/${workspace.id}/save`, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, language }),
-            });
-            setSaved(true);
-            setTimeout(() => setSaved(false), 3000);
-        } catch (error) {
-            console.error(error);
+            setSaving(false);
+            onWorkspaceCreated(); // refresh data so sidebar stays in sync if needed
         }
     };
 
     return (
-        <div className="flex flex-col lg:flex-row h-full">
-            {/* Editor Pane */}
-            <div className="flex-1 flex flex-col border-r border-[var(--border-color)] min-h-[50vh] lg:min-h-0 bg-[#0e0e0e]">
-                <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
-                    <div className="flex items-center gap-3">
-                        <select
-                            value={language}
-                            onChange={(e) => setLanguage(e.target.value)}
-                            className="bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] text-xs rounded px-2 py-1 outline-none focus:border-white transition-colors"
-                        >
-                            <option value="javascript">JavaScript</option>
-                            <option value="python">Python</option>
-                        </select>
-
-                        {saved && (
-                            <span className="text-[10px] text-emerald-400 flex items-center gap-1 animate-pulse">
-                                <CheckCircle className="w-3 h-3" /> Saxlandı
-                            </span>
-                        )}
-                    </div>
-
-                    <div className="flex items-center gap-2">
-                        <button
-                            onClick={handleSaveOnly}
-                            className="secondary-btn px-3 py-1.5 text-xs flex items-center gap-1.5"
-                        >
-                            <Save className="w-3.5 h-3.5" /> Saxla
-                        </button>
-                        <button
-                            onClick={handleSaveAndAnalyze}
-                            disabled={analyzing}
-                            className="glow-btn px-3 py-1.5 text-xs flex items-center gap-2"
-                        >
-                            {analyzing ? (
-                                <><div className="spinner !w-3 !h-3" /> Analiz gedir...</>
-                            ) : (
-                                <><Sparkles className="w-3.5 h-3.5" /> Saxla &amp; Analiz Et</>
-                            )}
-                        </button>
-                    </div>
-                </div>
-
-                <div className="flex-1 relative">
-                    <CodeEditor
-                        value={code}
-                        onChange={(val) => setCode(val || "")}
-                        language={language}
-                    />
-                </div>
-            </div>
-
-            {/* Right Panel - Tasks & AI */}
-            <div className="w-full lg:w-[400px] flex flex-col h-[50vh] lg:h-full bg-[var(--bg-secondary)] shrink-0 overflow-hidden">
-                {/* Panel Tabs */}
+        <div className="flex h-full flex-col md:flex-row">
+            {/* Sidebar (Left side for student too, looks more like VS Code) */}
+            <div className={cn(
+                "w-full md:w-72 border-r border-[var(--border-color)] flex flex-col h-full bg-[var(--bg-secondary)] shrink-0 transition-all z-20",
+                selectedWorkspaceId ? "hidden md:flex" : "flex"
+            )}>
                 <div className="flex border-b border-[var(--border-color)] shrink-0">
                     <button
-                        onClick={() => setActivePanel("tasks")}
+                        onClick={() => setActiveTab("tasks")}
                         className={cn(
                             "flex-1 py-3 text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5",
-                            activePanel === "tasks"
+                            activeTab === "tasks"
                                 ? "text-white border-b-2 border-white bg-[var(--bg-card)]"
                                 : "text-[var(--text-secondary)] hover:text-white"
                         )}
                     >
                         <ClipboardList className="w-3.5 h-3.5" />
                         Tapşırıqlar
-                        {tasks.length > 0 && (
-                            <span className="bg-blue-500/20 text-blue-400 text-[10px] px-1.5 py-0.5 rounded-full">{tasks.length}</span>
-                        )}
                     </button>
                     <button
-                        onClick={() => setActivePanel("ai")}
+                        onClick={() => setActiveTab("files")}
                         className={cn(
                             "flex-1 py-3 text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5",
-                            activePanel === "ai"
+                            activeTab === "files"
                                 ? "text-white border-b-2 border-white bg-[var(--bg-card)]"
                                 : "text-[var(--text-secondary)] hover:text-white"
                         )}
                     >
-                        <Activity className="w-3.5 h-3.5" />
-                        AI Köməkçi
-                        {feedback?.status && (
-                            <span className={cn(
-                                "text-[10px] px-1.5 py-0.5 rounded-full",
-                                feedback.status === "PASS" ? "bg-emerald-900/30 text-emerald-400" : "bg-rose-900/30 text-rose-400"
-                            )}>
-                                {feedback.status === "PASS" ? "✓" : "✗"}
-                            </span>
-                        )}
+                        <Folder className="w-3.5 h-3.5" />
+                        Fayllarım
                     </button>
                 </div>
 
-                {/* Panel Content */}
-                <div className="flex-1 overflow-y-auto custom-scrollbar">
-                    {activePanel === "tasks" ? (
-                        <div className="p-4 space-y-3">
+                <div className="flex-1 bg-[var(--bg-primary)] overflow-y-auto custom-scrollbar">
+                    {activeTab === "tasks" ? (
+                        <div className="p-3 space-y-3">
                             {tasks.length === 0 ? (
                                 <div className="text-center py-12 text-[var(--text-secondary)]">
                                     <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-20" />
                                     <p className="text-sm">Hələ tapşırıq yoxdur</p>
-                                    <p className="text-xs mt-1">Müəllim tapşırıq əlavə etdikdə burada görünəcək</p>
                                 </div>
                             ) : (
                                 tasks.map((t: any, i: number) => (
-                                    <div key={t.id} className="p-4 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] hover:border-[var(--border-hover)] transition-colors">
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-6 h-6 rounded-md bg-blue-500/10 border border-blue-500/30 flex items-center justify-center text-[10px] font-bold text-blue-400 shrink-0 mt-0.5">
+                                    <div key={t.id} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
+                                        <div className="flex items-start gap-2">
+                                            <div className="w-5 h-5 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center text-[10px] shrink-0 mt-0.5 font-mono">
                                                 {i + 1}
                                             </div>
-                                            <div className="flex-1 min-w-0">
-                                                <h4 className="text-sm font-medium text-white mb-1">{t.title}</h4>
+                                            <div>
+                                                <h4 className="text-sm font-medium text-white mb-1 leading-snug">{t.title}</h4>
                                                 {t.description && (
-                                                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed whitespace-pre-wrap">{t.description}</p>
+                                                    <p className="text-xs text-[var(--text-secondary)] leading-relaxed">{t.description}</p>
                                                 )}
-                                                <div className="text-[10px] text-[var(--text-secondary)] mt-2 flex items-center gap-1">
-                                                    <Clock className="w-3 h-3" />
-                                                    {new Date(t.createdAt).toLocaleDateString('az-AZ', { day: 'numeric', month: 'long' })}
-                                                </div>
+                                                <span className="text-[9px] text-[var(--text-secondary)] mt-2 inline-block bg-[var(--bg-elevated)] px-1.5 py-0.5 rounded">
+                                                    {new Date(t.createdAt).toLocaleDateString('az-AZ')}
+                                                </span>
                                             </div>
                                         </div>
                                     </div>
@@ -597,21 +558,93 @@ function StudentView({ workspace, tasks, classroomName }: any) {
                             )}
                         </div>
                     ) : (
-                        <div className="p-4 flex-1">
-                            <AIFeedback feedback={feedback} analyzing={analyzing} />
+                        <div className="p-2 space-y-1">
+                            <button
+                                onClick={handleCreateFile}
+                                disabled={creatingFile}
+                                className="w-full text-left p-2 rounded-md hover:bg-[var(--bg-card)] text-sm text-[var(--text-secondary)] hover:text-white transition-colors flex items-center justify-center gap-2 border border-dashed border-[var(--border-color)] hover:border-[var(--border-hover)] mb-2"
+                            >
+                                {creatingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                                Yeni Fayl
+                            </button>
+
+                            {workspaces.map((w: any) => (
+                                <button
+                                    key={w.id}
+                                    onClick={() => onSelectWorkspace(w.id)}
+                                    className={cn(
+                                        "w-full text-left p-2.5 rounded-md text-sm transition-all flex items-center justify-between border",
+                                        selectedWorkspaceId === w.id
+                                            ? "bg-[var(--bg-card)] border-[var(--border-color)] text-white shadow-sm"
+                                            : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white"
+                                    )}
+                                >
+                                    <span className="flex items-center gap-2 truncate">
+                                        <FileCode className="w-4 h-4 shrink-0" />
+                                        <span className="truncate">{w.title}</span>
+                                    </span>
+                                </button>
+                            ))}
                         </div>
                     )}
                 </div>
             </div>
-        </div>
-    );
-}
 
-function Sparkles(props: any) {
-    return (
-        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" {...props}>
-            <path d="m12 3-1.912 5.813a2 2 0 0 1-1.275 1.275L3 12l5.813 1.912a2 2 0 0 1 1.275 1.275L12 21l1.912-5.813a2 2 0 0 1 1.275-1.275L21 12l-5.813-1.912a2 2 0 0 1-1.275-1.275L12 3Z" />
-            <path d="M5 3v4" /><path d="M19 17v4" /><path d="M3 5h4" /><path d="M17 19h4" />
-        </svg>
+            {/* Editor Pane */}
+            <div className="flex-1 flex flex-col bg-[#0e0e0e] min-w-0">
+                {activeWorkspace ? (
+                    <>
+                        <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0 transition-all">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] mr-2">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <div className="text-sm font-medium text-white flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] px-2.5 py-1 rounded">
+                                    <FileCode className="w-3.5 h-3.5" />
+                                    {activeWorkspace.title}
+                                </div>
+                                <select
+                                    value={language}
+                                    onChange={(e) => setLanguage(e.target.value)}
+                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white"
+                                >
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="python">Python</option>
+                                </select>
+                            </div>
+
+                            <button
+                                onClick={handleSave}
+                                disabled={saving}
+                                className={cn(
+                                    "px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all",
+                                    saved ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "glow-btn"
+                                )}
+                            >
+                                {saving ? (
+                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                ) : saved ? (
+                                    <><CheckCircle className="w-3.5 h-3.5" /> Saxlandı</>
+                                ) : (
+                                    <><Save className="w-3.5 h-3.5" /> Saxla</>
+                                )}
+                            </button>
+                        </div>
+                        <div className="flex-1 relative">
+                            <CodeEditor
+                                value={code}
+                                onChange={(val) => setCode(val || "")}
+                                language={language}
+                            />
+                        </div>
+                    </>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)]">
+                        <Folder className="w-12 h-12 mb-4 opacity-20" />
+                        <p className="text-sm">Soldan fayl seçin və ya yeni fayl yaradın</p>
+                    </div>
+                )}
+            </div>
+        </div>
     );
 }

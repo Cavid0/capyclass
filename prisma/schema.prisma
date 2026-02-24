@@ -73,6 +73,7 @@ model Enrollment {
 
 model Workspace {
   id          String          @id @default(cuid())
+  title       String          @default("Mənim Kodum")
   code        String          @default("")
   language    String          @default("javascript")
   status      WorkspaceStatus @default(PENDING)
@@ -81,21 +82,6 @@ model Workspace {
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
-  student   User         @relation(fields: [studentId], references: [id])
-  classroom Classroom    @relation(fields: [classroomId], references: [id])
-  feedbacks AIFeedback[]
-
-  @@unique([studentId, classroomId])
-}
-
-model AIFeedback {
-  id          String   @id @default(cuid())
-  workspaceId String
-  summary     String
-  errors      String   @default("[]")
-  suggestions String   @default("[]")
-  status      WorkspaceStatus
-  createdAt   DateTime @default(now())
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id])
+  student   User      @relation(fields: [studentId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id])
 }
