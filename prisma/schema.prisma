@@ -45,6 +45,18 @@ model Classroom {
   teacher     User         @relation("TeacherClassrooms", fields: [teacherId], references: [id])
   enrollments Enrollment[]
   workspaces  Workspace[]
+  tasks       Task[]
+}
+
+model Task {
+  id          String   @id @default(cuid())
+  title       String
+  description String   @default("")
+  classroomId String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  classroom Classroom @relation(fields: [classroomId], references: [id])
 }
 
 model Enrollment {
