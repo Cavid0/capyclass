@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle } from "lucide-react";
+import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
 
@@ -16,6 +16,10 @@ export default function DashboardPage() {
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
     const [newClassName, setNewClassName] = useState("");
+    const [showJoinModal, setShowJoinModal] = useState(false);
+    const [joinCode, setJoinCode] = useState("");
+    const [joining, setJoining] = useState(false);
+    const [joinError, setJoinError] = useState("");
     const [creating, setCreating] = useState(false);
 
     // Copy state
@@ -61,6 +65,32 @@ export default function DashboardPage() {
         }
     };
 
+    const handleJoin = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!joinCode.trim()) return;
+
+        setJoining(true);
+        setJoinError("");
+        try {
+            const res = await fetch(`/api/classrooms/${joinCode.trim()}/join`, {
+                method: "POST",
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setJoinCode("");
+                setShowJoinModal(false);
+                fetchClassrooms();
+            } else {
+                setJoinError(data.error || "Xəta baş verdi");
+            }
+        } catch {
+            setJoinError("Bağlantı xətası");
+        } finally {
+            setJoining(false);
+        }
+    };
+
     const copyToClipboard = (code: string) => {
         navigator.clipboard.writeText(code);
         setCopiedCode(code);
@@ -102,13 +132,21 @@ export default function DashboardPage() {
                             />
                         </div>
 
-                        {isTeacher && (
+                        {isTeacher ? (
                             <button
                                 onClick={() => setShowCreateModal(true)}
                                 className="glow-btn px-4 py-[11px] h-[40px] flex items-center gap-2 whitespace-nowrap text-sm"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Yeni Sinif</span>
+                            </button>
+                        ) : (
+                            <button
+                                onClick={() => setShowJoinModal(true)}
+                                className="glow-btn px-4 py-[11px] h-[40px] flex items-center gap-2 whitespace-nowrap text-sm"
+                            >
+                                <UserPlus className="w-4 h-4" />
+                                <span className="hidden sm:inline">Sinfə Qoşul</span>
                             </button>
                         )}
                     </div>
@@ -257,6 +295,63 @@ export default function DashboardPage() {
                                     className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[100px]"
                                 >
                                     {creating ? <div className="spinner !w-4 !h-4" /> : "Yarat"}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {/* Join Modal (Student) */}
+            {showJoinModal && (
+                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
+                    <div className="glass-card w-full max-w-md p-6 relative">
+                        <div className="w-12 h-12 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center mx-auto mb-5">
+                            <UserPlus className="w-6 h-6 text-white" />
+                        </div>
+                        <h2 className="text-lg font-medium text-white mb-2 tracking-tight text-center">Sinfə Qoşul</h2>
+                        <p className="text-[var(--text-secondary)] text-sm mb-6 text-center">
+                            Müəlliminizdən aldığınız dəvət kodunu daxil edin
+                        </p>
+
+                        {joinError && (
+                            <div className="mb-4 p-3 rounded-md bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm">
+                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                                <span>{joinError}</span>
+                            </div>
+                        )}
+
+                        <form onSubmit={handleJoin} className="space-y-4 text-left">
+                            <div>
+                                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                                    Dəvət Kodu
+                                </label>
+                                <input
+                                    type="text"
+                                    required
+                                    autoFocus
+                                    value={joinCode}
+                                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                                    className="input-field text-center font-mono text-lg tracking-[0.3em] uppercase"
+                                    placeholder="ABC123"
+                                    maxLength={10}
+                                />
+                            </div>
+
+                            <div className="flex gap-3 justify-end pt-4">
+                                <button
+                                    type="button"
+                                    onClick={() => { setShowJoinModal(false); setJoinError(""); setJoinCode(""); }}
+                                    className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                                >
+                                    Ləğv et
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={joining || !joinCode.trim()}
+                                    className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[120px]"
+                                >
+                                    {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ArrowRight className="w-4 h-4" /> Qoşul</>}
                                 </button>
                             </div>
                         </form>
