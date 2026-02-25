@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -171,6 +171,11 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     const [taskDesc, setTaskDesc] = useState("");
     const [creatingTask, setCreatingTask] = useState(false);
 
+    // Review system
+    const [reviewingId, setReviewingId] = useState<string | null>(null);
+    const [reviewNote, setReviewNote] = useState("");
+    const [submittingReview, setSubmittingReview] = useState(false);
+
     // Notifications for when a student saves code
     const prevWorkspacesRef = useRef<any[]>([]);
     const [notifications, setNotifications] = useState<{ id: string, message: string, workspaceId: string }[]>([]);
@@ -221,6 +226,26 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
             console.error(error);
         } finally {
             setCreatingTask(false);
+        }
+    };
+
+    const handleReview = async (workspaceId: string, status: "CORRECT" | "INCORRECT") => {
+        setSubmittingReview(true);
+        try {
+            const res = await fetch(`/api/workspaces/${workspaceId}/review`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ reviewStatus: status, reviewNote }),
+            });
+            if (res.ok) {
+                setReviewNote("");
+                setReviewingId(null);
+                onTaskCreated();
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSubmittingReview(false);
         }
     };
 
@@ -396,6 +421,79 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 value={activeWorkspaceData.code}
                                 readOnly
                             />
+                        </div>
+
+                        {/* Review Panel */}
+                        <div className="shrink-0 border-t border-[var(--border-color)] bg-[var(--bg-secondary)] p-4">
+                            {activeWorkspaceData.reviewStatus ? (
+                                <div className={cn(
+                                    "flex items-center gap-3 p-3 rounded-lg border",
+                                    activeWorkspaceData.reviewStatus === "CORRECT"
+                                        ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                        : "bg-red-500/10 border-red-500/20 text-red-400"
+                                )}>
+                                    {activeWorkspaceData.reviewStatus === "CORRECT" ? (
+                                        <ThumbsUp className="w-5 h-5 shrink-0" />
+                                    ) : (
+                                        <ThumbsDown className="w-5 h-5 shrink-0" />
+                                    )}
+                                    <div className="flex-1 min-w-0">
+                                        <p className="text-sm font-medium">
+                                            {activeWorkspaceData.reviewStatus === "CORRECT" ? "Düzdür ✓" : "Səhvdir ✗"}
+                                        </p>
+                                        {activeWorkspaceData.reviewNote && (
+                                            <p className="text-xs mt-1 opacity-80">{activeWorkspaceData.reviewNote}</p>
+                                        )}
+                                    </div>
+                                    <button
+                                        onClick={() => setReviewingId(activeWorkspaceData.id)}
+                                        className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/5"
+                                    >
+                                        Dəyiş
+                                    </button>
+                                </div>
+                            ) : null}
+
+                            {(!activeWorkspaceData.reviewStatus || reviewingId === activeWorkspaceData.id) && (
+                                <div className="space-y-3">
+                                    {!activeWorkspaceData.reviewStatus && (
+                                        <p className="text-xs text-[var(--text-secondary)]">Bu faylı dəyərləndir:</p>
+                                    )}
+                                    <div className="flex items-center gap-2">
+                                        <input
+                                            type="text"
+                                            value={reviewNote}
+                                            onChange={e => setReviewNote(e.target.value)}
+                                            className="input-field flex-1 text-sm"
+                                            placeholder="Qeyd (ixtiyari)..."
+                                        />
+                                        <button
+                                            onClick={() => handleReview(activeWorkspaceData.id, "CORRECT")}
+                                            disabled={submittingReview}
+                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all text-xs font-medium"
+                                        >
+                                            {submittingReview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />}
+                                            Düzdü
+                                        </button>
+                                        <button
+                                            onClick={() => handleReview(activeWorkspaceData.id, "INCORRECT")}
+                                            disabled={submittingReview}
+                                            className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
+                                        >
+                                            {submittingReview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsDown className="w-3.5 h-3.5" />}
+                                            Səhvdi
+                                        </button>
+                                        {reviewingId && (
+                                            <button
+                                                onClick={() => { setReviewingId(null); setReviewNote(""); }}
+                                                className="p-2 text-[var(--text-secondary)] hover:text-white transition-colors"
+                                            >
+                                                <XCircle className="w-4 h-4" />
+                                            </button>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
                     </div>
                 ) : (
@@ -626,23 +724,36 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 Yeni Fayl
                             </button>
 
-                            {workspaces.map((w: any) => (
-                                <button
-                                    key={w.id}
-                                    onClick={() => onSelectWorkspace(w.id)}
-                                    className={cn(
-                                        "w-full text-left p-2.5 rounded-md text-sm transition-all flex items-center justify-between border",
-                                        selectedWorkspaceId === w.id
-                                            ? "bg-[var(--bg-card)] border-[var(--border-color)] text-white shadow-sm"
-                                            : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white"
-                                    )}
-                                >
-                                    <span className="flex items-center gap-2 truncate">
-                                        <FileCode className="w-4 h-4 shrink-0" />
-                                        <span className="truncate">{w.title}</span>
-                                    </span>
-                                </button>
-                            ))}
+                            {workspaces.map((w: any) => {
+                                const hasReview = w.reviewStatus;
+                                return (
+                                    <button
+                                        key={w.id}
+                                        onClick={() => onSelectWorkspace(w.id)}
+                                        className={cn(
+                                            "w-full text-left p-2.5 rounded-md text-sm transition-all flex items-center justify-between border",
+                                            selectedWorkspaceId === w.id
+                                                ? "bg-[var(--bg-card)] border-[var(--border-color)] text-white shadow-sm"
+                                                : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white"
+                                        )}
+                                    >
+                                        <span className="flex items-center gap-2 truncate">
+                                            <FileCode className="w-4 h-4 shrink-0" />
+                                            <span className="truncate">{w.title}</span>
+                                        </span>
+                                        {hasReview && (
+                                            <span className={cn(
+                                                "text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0",
+                                                w.reviewStatus === "CORRECT"
+                                                    ? "bg-emerald-500/10 text-emerald-400"
+                                                    : "bg-red-500/10 text-red-400"
+                                            )}>
+                                                {w.reviewStatus === "CORRECT" ? <ThumbsUp className="w-2.5 h-2.5" /> : <ThumbsDown className="w-2.5 h-2.5" />}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
                         </div>
                     )}
                 </div>
@@ -688,13 +799,35 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 )}
                             </button>
                         </div>
-                        <div className="flex-1 relative">
+                        <div className="flex-1 relative min-h-0">
                             <CodeEditor
                                 value={code}
                                 onChange={(val) => setCode(val || "")}
                                 language={language}
                             />
                         </div>
+
+                        {/* Review Status Banner */}
+                        {activeWorkspace.reviewStatus && (
+                            <div className={cn(
+                                "shrink-0 border-t px-4 py-3 flex items-center gap-3",
+                                activeWorkspace.reviewStatus === "CORRECT"
+                                    ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400"
+                                    : "bg-red-500/10 border-red-500/20 text-red-400"
+                            )}>
+                                {activeWorkspace.reviewStatus === "CORRECT" ? (
+                                    <ThumbsUp className="w-4 h-4 shrink-0" />
+                                ) : (
+                                    <ThumbsDown className="w-4 h-4 shrink-0" />
+                                )}
+                                <span className="text-sm font-medium">
+                                    Müəllim review: {activeWorkspace.reviewStatus === "CORRECT" ? "Düzdür ✓" : "Səhvdir ✗"}
+                                </span>
+                                {activeWorkspace.reviewNote && (
+                                    <span className="text-xs opacity-80 ml-2">— {activeWorkspace.reviewNote}</span>
+                                )}
+                            </div>
+                        )}
                     </>
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)]">

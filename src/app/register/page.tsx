@@ -1,20 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { Mail, Lock, User, AlertCircle, BookOpen, GraduationCap, Code2, ArrowRight } from "lucide-react";
 import { Role } from "@prisma/client";
 
 export default function RegisterPage() {
     const router = useRouter();
+    const { status } = useSession();
     const [role, setRole] = useState<Role>("STUDENT");
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+
+    useEffect(() => {
+        if (status === "authenticated") {
+            router.replace("/dashboard");
+        }
+    }, [status, router]);
+
+    if (status === "loading" || status === "authenticated") {
+        return (
+            <div className="min-h-screen flex items-center justify-center bg-black">
+                <div className="spinner" />
+            </div>
+        );
+    }
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -90,8 +105,8 @@ export default function RegisterPage() {
                                 type="button"
                                 onClick={() => setRole("STUDENT")}
                                 className={`flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-all ${role === "STUDENT"
-                                        ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
-                                        : "text-[var(--text-secondary)] hover:text-white"
+                                    ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
+                                    : "text-[var(--text-secondary)] hover:text-white"
                                     }`}
                             >
                                 <GraduationCap className="w-4 h-4" />
@@ -101,8 +116,8 @@ export default function RegisterPage() {
                                 type="button"
                                 onClick={() => setRole("TEACHER")}
                                 className={`flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-all ${role === "TEACHER"
-                                        ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
-                                        : "text-[var(--text-secondary)] hover:text-white"
+                                    ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
+                                    : "text-[var(--text-secondary)] hover:text-white"
                                     }`}
                             >
                                 <BookOpen className="w-4 h-4" />
