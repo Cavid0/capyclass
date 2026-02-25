@@ -139,6 +139,7 @@ export default function ClassroomPage() {
                         selectedWorkspaceId={selectedWorkspaceId}
                         onSelectWorkspace={setSelectedWorkspaceId}
                         onTaskCreated={fetchTasks}
+                        onRefresh={fetchClassroom}
                     />
                 ) : (
                     <StudentView
@@ -158,7 +159,7 @@ export default function ClassroomPage() {
 // =============================================================
 // TEACHER VIEW
 // =============================================================
-function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated }: any) {
+function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated, onRefresh }: any) {
     const workspaces = classroom.workspaces || [];
     const enrollments = classroom.enrollments || [];
 
@@ -240,7 +241,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
             if (res.ok) {
                 setReviewNote("");
                 setReviewingId(null);
-                onTaskCreated();
+                onRefresh();
             }
         } catch (error) {
             console.error(error);
