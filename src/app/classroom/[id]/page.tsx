@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown, Play, Terminal, X
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -596,6 +596,12 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
     const [activeTab, setActiveTab] = useState<"files" | "tasks">("tasks");
     const [creatingFile, setCreatingFile] = useState(false);
 
+    // Compiler state
+    const [running, setRunning] = useState(false);
+    const [output, setOutput] = useState<string | null>(null);
+    const [outputError, setOutputError] = useState(false);
+    const [showOutput, setShowOutput] = useState(false);
+
     // Sync editor when active workspace changes
     useEffect(() => {
         if (activeWorkspace) {
@@ -648,6 +654,34 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
         } finally {
             setSaving(false);
             onWorkspaceCreated(); // refresh data so sidebar stays in sync if needed
+        }
+    };
+
+    const handleRun = async () => {
+        if (!code.trim() || language === "html") return;
+        setRunning(true);
+        setOutput(null);
+        setOutputError(false);
+        setShowOutput(true);
+        try {
+            const res = await fetch("/api/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code, language }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setOutput(data.output || "(Çıxış yoxdur)");
+                setOutputError(data.hasError);
+            } else {
+                setOutput(data.error || "Xəta baş verdi");
+                setOutputError(true);
+            }
+        } catch (error) {
+            setOutput("Şəbəkə xətası. Yenidən cəhd edin.");
+            setOutputError(true);
+        } finally {
+            setRunning(false);
         }
     };
 
@@ -811,13 +845,64 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     <><Save className="w-3.5 h-3.5" /> Saxla</>
                                 )}
                             </button>
+
+                            {language !== "html" && (
+                                <button
+                                    onClick={handleRun}
+                                    disabled={running}
+                                    className="px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
+                                >
+                                    {running ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : (
+                                        <Play className="w-3.5 h-3.5" />
+                                    )}
+                                    Çalışdır
+                                </button>
+                            )}
                         </div>
-                        <div className="flex-1 relative min-h-0">
-                            <CodeEditor
-                                value={code}
-                                onChange={(val) => setCode(val || "")}
-                                language={language}
-                            />
+                        <div className={cn("flex-1 relative min-h-0 flex flex-col", showOutput && "flex-[2]")}>
+                            <div className="flex-1 relative min-h-0">
+                                <CodeEditor
+                                    value={code}
+                                    onChange={(val) => setCode(val || "")}
+                                    language={language}
+                                />
+                            </div>
+
+                            {/* Output Panel */}
+                            {showOutput && (
+                                <div className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col" style={{ height: '200px' }}>
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-[#0d1117] border-b border-[var(--border-color)]">
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <Terminal className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+                                            <span className="text-[var(--text-secondary)] font-medium">Çıxış</span>
+                                            {running && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
+                                        </div>
+                                        <button
+                                            onClick={() => { setShowOutput(false); setOutput(null); }}
+                                            className="p-1 text-[var(--text-secondary)] hover:text-white transition-colors rounded hover:bg-white/5"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 overflow-auto p-3 custom-scrollbar">
+                                        {running ? (
+                                            <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs">
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Kod icra edilir...
+                                            </div>
+                                        ) : output !== null ? (
+                                            <pre className={cn(
+                                                "text-xs font-mono whitespace-pre-wrap leading-relaxed",
+                                                outputError ? "text-red-400" : "text-emerald-300"
+                                            )}>{output}</pre>
+                                        ) : (
+                                            <p className="text-xs text-[var(--text-secondary)]">Çalışdırmaq üçün ▶ düyməsini basın</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Review Status Banner */}
