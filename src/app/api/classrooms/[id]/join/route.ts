@@ -62,6 +62,7 @@ export async function POST(
                 data: {
                     studentId: userId,
                     classroomId: classroom.id,
+                    title: "Əsas fayl",
                     code: getStarterCode(classroom.name),
                     language: "javascript",
                 },
