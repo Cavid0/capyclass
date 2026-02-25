@@ -2,22 +2,29 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 
-// Language mapping: Monaco language id -> Piston language + version
-const LANGUAGE_MAP: Record<string, { language: string; version: string }> = {
-    javascript: { language: "javascript", version: "18.15.0" },
-    typescript: { language: "typescript", version: "5.0.3" },
-    python: { language: "python", version: "3.10.0" },
-    c: { language: "c", version: "10.2.0" },
-    cpp: { language: "c++", version: "10.2.0" },
-    csharp: { language: "csharp", version: "6.12.0" },
-    java: { language: "java", version: "15.0.2" },
-    go: { language: "go", version: "1.16.2" },
-    ruby: { language: "ruby", version: "3.0.1" },
-    php: { language: "php", version: "8.2.3" },
-    rust: { language: "rust", version: "1.68.2" },
-    swift: { language: "swift", version: "5.3.3" },
-    kotlin: { language: "kotlin", version: "1.8.20" },
+// Language mapping: Monaco language id -> Wandbox compiler name
+const COMPILER_MAP: Record<string, string> = {
+    javascript: "nodejs-20.17.0",
+    typescript: "typescript-5.6.2",
+    python: "cpython-3.12.7",
+    c: "gcc-head-c",
+    cpp: "gcc-head",
+    csharp: "mono-6.12.0.199",
+    java: "openjdk-jdk-22+36",
+    go: "go-1.23.2",
+    ruby: "ruby-3.4.1",
+    php: "php-8.3.12",
+    rust: "rust-1.82.0",
+    swift: "swift-6.0.1",
+    kotlin: "openjdk-jdk-22+36", // Kotlin uses Java compiler, will wrap
 };
+
+// Java needs a Main class wrapper
+function wrapJavaCode(code: string): string {
+    // If user already has a class with main, don't wrap
+    if (code.includes("public static void main")) return code;
+    return `public class Main {\n    public static void main(String[] args) {\n        ${code}\n    }\n}`;
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -32,30 +39,34 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Kod və dil tələb olunur" }, { status: 400 });
         }
 
-        const langConfig = LANGUAGE_MAP[language];
-        if (!langConfig) {
+        if (language === "html") {
+            return NextResponse.json({ error: "HTML/CSS icra edilə bilməz" }, { status: 400 });
+        }
+
+        const compiler = COMPILER_MAP[language];
+        if (!compiler) {
             return NextResponse.json({ error: `"${language}" dili dəstəklənmir` }, { status: 400 });
         }
 
-        // Call Piston API
-        const response = await fetch("https://emkc.org/api/v2/piston/execute", {
+        let finalCode = code;
+        // Java needs wrapping if no main method
+        if (language === "java") {
+            finalCode = wrapJavaCode(code);
+        }
+
+        // Call Wandbox API
+        const response = await fetch("https://wandbox.org/api/compile.json", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
             body: JSON.stringify({
-                language: langConfig.language,
-                version: langConfig.version,
-                files: [{ content: code }],
-                stdin: "",
-                compile_timeout: 10000,
-                run_timeout: 5000,
-                compile_memory_limit: -1,
-                run_memory_limit: -1,
+                code: finalCode,
+                compiler: compiler,
             }),
         });
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Piston API error:", errorText);
+            console.error("Wandbox API error:", response.status, errorText);
             return NextResponse.json({
                 error: "Kod icra edilərkən xəta baş verdi",
                 output: errorText
@@ -64,26 +75,38 @@ export async function POST(req: NextRequest) {
 
         const result = await response.json();
 
-        // Combine compile and run output
-        const compileOutput = result.compile?.output || "";
-        const runOutput = result.run?.output || "";
-        const runStderr = result.run?.stderr || "";
-        const compileStderr = result.compile?.stderr || "";
+        const programOutput = result.program_output || "";
+        const programError = result.program_error || "";
+        const compilerError = result.compiler_error || "";
+        const compilerOutput = result.compiler_output || "";
+        const statusCode = result.status || "0";
+        const signal = result.signal || "";
 
-        const hasError = !!(compileStderr || runStderr || result.compile?.code !== 0 && result.compile);
+        const hasError = statusCode !== "0" || !!signal || !!compilerError || !!programError;
 
         let output = "";
-        if (compileStderr) {
-            output = `[Compile Error]\n${compileStderr}`;
-        } else if (runStderr) {
-            output = runOutput ? `${runOutput}\n[Error]\n${runStderr}` : `[Error]\n${runStderr}`;
+        if (compilerError) {
+            output = `[Compile Error]\n${compilerError}`;
+        } else if (programError && !programOutput) {
+            output = `[Error]\n${programError}`;
+        } else if (programError && programOutput) {
+            output = `${programOutput}\n[Stderr]\n${programError}`;
+        } else if (programOutput) {
+            output = programOutput;
+        } else if (compilerOutput) {
+            output = compilerOutput;
         } else {
-            output = runOutput || compileOutput || "(Çıxış yoxdur)";
+            output = "(Çıxış yoxdur)";
+        }
+
+        // If there was a signal (like SIGSEGV)
+        if (signal) {
+            output += `\n[Signal: ${signal}]`;
         }
 
         return NextResponse.json({
             output: output.substring(0, 10000), // Limit output size
-            exitCode: result.run?.code ?? result.compile?.code ?? 0,
+            exitCode: parseInt(statusCode) || 0,
             hasError,
         });
     } catch (error) {
