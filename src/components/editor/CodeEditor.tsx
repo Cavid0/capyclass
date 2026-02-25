@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useRef, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 
 interface CodeEditorProps {
@@ -21,32 +21,53 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
             base: 'vs-dark',
             inherit: true,
             rules: [
-                { background: '0e0e0e' },
-                { token: 'comment', foreground: '52525b', fontStyle: 'italic' },
-                { token: 'keyword', foreground: 'a78bfa' },
-                { token: 'string', foreground: '34d399' },
-                { token: 'number', foreground: 'f472b6' },
+                { background: '0d1117' },
+                { token: 'comment', foreground: '6e7681', fontStyle: 'italic' },
+                { token: 'keyword', foreground: 'ff7b72' },
+                { token: 'string', foreground: 'a5d6ff' },
+                { token: 'number', foreground: '79c0ff' },
+                { token: 'type', foreground: 'ffa657' },
+                { token: 'variable', foreground: 'ffa657' },
+                { token: 'delimiter', foreground: 'c9d1d9' },
             ],
             colors: {
-                'editor.background': '#000000', // matches bg-primary
-                'editor.foreground': '#ededed',
-                'editor.lineHighlightBackground': '#111111',
-                'editorLineNumber.foreground': '#3f3f46',
-                'editorIndentGuide.background': '#27272a',
-                'editor.selectionBackground': '#27272a',
-                'scrollbarSlider.background': '#27272a',
-                'scrollbarSlider.hoverBackground': '#3f3f46',
+                'editor.background': '#0d1117',
+                'editor.foreground': '#c9d1d9',
+                'editor.lineHighlightBackground': '#161b22',
+                'editorLineNumber.foreground': '#484f58',
+                'editorLineNumber.activeForeground': '#c9d1d9',
+                'editorIndentGuide.background': '#21262d',
+                'editor.selectionBackground': '#264f78',
+                'scrollbarSlider.background': '#484f5833',
+                'scrollbarSlider.hoverBackground': '#484f5866',
+                'editorCursor.foreground': '#58a6ff',
             }
         });
 
         monaco.editor.setTheme('classflow-dark');
+
+        // Force layout after mount
+        setTimeout(() => {
+            editor.layout();
+        }, 100);
     };
+
+    // Update value externally for readOnly mode
+    useEffect(() => {
+        if (readOnly && editorRef.current && value !== undefined) {
+            const model = editorRef.current.getModel();
+            if (model && model.getValue() !== value) {
+                model.setValue(value);
+            }
+        }
+    }, [value, readOnly]);
 
     return (
         <Editor
             height="100%"
             language={language}
             value={value}
+            defaultValue={value || "// Kod yoxdur"}
             onChange={onChange}
             onMount={handleEditorDidMount}
             options={{
@@ -62,10 +83,12 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                 cursorBlinking: "smooth",
                 cursorSmoothCaretAnimation: "on",
                 lineHeight: 22,
-                renderLineHighlight: "all",
+                renderLineHighlight: readOnly ? "none" : "all",
+                domReadOnly: readOnly,
+                automaticLayout: true,
             }}
             loading={
-                <div className="flex justify-center items-center h-full w-full bg-black">
+                <div className="flex justify-center items-center h-full w-full bg-[#0d1117]">
                     <div className="spinner !w-6 !h-6 border-white/20 border-t-white" />
                 </div>
             }

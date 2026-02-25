@@ -225,7 +225,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     };
 
     return (
-        <div className="h-full flex flex-col md:flex-row bg-[var(--bg-primary)]">
+        <div className="flex flex-col md:flex-row bg-[var(--bg-primary)]" style={{ height: 'calc(100vh - 3.5rem)' }}>
             {/* Sidebar */}
             <div className={cn(
                 "w-full md:w-80 border-r border-[var(--border-color)] flex flex-col h-full bg-[var(--bg-secondary)] shrink-0 transition-all",
@@ -298,26 +298,35 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                             Hələ fayl yaradılmayıb
                                                         </div>
                                                     ) : (
-                                                        studentWorkspaces.map((w: any) => (
-                                                            <button
-                                                                key={w.id}
-                                                                onClick={() => onSelectWorkspace(w.id)}
-                                                                className={cn(
-                                                                    "w-full text-left p-2 rounded-md text-xs transition-colors flex items-center justify-between",
-                                                                    selectedWorkspaceId === w.id
-                                                                        ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
-                                                                        : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-secondary)] border border-transparent"
-                                                                )}
-                                                            >
-                                                                <span className="flex items-center gap-1.5 truncate">
-                                                                    <FileCode className="w-3.5 h-3.5 shrink-0" />
-                                                                    <span className="truncate">{w.title}</span>
-                                                                </span>
-                                                                <span className="text-[9px] opacity-70 ml-2 shrink-0">
-                                                                    {new Date(w.updatedAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
-                                                                </span>
-                                                            </button>
-                                                        ))
+                                                        studentWorkspaces.map((w: any) => {
+                                                            const wasSaved = new Date(w.updatedAt).getTime() - new Date(w.createdAt).getTime() > 1000;
+                                                            return (
+                                                                <button
+                                                                    key={w.id}
+                                                                    onClick={() => onSelectWorkspace(w.id)}
+                                                                    className={cn(
+                                                                        "w-full text-left p-2 rounded-md text-xs transition-colors flex items-center justify-between",
+                                                                        selectedWorkspaceId === w.id
+                                                                            ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
+                                                                            : "text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-secondary)] border border-transparent"
+                                                                    )}
+                                                                >
+                                                                    <span className="flex items-center gap-1.5 truncate">
+                                                                        <FileCode className="w-3.5 h-3.5 shrink-0" />
+                                                                        <span className="truncate">{w.title}</span>
+                                                                        {wasSaved && (
+                                                                            <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
+                                                                                <CheckCircle className="w-2.5 h-2.5" />
+                                                                                Göndərilib
+                                                                            </span>
+                                                                        )}
+                                                                    </span>
+                                                                    <span className="text-[9px] opacity-70 ml-2 shrink-0">
+                                                                        {new Date(w.updatedAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+                                                                    </span>
+                                                                </button>
+                                                            );
+                                                        })
                                                     )}
                                                 </div>
                                             )}
@@ -361,7 +370,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
             {/* Main Area */}
             <div className="flex-1 flex flex-col h-full overflow-hidden bg-[var(--bg-primary)]">
                 {selectedWorkspaceId && activeWorkspaceData ? (
-                    <div className="flex-1 flex flex-col h-full">
+                    <div className="flex-1 flex flex-col min-h-0">
                         <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center gap-4 px-4 shrink-0">
                             <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] hover:text-white">
                                 <ChevronLeft className="w-4 h-4" />
@@ -376,8 +385,9 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             </div>
                         </div>
 
-                        <div className="flex-1 border-r border-[var(--border-color)] bg-[#0e0e0e] relative h-full">
-                            <div className="absolute top-2 right-4 z-10 bg-[#1e1e1e] border border-[var(--border-color)] px-2 py-1 rounded text-[10px] text-[var(--text-secondary)] uppercase tracking-wider flex items-center gap-1.5">
+                        <div className="flex-1 bg-[#0d1117] relative min-h-0">
+                            <div className="absolute top-2 right-4 z-10 bg-[#161b22] border border-[#30363d] px-2.5 py-1 rounded-md text-[10px] text-[#8b949e] uppercase tracking-wider flex items-center gap-1.5">
+                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70"></span>
                                 Yalnız oxu
                             </div>
                             <CodeEditor
@@ -543,7 +553,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
     };
 
     return (
-        <div className="flex h-full flex-col md:flex-row">
+        <div className="flex flex-col md:flex-row" style={{ height: 'calc(100vh - 3.5rem)' }}>
             {/* Sidebar (Left side for student too, looks more like VS Code) */}
             <div className={cn(
                 "w-full md:w-72 border-r border-[var(--border-color)] flex flex-col h-full bg-[var(--bg-secondary)] shrink-0 transition-all z-20",
@@ -639,7 +649,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
             </div>
 
             {/* Editor Pane */}
-            <div className="flex-1 flex flex-col bg-[#0e0e0e] min-w-0">
+            <div className="flex-1 flex flex-col bg-[#0d1117] min-w-0 min-h-0">
                 {activeWorkspace ? (
                     <>
                         <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0 transition-all">
