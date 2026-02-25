@@ -779,7 +779,19 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white"
                                 >
                                     <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
                                     <option value="python">Python</option>
+                                    <option value="c">C</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="csharp">C#</option>
+                                    <option value="java">Java</option>
+                                    <option value="go">Go</option>
+                                    <option value="ruby">Ruby</option>
+                                    <option value="php">PHP</option>
+                                    <option value="rust">Rust</option>
+                                    <option value="swift">Swift</option>
+                                    <option value="kotlin">Kotlin</option>
+                                    <option value="html">HTML/CSS</option>
                                 </select>
                             </div>
 
