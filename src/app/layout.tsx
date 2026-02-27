@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import "./globals.css";
 import Providers from "./providers";
+import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
   title: "ClassFlow Repo — Interaktiv Təhsil Platforması",
@@ -17,6 +18,7 @@ export default function RootLayout({
     <html lang="az">
       <body className="gradient-bg grid-pattern">
         <Providers>{children}</Providers>
+        <Toaster theme="dark" position="top-center" />
       </body>
     </html>
   );

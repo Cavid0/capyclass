@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
+import { toast } from "sonner";
 
 export default function DashboardPage() {
     const { data: session, status } = useSession();
@@ -104,19 +105,31 @@ export default function DashboardPage() {
     };
 
     const handleDeleteClassroom = async (classroomId: string) => {
-        if (!confirm("Bu sinfi silmək istədiyinizə əminsiniz? Bütün tapşırıqlar və tələbə faylları silinəcək.")) return;
-        try {
-            const res = await fetch(`/api/classrooms/${classroomId}`, {
-                method: "DELETE"
-            });
-            if (res.ok) {
-                fetchClassrooms();
-            } else {
-                alert("Sinif silinərkən xəta baş verdi");
+        toast("Bu sinfi silmək istədiyinizə əminsiniz?", {
+            description: "Bütün tapşırıqlar və tələbə faylları silinəcək.",
+            action: {
+                label: "Sil",
+                onClick: async () => {
+                    try {
+                        const res = await fetch(`/api/classrooms/${classroomId}`, {
+                            method: "DELETE"
+                        });
+                        if (res.ok) {
+                            fetchClassrooms();
+                            toast.success("Sinif silindi");
+                        } else {
+                            toast.error("Sinif silinərkən xəta baş verdi");
+                        }
+                    } catch (error) {
+                        console.error("Delete classroom timeout/error", error);
+                    }
+                }
+            },
+            cancel: {
+                label: "Ləğv et",
+                onClick: () => { }
             }
-        } catch (error) {
-            console.error("Delete classroom timeout/error", error);
-        }
+        });
     };
 
     const filteredClasses = (classrooms || []).filter(c =>
@@ -265,9 +278,9 @@ export default function DashboardPage() {
                                         ) : (
                                             <div className="mt-5 text-sm text-[var(--text-secondary)] flex items-center gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/5">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center">
-                                                    <span className="text-xs font-bold text-indigo-300">M</span>
+                                                    <span className="text-xs font-bold text-indigo-300">A</span>
                                                 </div>
-                                                Müəllim: <span className="text-gray-300 font-medium">{item.teacherName || "Bilinmir"}</span>
+                                                Admin: <span className="text-gray-300 font-medium">{item.teacherName || "Bilinmir"}</span>
                                             </div>
                                         )}
                                     </div>
