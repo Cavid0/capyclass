@@ -300,6 +300,20 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
         }
     };
 
+    const handleRemoveStudent = async (studentId: string) => {
+        if (!confirm("Bu tələbəni sinifdən silmək istədiyinizə əminsiniz? Onların yaratdığı fayllar da silinəcək.")) return;
+        try {
+            const res = await fetch(`/api/classrooms/${classroom.id}/enrollments/${studentId}`, { method: "DELETE" });
+            if (res.ok) {
+                onRefresh();
+            } else {
+                alert("Xəta baş verdi");
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const handleReview = async (workspaceId: string, status: "CORRECT" | "INCORRECT") => {
         setSubmittingReview(true);
         try {
@@ -370,22 +384,33 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
 
                                     return (
                                         <div key={en.id} className="border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-card)]">
-                                            <button
-                                                onClick={() => setExpandedStudent(isExpanded ? null : en.studentId)}
-                                                className="w-full text-left p-3 hover:bg-[var(--bg-elevated)] transition-colors flex items-center justify-between"
+                                            <div
+                                                className="w-full text-left p-3 hover:bg-[var(--bg-elevated)] transition-colors flex items-center justify-between group"
                                             >
-                                                <div className="flex items-center gap-2">
+                                                <button
+                                                    onClick={() => setExpandedStudent(isExpanded ? null : en.studentId)}
+                                                    className="flex items-center gap-2 flex-1"
+                                                >
                                                     <div className="w-6 h-6 rounded-md bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center text-[10px] font-bold text-white">
                                                         {en.student.name?.charAt(0)?.toUpperCase()}
                                                     </div>
                                                     <span className="text-sm font-medium text-white">
                                                         {en.student.name}
                                                     </span>
+                                                </button>
+                                                <div className="flex items-center gap-2">
+                                                    <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none">
+                                                        {studentWorkspaces.length} fayl
+                                                    </div>
+                                                    <button
+                                                        onClick={() => handleRemoveStudent(en.studentId)}
+                                                        className="w-7 h-7 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-red-500/30"
+                                                        title="Tələbəni sinifdən sil"
+                                                    >
+                                                        <Trash2 className="w-3.5 h-3.5" />
+                                                    </button>
                                                 </div>
-                                                <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded">
-                                                    {studentWorkspaces.length} fayl
-                                                </div>
-                                            </button>
+                                            </div>
 
                                             {isExpanded && (
                                                 <div className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-1.5 space-y-1">

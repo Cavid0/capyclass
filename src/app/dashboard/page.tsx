@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
-import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2 } from "lucide-react";
+import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
 
@@ -101,6 +101,22 @@ export default function DashboardPage() {
         navigator.clipboard.writeText(code);
         setCopiedCode(code);
         setTimeout(() => setCopiedCode(null), 2000);
+    };
+
+    const handleDeleteClassroom = async (classroomId: string) => {
+        if (!confirm("Bu sinfi silmək istədiyinizə əminsiniz? Bütün tapşırıqlar və tələbə faylları silinəcək.")) return;
+        try {
+            const res = await fetch(`/api/classrooms/${classroomId}`, {
+                method: "DELETE"
+            });
+            if (res.ok) {
+                fetchClassrooms();
+            } else {
+                alert("Sinif silinərkən xəta baş verdi");
+            }
+        } catch (error) {
+            console.error("Delete classroom timeout/error", error);
+        }
     };
 
     // Derived state
@@ -213,16 +229,27 @@ export default function DashboardPage() {
                                                 <Code2 className="w-6 h-6 text-indigo-400" />
                                             </div>
 
-                                            {!isTeacher && (
-                                                <span className={cn(
-                                                    "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full border shadow-sm",
-                                                    item.status === "PASS" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
-                                                        item.status === "FAIL" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" :
-                                                            "text-indigo-400 border-indigo-500/30 bg-indigo-500/10"
-                                                )}>
-                                                    {item.status || "AKTİV"}
-                                                </span>
-                                            )}
+                                            <div className="flex items-center gap-2">
+                                                {!isTeacher && (
+                                                    <span className={cn(
+                                                        "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full border shadow-sm",
+                                                        item.status === "PASS" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
+                                                            item.status === "FAIL" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" :
+                                                                "text-indigo-400 border-indigo-500/30 bg-indigo-500/10"
+                                                    )}>
+                                                        {item.status || "AKTİV"}
+                                                    </span>
+                                                )}
+                                                {isTeacher && (
+                                                    <button
+                                                        onClick={(e) => { e.preventDefault(); handleDeleteClassroom(item.id); }}
+                                                        className="w-8 h-8 rounded-lg flex items-center justify-center border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 relative z-20"
+                                                        title="Sinfi Sil"
+                                                    >
+                                                        <Trash2 className="w-4 h-4" />
+                                                    </button>
+                                                )}
+                                            </div>
                                         </div>
 
                                         <h3 className="text-xl font-semibold text-white tracking-tight mb-2 truncate group-hover:text-indigo-200 transition-colors">

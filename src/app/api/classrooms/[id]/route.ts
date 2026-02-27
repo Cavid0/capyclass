@@ -94,3 +94,48 @@ export async function GET(
         return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
     }
 }
+
+export async function DELETE(
+    req: NextRequest,
+    { params }: { params: { id: string } }
+) {
+    try {
+        const session = await getServerSession(authOptions);
+        if (!session?.user) {
+            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+        }
+
+        const userId = (session.user as any).id;
+        const role = (session.user as any).role;
+        const classroomId = params.id;
+
+        if (role !== "TEACHER") {
+            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+        }
+
+        const classroom = await prisma.classroom.findUnique({
+            where: { id: classroomId }
+        });
+
+        if (!classroom) {
+            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+        }
+
+        if (classroom.teacherId !== userId) {
+            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+        }
+
+        // Delete dependencies first
+        await prisma.workspace.deleteMany({ where: { classroomId } });
+        await prisma.enrollment.deleteMany({ where: { classroomId } });
+        await prisma.task.deleteMany({ where: { classroomId } });
+
+        // Delete classroom
+        await prisma.classroom.delete({ where: { id: classroomId } });
+
+        return NextResponse.json({ success: true });
+    } catch (error) {
+        console.error("Delete classroom error:", error);
+        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+    }
+}
