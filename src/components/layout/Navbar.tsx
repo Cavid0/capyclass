@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
-import { Code2, LayoutDashboard, User } from "lucide-react";
+import { Code2, LayoutDashboard, User, Layers } from "lucide-react";
 
 export function Navbar() {
     const { data: session } = useSession();
@@ -14,10 +14,10 @@ export function Navbar() {
                 {/* Logo */}
                 <Link href={session ? "/dashboard" : "/"} className="flex items-center gap-2 group">
                     <div className="w-6 h-6 border border-white/20 bg-white/5 rounded flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                        <Code2 className="w-3.5 h-3.5 text-white" />
+                        <Layers className="w-3.5 h-3.5 text-white" />
                     </div>
                     <span className="text-sm font-semibold text-white tracking-tight">
-                        UniCode
+                        ClassFlow
                     </span>
                 </Link>
 

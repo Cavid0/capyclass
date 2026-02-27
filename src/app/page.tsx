@@ -173,9 +173,9 @@ export default function HomePage() {
           <div className="flex flex-col md:flex-row items-center justify-between gap-6">
             <div className="flex items-center gap-3">
               <div className="w-8 h-8 rounded-lg border border-white/20 bg-white/5 flex items-center justify-center">
-                <Code2 className="w-4 h-4 text-white" />
+                <Layers className="w-4 h-4 text-white" />
               </div>
-              <span className="text-xl font-bold text-white tracking-tight">UniCode</span>
+              <span className="text-xl font-bold text-white tracking-tight">ClassFlow</span>
             </div>
 
             <div className="flex gap-8 text-sm text-gray-400 font-medium">
@@ -185,7 +185,7 @@ export default function HomePage() {
             </div>
 
             <p className="text-gray-500 text-sm">
-              © 2026 UniCode. Bütün hüquqlar qorunur.
+              © 2026 ClassFlow. Bütün hüquqlar qorunur.
             </p>
           </div>
         </div>
