@@ -13,58 +13,65 @@ export async function GET() {
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
 
-        if (role === "TEACHER") {
-            const classrooms = await prisma.classroom.findMany({
-                where: { teacherId: userId },
-                include: {
-                    _count: {
-                        select: { enrollments: true, workspaces: true },
+        // Fetch classrooms created by the user (teacher role for these)
+        const teachingClassrooms = await prisma.classroom.findMany({
+            where: { teacherId: userId },
+            include: {
+                _count: {
+                    select: { enrollments: true, workspaces: true },
+                },
+            },
+            orderBy: { createdAt: "desc" },
+        });
+
+        // Get status counts for teaching classrooms
+        const teachingWithStats = await Promise.all(
+            teachingClassrooms.map(async (c) => {
+                const statusCounts = await prisma.workspace.groupBy({
+                    by: ["status"],
+                    where: { classroomId: c.id },
+                    _count: true,
+                });
+                return {
+                    ...c,
+                    isTeacher: true,
+                    passCount: statusCounts.find((s) => s.status === "PASS")?._count || 0,
+                    failCount: statusCounts.find((s) => s.status === "FAIL")?._count || 0,
+                    pendingCount: statusCounts.find((s) => s.status === "PENDING")?._count || 0,
+                };
+            })
+        );
+
+        // Fetch classrooms enrolled by the user (student role for these)
+        const enrollments = await prisma.enrollment.findMany({
+            where: { studentId: userId },
+            include: {
+                classroom: {
+                    include: {
+                        teacher: { select: { name: true } },
                     },
                 },
-                orderBy: { createdAt: "desc" },
-            });
+            },
+            orderBy: { joinedAt: "desc" },
+        });
 
-            // Get status counts for each classroom
-            const classroomsWithStats = await Promise.all(
-                classrooms.map(async (c) => {
-                    const statusCounts = await prisma.workspace.groupBy({
-                        by: ["status"],
-                        where: { classroomId: c.id },
-                        _count: true,
-                    });
-                    return {
-                        ...c,
-                        passCount: statusCounts.find((s) => s.status === "PASS")?._count || 0,
-                        failCount: statusCounts.find((s) => s.status === "FAIL")?._count || 0,
-                        pendingCount: statusCounts.find((s) => s.status === "PENDING")?._count || 0,
-                    };
-                })
-            );
+        const enrolledClassrooms = enrollments.map((e) => ({
+            ...e.classroom,
+            isTeacher: false,
+            teacherName: e.classroom.teacher.name,
+        }));
 
-            return NextResponse.json(classroomsWithStats);
-        } else {
-            // Student: return enrolled classrooms
-            const enrollments = await prisma.enrollment.findMany({
-                where: { studentId: userId },
-                include: {
-                    classroom: {
-                        include: {
-                            teacher: { select: { name: true } },
-                        },
-                    },
-                },
-                orderBy: { joinedAt: "desc" },
-            });
+        const allClasses = [...teachingWithStats, ...enrolledClassrooms];
 
-            return NextResponse.json(
-                enrollments.map((e) => ({
-                    ...e.classroom,
-                    teacherName: e.classroom.teacher.name,
-                }))
-            );
-        }
+        // Sort by most recently created/joined
+        allClasses.sort((a: any, b: any) => {
+            const dateA = a.isTeacher ? a.createdAt : a.createdAt; // or joinedAt if available
+            const dateB = b.isTeacher ? b.createdAt : b.createdAt;
+            return new Date(dateB).getTime() - new Date(dateA).getTime();
+        });
+
+        return NextResponse.json(allClasses);
     } catch (error) {
         console.error("List classrooms error:", error);
         return NextResponse.json(
@@ -80,14 +87,6 @@ export async function POST(req: NextRequest) {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
             return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
-        }
-
-        const role = (session.user as any).role;
-        if (role !== "TEACHER") {
-            return NextResponse.json(
-                { error: "Yalnız müəllimlər sinif yarada bilər" },
-                { status: 403 }
-            );
         }
 
         const { name, description } = await req.json();

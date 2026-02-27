@@ -104,7 +104,7 @@ export default function ProfilePage() {
         );
     }
 
-    const isTeacher = profile?.role === "TEACHER";
+    const totalClasses = (profile?._count?.classrooms || 0) + (profile?._count?.enrollments || 0);
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)]">
@@ -131,14 +131,6 @@ export default function ProfilePage() {
                                 {profile?.name}
                             </h2>
                             <p className="text-sm text-[var(--text-secondary)]">{profile?.email}</p>
-                            <span className={cn(
-                                "status-badge mt-1 inline-flex",
-                                isTeacher
-                                    ? "text-blue-400 border-blue-900/50 bg-blue-900/20"
-                                    : "text-emerald-400 border-emerald-900/50 bg-emerald-900/20"
-                            )}>
-                                {isTeacher ? "Müəllim" : "Tələbə"}
-                            </span>
                         </div>
                     </div>
 
@@ -146,13 +138,13 @@ export default function ProfilePage() {
                     <div className="grid grid-cols-3 gap-3">
                         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">
                             <div className="flex items-center justify-center gap-1.5 mb-1">
-                                {isTeacher ? <BookOpen className="w-3.5 h-3.5 text-[var(--text-secondary)]" /> : <GraduationCap className="w-3.5 h-3.5 text-[var(--text-secondary)]" />}
+                                <BookOpen className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                             </div>
                             <div className="text-lg font-bold text-white">
-                                {isTeacher ? profile?._count?.classrooms : profile?._count?.enrollments}
+                                {totalClasses}
                             </div>
                             <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
-                                {isTeacher ? "Sinif" : "Dərs"}
+                                Sinif sayı
                             </div>
                         </div>
                         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">
@@ -220,20 +212,6 @@ export default function ProfilePage() {
                                 <p className="text-[10px] text-[var(--text-secondary)] mt-1">Email dəyişdirilə bilməz</p>
                             </div>
 
-                            <div>
-                                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-                                    Rol
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        value={isTeacher ? "Müəllim" : "Tələbə"}
-                                        disabled
-                                        className="input-field !pl-[42px] opacity-50 cursor-not-allowed"
-                                    />
-                                    <Shield className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
-                                </div>
-                            </div>
                         </div>
                     </div>
 

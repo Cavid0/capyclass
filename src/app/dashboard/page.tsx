@@ -119,10 +119,8 @@ export default function DashboardPage() {
         }
     };
 
-    // Derived state
-    const isTeacher = (session?.user as any)?.role === "TEACHER";
     const filteredClasses = (classrooms || []).filter(c =>
-        (c.name || c.classroom?.name || "").toLowerCase().includes(search.toLowerCase())
+        (c.name || "").toLowerCase().includes(search.toLowerCase())
     );
 
     if (status === "unauthenticated") return null;
@@ -145,7 +143,7 @@ export default function DashboardPage() {
                             Salam, {userName}! 👋
                         </h1>
                         <p className="text-[var(--text-secondary)] text-base max-w-lg">
-                            {isTeacher ? "Siniflərinizi buradan asanlıqla idarə edə və yeni kurslar yarada bilərsiniz." : "Dərslərinizə nəzər salın, tapşırıqları vaxtında həll edin."}
+                            Siniflərinizi buradan asanlıqla idarə edə, yeni kurslar yarada və dərslər üçün tapşırıqları həll edə bilərsiniz.
                         </p>
                     </div>
 
@@ -161,23 +159,21 @@ export default function DashboardPage() {
                             />
                         </div>
 
-                        {isTeacher ? (
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
-                            >
-                                <Plus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Yeni Sinif</span>
-                            </button>
-                        ) : (
-                            <button
-                                onClick={() => setShowJoinModal(true)}
-                                className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
-                            >
-                                <UserPlus className="w-4 h-4" />
-                                <span className="hidden sm:inline">Sinfə Qoşul</span>
-                            </button>
-                        )}
+                        <button
+                            onClick={() => setShowJoinModal(true)}
+                            className="glow-btn !bg-white/5 !border-white/10 !text-white hover:!bg-white/10 px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
+                        >
+                            <UserPlus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Sinfə Qoşul</span>
+                        </button>
+
+                        <button
+                            onClick={() => setShowCreateModal(true)}
+                            className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
+                        >
+                            <Plus className="w-4 h-4" />
+                            <span className="hidden sm:inline">Yeni Sinif</span>
+                        </button>
                     </div>
                 </div>
 
@@ -192,28 +188,27 @@ export default function DashboardPage() {
                             <AlertCircle className="w-8 h-8 text-[var(--text-secondary)]" />
                         </div>
                         <h3 className="text-xl font-semibold text-white mb-3 tracking-tight relative z-10">
-                            {search ? "Nəticə tapılmadı" : (isTeacher ? "İlk sinfinizi yaradın" : "Heç bir sinif tapılmadı")}
+                            {search ? "Nəticə tapılmadı" : "Heç bir sinif tapılmadı"}
                         </h3>
                         <p className="text-[var(--text-secondary)] text-sm max-w-md mb-8 relative z-10 leading-relaxed">
-                            {isTeacher
-                                ? "Platformada tələbələriniz üçün kodlaşdırma dərsləri hazırlamaq üçün ilk sinfinizi yaradın."
-                                : "Müəlliminizin sizə verdiyi xüsusi dəvət kodu vasitəsilə dərslərə daxil ola bilərsiniz."}
+                            Platformada tələbələriniz üçün dərs yaratmaq və ya dərslərə daxil olmaq üçün seçiminizi edin.
                         </p>
-                        {isTeacher && !search ? (
-                            <button
-                                onClick={() => setShowCreateModal(true)}
-                                className="glow-btn px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 relative z-10 hover:scale-105 transition-transform"
-                            >
-                                <Plus className="w-4 h-4" /> Sinif Yarat
-                            </button>
-                        ) : !isTeacher && !search ? (
-                            <button
-                                onClick={() => setShowJoinModal(true)}
-                                className="glow-btn px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 relative z-10 hover:scale-105 transition-transform"
-                            >
-                                <UserPlus className="w-4 h-4" /> Sinfə Qoşul
-                            </button>
-                        ) : null}
+                        {!search && (
+                            <div className="flex items-center gap-4 relative z-10">
+                                <button
+                                    onClick={() => setShowJoinModal(true)}
+                                    className="glow-btn !bg-white/5 !border-white/10 !text-white hover:!bg-white/10 px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 hover:scale-105 transition-transform"
+                                >
+                                    <UserPlus className="w-4 h-4" /> Sinfə Qoşul
+                                </button>
+                                <button
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="glow-btn px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 hover:scale-105 transition-transform"
+                                >
+                                    <Plus className="w-4 h-4" /> Sinif Yarat
+                                </button>
+                            </div>
+                        )}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -230,7 +225,7 @@ export default function DashboardPage() {
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                {!isTeacher && (
+                                                {!item.isTeacher && (
                                                     <span className={cn(
                                                         "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full border shadow-sm",
                                                         item.status === "PASS" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
@@ -240,7 +235,7 @@ export default function DashboardPage() {
                                                         {item.status || "AKTİV"}
                                                     </span>
                                                 )}
-                                                {isTeacher && (
+                                                {item.isTeacher && (
                                                     <button
                                                         onClick={(e) => { e.preventDefault(); handleDeleteClassroom(item.id); }}
                                                         className="w-8 h-8 rounded-lg flex items-center justify-center border border-transparent hover:border-red-500/30 hover:bg-red-500/10 text-[var(--text-secondary)] hover:text-red-400 transition-all opacity-0 group-hover:opacity-100 relative z-20"
@@ -256,7 +251,7 @@ export default function DashboardPage() {
                                             {title}
                                         </h3>
 
-                                        {isTeacher ? (
+                                        {item.isTeacher ? (
                                             <div className="flex flex-col gap-2.5 mt-5 text-sm text-[var(--text-secondary)]">
                                                 <div className="flex items-center gap-2.5 bg-white/5 rounded-md px-3 py-2 border border-white/5">
                                                     <Users className="w-4 h-4 text-blue-400" />
@@ -278,7 +273,7 @@ export default function DashboardPage() {
                                     </div>
 
                                     <div className="p-4 bg-[var(--bg-card)]/50 backdrop-blur-sm flex items-center justify-between gap-3 text-sm rounded-b-xl border-t border-white/5 relative z-10">
-                                        {isTeacher && item.inviteCode ? (
+                                        {item.isTeacher && item.inviteCode ? (
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();

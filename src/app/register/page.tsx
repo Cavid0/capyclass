@@ -10,7 +10,6 @@ import { Role } from "@prisma/client";
 export default function RegisterPage() {
     const router = useRouter();
     const { status } = useSession();
-    const [role, setRole] = useState<Role>("STUDENT");
     const [name, setName] = useState("");
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
@@ -40,7 +39,7 @@ export default function RegisterPage() {
             const res = await fetch("/api/auth/register", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ name, email, password, role }),
+                body: JSON.stringify({ name, email, password, role: "STUDENT" }),
             });
 
             const data = await res.json();
@@ -87,7 +86,7 @@ export default function RegisterPage() {
                     <div className="mb-6">
                         <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Hesab yarat</h1>
                         <p className="text-[var(--text-secondary)] text-sm">
-                            Rolunuzu seçin və məlumatları doldurun
+                            Məlumatları doldurun
                         </p>
                     </div>
 
@@ -99,32 +98,6 @@ export default function RegisterPage() {
                     )}
 
                     <form onSubmit={handleSubmit} className="space-y-4">
-                        {/* Role Switcher */}
-                        <div className="grid grid-cols-2 gap-2 p-1 bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg mb-6">
-                            <button
-                                type="button"
-                                onClick={() => setRole("STUDENT")}
-                                className={`flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-all ${role === "STUDENT"
-                                    ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
-                                    : "text-[var(--text-secondary)] hover:text-white"
-                                    }`}
-                            >
-                                <GraduationCap className="w-4 h-4" />
-                                <span>Tələbə</span>
-                            </button>
-                            <button
-                                type="button"
-                                onClick={() => setRole("TEACHER")}
-                                className={`flex items-center justify-center gap-2 py-2 text-sm rounded-md transition-all ${role === "TEACHER"
-                                    ? "bg-[var(--bg-card)] border border-[var(--border-color)] text-white shadow-sm"
-                                    : "text-[var(--text-secondary)] hover:text-white"
-                                    }`}
-                            >
-                                <BookOpen className="w-4 h-4" />
-                                <span>Müəllim</span>
-                            </button>
-                        </div>
-
                         <div className="space-y-1.5">
                             <label className="text-xs font-medium text-[var(--text-secondary)]">Ad Soyad *</label>
                             <div className="relative">

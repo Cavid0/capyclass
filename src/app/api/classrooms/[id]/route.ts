@@ -17,7 +17,6 @@ export async function GET(
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
         const classroomId = params.id;
 
         const classroom = await prisma.classroom.findUnique({
@@ -31,12 +30,9 @@ export async function GET(
             return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
         }
 
-        if (role === "TEACHER") {
-            // Teacher: must own the classroom
-            if (classroom.teacherId !== userId) {
-                return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
-            }
+        const isTeacher = classroom.teacherId === userId;
 
+        if (isTeacher) {
             // Get all workspaces with student info
             const workspaces = await prisma.workspace.findMany({
                 where: { classroomId },
@@ -54,7 +50,14 @@ export async function GET(
                 },
             });
 
-            return NextResponse.json({ classroom, workspaces, enrollments });
+            return NextResponse.json({
+                classroom: {
+                    ...classroom,
+                    teacherId: classroom.teacherId
+                },
+                workspaces,
+                enrollments
+            });
         } else {
             // Student: must be enrolled
             const enrollment = await prisma.enrollment.findUnique({
@@ -85,6 +88,7 @@ export async function GET(
                     name: classroom.name,
                     description: classroom.description,
                     teacherName: classroom.teacher.name,
+                    teacherId: classroom.teacherId,
                 },
                 workspaces,
             });
@@ -106,12 +110,7 @@ export async function DELETE(
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
         const classroomId = params.id;
-
-        if (role !== "TEACHER") {
-            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
-        }
 
         const classroom = await prisma.classroom.findUnique({
             where: { id: classroomId }

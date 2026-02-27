@@ -66,7 +66,7 @@ export default function ClassroomPage() {
 
     // Auto-poll every 5 seconds for teacher
     useEffect(() => {
-        if (status === "authenticated" && (session?.user as any)?.role === "TEACHER") {
+        if (status === "authenticated" && classroom && classroom.teacherId === (session?.user as any)?.id) {
             intervalRef.current = setInterval(() => {
                 fetchClassroom(true);
             }, 5000);
@@ -84,8 +84,7 @@ export default function ClassroomPage() {
 
     if (!classroom) return null;
 
-    const role = (session?.user as any)?.role;
-    const isTeacher = role === "TEACHER";
+    const isTeacher = classroom.teacherId === (session?.user as any)?.id;
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
@@ -314,6 +313,25 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
         }
     };
 
+    const handleTransferAdmin = async (studentId: string) => {
+        if (!confirm("Admin hüquqlarını bu tələbəyə vermək istədiyinizə əminsiniz? Siz artıq bu sinfin admini olmayacaqsınız.")) return;
+        try {
+            const res = await fetch(`/api/classrooms/${classroom.id}/transfer`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ newTeacherId: studentId })
+            });
+            if (res.ok) {
+                window.location.reload(); // Reload context to become student view
+            } else {
+                const data = await res.json();
+                alert(data.error || "Xəta baş verdi");
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
     const handleReview = async (workspaceId: string, status: "CORRECT" | "INCORRECT") => {
         setSubmittingReview(true);
         try {
@@ -403,7 +421,14 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                         {studentWorkspaces.length} fayl
                                                     </div>
                                                     <button
-                                                        onClick={() => handleRemoveStudent(en.studentId)}
+                                                        onClick={(e) => { e.stopPropagation(); handleTransferAdmin(en.studentId); }}
+                                                        className="h-7 px-2 rounded flex items-center justify-center text-[10px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-all border border-blue-500/20"
+                                                        title="Admin hüquqlarını ver"
+                                                    >
+                                                        Admin Et
+                                                    </button>
+                                                    <button
+                                                        onClick={(e) => { e.stopPropagation(); handleRemoveStudent(en.studentId); }}
                                                         className="w-7 h-7 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-red-500/30"
                                                         title="Tələbəni sinifdən sil"
                                                     >

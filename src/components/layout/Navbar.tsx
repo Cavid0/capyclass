@@ -28,9 +28,6 @@ export function Navbar() {
                             <Link href="/profile" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] hover:border-[var(--border-hover)] transition-colors cursor-pointer">
                                 <User className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                 <span className="text-xs text-white">{session.user?.name}</span>
-                                <span className="text-[10px] uppercase font-bold text-[var(--text-secondary)] tracking-wider px-1">
-                                    {(session.user as any)?.role === "TEACHER" ? "M.L.M" : "TƏL"}
-                                </span>
                             </Link>
                             <button
                                 onClick={() => signOut({ callbackUrl: '/' })}
