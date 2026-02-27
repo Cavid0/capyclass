@@ -135,7 +135,7 @@ export default function ProfilePage() {
                     </div>
 
                     {/* Stats */}
-                    <div className="grid grid-cols-3 gap-3">
+                    <div className="grid grid-cols-2 gap-3">
                         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">
                             <div className="flex items-center justify-center gap-1.5 mb-1">
                                 <BookOpen className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
@@ -145,17 +145,6 @@ export default function ProfilePage() {
                             </div>
                             <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
                                 Sinif sayı
-                            </div>
-                        </div>
-                        <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                                <Code2 className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                            </div>
-                            <div className="text-lg font-bold text-white">
-                                {profile?._count?.workspaces || 0}
-                            </div>
-                            <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
-                                Workspace
                             </div>
                         </div>
                         <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">

@@ -61,10 +61,10 @@ export default function LoginPage() {
             <div className="w-full max-w-sm z-10">
                 <div className="flex justify-center mb-8">
                     <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center group-hover:border-white transition-colors">
-                            <Code2 className="w-4 h-4 text-white" />
+                        <div className="w-8 h-8 rounded-lg bg-indigo-500 flex items-center justify-center">
+                            <Code2 className="w-5 h-5 text-white" />
                         </div>
-                        <span className="text-xl font-bold text-white tracking-tight">ClassFlow</span>
+                        <span className="text-xl font-bold text-white tracking-tight">UniCode</span>
                     </Link>
                 </div>
 

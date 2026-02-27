@@ -829,6 +829,22 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
 // =============================================================
 // STUDENT VIEW
 // =============================================================
+const DEFAULT_CODE: Record<string, string> = {
+    javascript: 'console.log("Hello, World!");',
+    typescript: 'console.log("Hello, TypeScript!");',
+    python: 'print("Hello, World!")',
+    c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+    cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
+    csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello, World!");\n    }\n}',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}',
+    go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}',
+    ruby: 'puts "Hello, World!"',
+    php: '<?php\n\necho "Hello, World!";\n?>',
+    rust: 'fn main() {\n    println!("Hello, World!");\n}',
+    swift: 'print("Hello, World!")',
+    kotlin: 'fun main() {\n    println("Hello, World!")\n}',
+    html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Hello World</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>'
+};
 function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: any) {
     const activeWorkspace = workspaces.find((w: any) => w.id === selectedWorkspaceId);
 
@@ -853,12 +869,27 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
     // Sync editor when active workspace changes
     useEffect(() => {
         if (activeWorkspace) {
-            setCode(activeWorkspace.code);
-            setLanguage(activeWorkspace.language || "javascript");
+            const initialCode = activeWorkspace.code;
+            const initialLang = activeWorkspace.language || "javascript";
+            setLanguage(initialLang);
+
+            if (!initialCode || initialCode.trim() === "") {
+                setCode(DEFAULT_CODE[initialLang] || "");
+            } else {
+                setCode(initialCode);
+            }
         } else {
             setCode("");
         }
     }, [activeWorkspace?.id, activeWorkspace]);
+
+    const handleLanguageChange = (newLang: string) => {
+        setLanguage(newLang);
+        const defaultCodeVals = Object.values(DEFAULT_CODE);
+        if (!code || code.trim() === "" || defaultCodeVals.includes(code.trim())) {
+            setCode(DEFAULT_CODE[newLang] || "");
+        }
+    };
 
     const submitCreateFile = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -1076,7 +1107,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 </div>
                                 <select
                                     value={language}
-                                    onChange={(e) => setLanguage(e.target.value)}
+                                    onChange={(e) => handleLanguageChange(e.target.value)}
                                     className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white"
                                 >
                                     <option value="javascript">JavaScript</option>

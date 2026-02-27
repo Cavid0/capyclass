@@ -4,9 +4,12 @@ import Providers from "./providers";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "ClassFlow Repo — Interaktiv Təhsil Platforması",
+  title: "UniCode Repo — Interaktiv Təhsil Platforması",
   description:
     "Müəllimlər üçün sinif yaratma, tələbələr üçün izolasiya olunmuş kod mühiti və AI dəstəkli kod analizi platforması.",
+  icons: {
+    icon: '/favicon.svg',
+  },
 };
 
 export default function RootLayout({

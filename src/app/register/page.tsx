@@ -78,7 +78,7 @@ export default function RegisterPage() {
                         <div className="w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center group-hover:border-white transition-colors">
                             <Code2 className="w-4 h-4 text-white" />
                         </div>
-                        <span className="text-xl font-bold text-white tracking-tight">ClassFlow</span>
+                        <span className="text-xl font-bold text-white tracking-tight">UniCode</span>
                     </Link>
                 </div>
 

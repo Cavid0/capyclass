@@ -64,24 +64,15 @@ export default function HomePage() {
             transition={{ duration: 0.8, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
             className="flex flex-col sm:flex-row gap-5 items-center justify-center w-full sm:w-auto"
           >
-            <Link href="/register" className="w-full sm:w-auto">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                className="w-full sm:w-auto px-8 py-4 bg-white text-black text-sm font-semibold rounded-2xl hover:bg-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 group"
-              >
-                Ödənişsiz Başla
-                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
-              </motion.button>
-            </Link>
             <Link href="/login" className="w-full sm:w-auto">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                className="w-full sm:w-auto px-8 py-4 bg-white/[0.05] border border-white/10 text-white text-sm font-medium rounded-2xl hover:bg-white/[0.1] backdrop-blur-sm transition-all flex items-center justify-center gap-2 group"
+                className="w-full sm:w-auto px-10 py-4 bg-white text-black text-sm font-semibold rounded-2xl hover:bg-gray-100 transition-all shadow-[0_0_40px_rgba(255,255,255,0.2)] flex items-center justify-center gap-2 group"
               >
-                <Terminal className="w-4 h-4 text-gray-400 group-hover:text-white transition-colors" />
+                <Terminal className="w-4 h-4 text-black group-hover:text-black transition-colors" />
                 Hesaba Daxil Ol
+                <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
               </motion.button>
             </Link>
           </motion.div>
@@ -184,7 +175,7 @@ export default function HomePage() {
               <div className="w-8 h-8 rounded-lg border border-white/20 bg-white/5 flex items-center justify-center">
                 <Code2 className="w-4 h-4 text-white" />
               </div>
-              <span className="text-xl font-bold text-white tracking-tight">ClassFlow</span>
+              <span className="text-xl font-bold text-white tracking-tight">UniCode</span>
             </div>
 
             <div className="flex gap-8 text-sm text-gray-400 font-medium">
@@ -194,7 +185,7 @@ export default function HomePage() {
             </div>
 
             <p className="text-gray-500 text-sm">
-              © 2026 ClassFlow. Bütün hüquqlar qorunur.
+              © 2026 UniCode. Bütün hüquqlar qorunur.
             </p>
           </div>
         </div>

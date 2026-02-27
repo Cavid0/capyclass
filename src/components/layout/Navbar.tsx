@@ -17,7 +17,7 @@ export function Navbar() {
                         <Code2 className="w-3.5 h-3.5 text-white" />
                     </div>
                     <span className="text-sm font-semibold text-white tracking-tight">
-                        ClassFlow
+                        UniCode
                     </span>
                 </Link>
 
