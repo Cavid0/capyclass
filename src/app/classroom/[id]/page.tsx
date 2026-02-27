@@ -446,8 +446,26 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 </div>
                             ) : (
                                 tasks.map((t: any) => (
-                                    <div key={t.id} onClick={() => setViewingTask(t)} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] cursor-pointer hover:border-[var(--border-hover)] transition-all">
-                                        <h4 className="text-sm font-medium text-white mb-1">{t.title}</h4>
+                                    <div key={t.id} onClick={() => setViewingTask(t)} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] cursor-pointer hover:border-[var(--border-hover)] transition-all group">
+                                        <div className="flex items-start justify-between mb-1">
+                                            <h4 className="text-sm font-medium text-white">{t.title}</h4>
+                                            <div className="flex items-center gap-1.5 opacity-0 group-hover:opacity-100 transition-opacity" onClick={e => e.stopPropagation()}>
+                                                <button
+                                                    onClick={() => openEditTask(t)}
+                                                    className="p-1 text-[var(--text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all"
+                                                    title="Redaktə et"
+                                                >
+                                                    <Edit2 className="w-3 h-3" />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleDeleteTask(t.id)}
+                                                    className="p-1 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                                    title="Sil"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        </div>
                                         {t.description && (
                                             <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{t.description}</p>
                                         )}
@@ -695,9 +713,24 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         </div>
                         <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
                             {viewingTask.description || "Təsvir yoxdur"}
-                        </div>
-                        <div className="shrink-0 pt-4 border-t border-[var(--border-color)] text-right">
-                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">Bağla</button>
+                            <div className="shrink-0 pt-4 border-t border-[var(--border-color)] flex items-center justify-between">
+                                <div className="flex items-center gap-2">
+                                    <button
+                                        onClick={() => { openEditTask(viewingTask); setViewingTask(null); }}
+                                        className="p-2 text-[var(--text-secondary)] hover:text-blue-400 border border-transparent hover:border-blue-500/20 hover:bg-blue-500/10 rounded-md transition-all"
+                                        title="Redaktə et"
+                                    >
+                                        <Edit2 className="w-4 h-4" />
+                                    </button>
+                                    <button
+                                        onClick={() => handleDeleteTask(viewingTask.id)}
+                                        className="p-2 text-[var(--text-secondary)] hover:text-red-400 border border-transparent hover:border-red-500/20 hover:bg-red-500/10 rounded-md transition-all"
+                                        title="Sil"
+                                    >
+                                        <Trash2 className="w-4 h-4" />
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -718,7 +751,6 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                     </div>
                 ))}
             </div>
-
         </div>
     );
 }
