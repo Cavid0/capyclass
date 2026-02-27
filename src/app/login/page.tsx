@@ -92,10 +92,12 @@ export default function LoginPage() {
                                     required
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
-                                    className="input-field pl-10"
-                                    placeholder="mail@numune.az"
+                                    className="input-field !pl-[42px]"
+                                    placeholder="mail@unvan.az"
                                 />
-                                <Mail className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
+                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center pointer-events-none">
+                                    <Mail className="w-4 h-4 text-[#71717a]" />
+                                </div>
                             </div>
                         </div>
 
@@ -107,10 +109,12 @@ export default function LoginPage() {
                                     required
                                     value={password}
                                     onChange={(e) => setPassword(e.target.value)}
-                                    className="input-field pl-10 tracking-widest"
+                                    className="input-field !pl-[42px] tracking-widest"
                                     placeholder="••••••••"
                                 />
-                                <Lock className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
+                                <div className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center pointer-events-none">
+                                    <Lock className="w-4 h-4 text-[#71717a]" />
+                                </div>
                             </div>
                         </div>
 

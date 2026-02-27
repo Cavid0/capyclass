@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown, Play, Terminal, X
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown, Play, Terminal, X, Edit2, Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -171,11 +171,62 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDesc, setTaskDesc] = useState("");
     const [creatingTask, setCreatingTask] = useState(false);
+    const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+    const openCreateTask = () => {
+        setEditingTaskId(null);
+        setTaskTitle("");
+        setTaskDesc("");
+        setShowTaskModal(true);
+    };
+
+    const openEditTask = (t: any) => {
+        setEditingTaskId(t.id);
+        setTaskTitle(t.title);
+        setTaskDesc(t.description || "");
+        setShowTaskModal(true);
+    };
 
     // Review system
     const [reviewingId, setReviewingId] = useState<string | null>(null);
     const [reviewNote, setReviewNote] = useState("");
     const [submittingReview, setSubmittingReview] = useState(false);
+    const [viewingTask, setViewingTask] = useState<any>(null);
+
+    // Compiler state
+    const [running, setRunning] = useState(false);
+    const [output, setOutput] = useState<string | null>(null);
+    const [outputError, setOutputError] = useState(false);
+    const [showOutput, setShowOutput] = useState(false);
+
+    const handleRun = async () => {
+        if (!activeWorkspaceData) return;
+        if (!activeWorkspaceData.code.trim() || activeWorkspaceData.language === "html") return;
+        setRunning(true);
+        setOutput(null);
+        setOutputError(false);
+        setShowOutput(true);
+        try {
+            const res = await fetch("/api/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: activeWorkspaceData.code, language: activeWorkspaceData.language }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setOutput(data.output || "(Çıxış yoxdur)");
+                setOutputError(data.hasError);
+            } else {
+                setOutput(data.error || "Xəta baş verdi");
+                setOutputError(true);
+            }
+        } catch (error) {
+            setOutput("Şəbəkə xətası. Yenidən cəhd edin.");
+            setOutputError(true);
+        } finally {
+            setRunning(false);
+        }
+    };
 
     // Notifications for when a student saves code
     const prevWorkspacesRef = useRef<any[]>([]);
@@ -207,13 +258,18 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
         prevWorkspacesRef.current = workspaces;
     }, [workspaces]);
 
-    const handleCreateTask = async (e: React.FormEvent) => {
+    const handleTaskSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         if (!taskTitle.trim()) return;
         setCreatingTask(true);
         try {
-            const res = await fetch(`/api/classrooms/${classroom.id}/tasks`, {
-                method: "POST",
+            const url = editingTaskId
+                ? `/api/tasks/${editingTaskId}`
+                : `/api/classrooms/${classroom.id}/tasks`;
+            const method = editingTaskId ? "PUT" : "POST";
+
+            const res = await fetch(url, {
+                method,
                 headers: { "Content-Type": "application/json" },
                 body: JSON.stringify({ title: taskTitle, description: taskDesc }),
             });
@@ -221,12 +277,26 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 setShowTaskModal(false);
                 setTaskTitle("");
                 setTaskDesc("");
+                setEditingTaskId(null);
                 onTaskCreated();
             }
         } catch (error) {
             console.error(error);
         } finally {
             setCreatingTask(false);
+        }
+    };
+
+    const handleDeleteTask = async (taskId: string) => {
+        if (!confirm("Bu tapşırığı silmək istədiyinizə əminsiniz?")) return;
+        try {
+            const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
+            if (res.ok) {
+                if (viewingTask?.id === taskId) setViewingTask(null);
+                onTaskCreated(); // refresh tasks
+            }
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -364,7 +434,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                     ) : (
                         <div className="p-3 space-y-2">
                             <button
-                                onClick={() => setShowTaskModal(true)}
+                                onClick={openCreateTask}
                                 className="w-full p-3 rounded-lg border border-dashed border-[var(--border-color)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-hover)] transition-all flex items-center justify-center gap-2"
                             >
                                 <Plus className="w-4 h-4" /> Yeni Tapşırıq
@@ -376,7 +446,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 </div>
                             ) : (
                                 tasks.map((t: any) => (
-                                    <div key={t.id} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
+                                    <div key={t.id} onClick={() => setViewingTask(t)} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] cursor-pointer hover:border-[var(--border-hover)] transition-all">
                                         <h4 className="text-sm font-medium text-white mb-1">{t.title}</h4>
                                         {t.description && (
                                             <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{t.description}</p>
@@ -411,17 +481,57 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             </div>
                         </div>
 
-                        <div className="flex-1 bg-[#0d1117] relative min-h-0">
-                            <div className="absolute top-2 right-4 z-10 bg-[#161b22] border border-[#30363d] px-2.5 py-1 rounded-md text-[10px] text-[#8b949e] uppercase tracking-wider flex items-center gap-1.5">
-                                <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70"></span>
-                                Yalnız oxu
+                        <div className="flex-1 bg-[#0d1117] relative min-h-0 flex flex-col">
+                            <div className="flex-1 relative min-h-0">
+                                <div className="absolute top-2 right-4 z-10 flex gap-2">
+                                    <div className="bg-[#161b22] border border-[#30363d] px-2.5 py-1 rounded-md text-[10px] text-[#8b949e] uppercase tracking-wider flex items-center gap-1.5">
+                                        <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70"></span>
+                                        Yalnız oxu
+                                    </div>
+                                    {activeWorkspaceData.language !== "html" && (
+                                        <button onClick={handleRun} disabled={running} className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-colors">
+                                            {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
+                                            İcra et
+                                        </button>
+                                    )}
+                                </div>
+                                <CodeEditor
+                                    key={`${activeWorkspaceData.id}-${activeWorkspaceData.updatedAt}`}
+                                    language={activeWorkspaceData.language}
+                                    value={activeWorkspaceData.code}
+                                    readOnly
+                                />
                             </div>
-                            <CodeEditor
-                                key={`${activeWorkspaceData.id}-${activeWorkspaceData.updatedAt}`}
-                                language={activeWorkspaceData.language}
-                                value={activeWorkspaceData.code}
-                                readOnly
-                            />
+
+                            {/* Output Panel for Teacher */}
+                            {showOutput && (
+                                <div className="h-48 border-t border-[#30363d] bg-[#0d1117] flex flex-col shrink-0">
+                                    <div className="h-8 border-b border-[#30363d] bg-[#161b22] flex items-center justify-between px-4 shrink-0">
+                                        <div className="flex items-center gap-2 text-[#8b949e]">
+                                            <Terminal className="w-3.5 h-3.5" />
+                                            <span className="text-xs font-medium uppercase tracking-wider">Terminal</span>
+                                        </div>
+                                        <button onClick={() => setShowOutput(false)} className="text-[#8b949e] hover:text-[#c9d1d9] transition-colors">
+                                            <X className="w-4 h-4" />
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                                        {running ? (
+                                            <div className="flex items-center gap-3 text-[#8b949e] text-sm">
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                <span>Proqram icra edilir...</span>
+                                            </div>
+                                        ) : (
+                                            <pre className={cn(
+                                                "text-sm font-mono whitespace-pre-wrap",
+                                                outputError ? "text-red-400" : "text-[#e6edf3]"
+                                            )}>
+                                                {output}
+                                            </pre>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
                         </div>
 
                         {/* Review Panel */}
@@ -514,12 +624,12 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 <ClipboardList className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-white">Yeni Tapşırıq</h3>
+                                <h3 className="text-lg font-semibold text-white">{editingTaskId ? "Tapşırığı Yenilə" : "Yeni Tapşırıq"}</h3>
                                 <p className="text-xs text-[var(--text-secondary)]">Bütün tələbələr bu tapşırığı görəcək</p>
                             </div>
                         </div>
 
-                        <form onSubmit={handleCreateTask}>
+                        <form onSubmit={handleTaskSubmit}>
                             <div className="space-y-4">
                                 <div>
                                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Başlıq *</label>
@@ -546,7 +656,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             <div className="flex gap-3 justify-end pt-6">
                                 <button
                                     type="button"
-                                    onClick={() => setShowTaskModal(false)}
+                                    onClick={() => { setShowTaskModal(false); setEditingTaskId(null); }}
                                     className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
                                 >Ləğv et</button>
                                 <button
@@ -554,10 +664,41 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                     disabled={creatingTask || !taskTitle.trim()}
                                     className="glow-btn px-4 py-2 text-sm flex items-center gap-2"
                                 >
-                                    {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : <><Send className="w-4 h-4" /> Göndər</>}
+                                    {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : editingTaskId ? <><Save className="w-4 h-4" /> Yadda saxla</> : <><Send className="w-4 h-4" /> Göndər</>}
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* View Task Modal */}
+            {viewingTask && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingTask(null)}>
+                    <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-6 shrink-0 gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+                                    <ClipboardList className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
+                                    <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
+                                        <Clock className="w-3 h-3" />
+                                        {new Date(viewingTask.createdAt).toLocaleDateString('az-AZ')}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onClick={() => setViewingTask(null)} className="text-[var(--text-secondary)] hover:text-white transition-colors shrink-0 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
+                            {viewingTask.description || "Təsvir yoxdur"}
+                        </div>
+                        <div className="shrink-0 pt-4 border-t border-[var(--border-color)] text-right">
+                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">Bağla</button>
+                        </div>
                     </div>
                 </div>
             )}
@@ -595,6 +736,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
 
     const [activeTab, setActiveTab] = useState<"files" | "tasks">("tasks");
     const [creatingFile, setCreatingFile] = useState(false);
+    const [viewingTask, setViewingTask] = useState<any>(null);
 
     // Compiler state
     const [running, setRunning] = useState(false);
@@ -654,6 +796,20 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
         } finally {
             setSaving(false);
             onWorkspaceCreated(); // refresh data so sidebar stays in sync if needed
+        }
+    };
+
+    const handleDeleteWorkspace = async () => {
+        if (!activeWorkspace) return;
+        if (!confirm("Bu faylı silmək istədiyinizə əminsiniz?")) return;
+        try {
+            const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, { method: "DELETE" });
+            if (res.ok) {
+                onSelectWorkspace(null);
+                onWorkspaceCreated();
+            }
+        } catch (error) {
+            console.error(error);
         }
     };
 
@@ -729,7 +885,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 </div>
                             ) : (
                                 tasks.map((t: any, i: number) => (
-                                    <div key={t.id} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)]">
+                                    <div key={t.id} onClick={() => setViewingTask(t)} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] cursor-pointer hover:border-[var(--border-hover)] transition-all">
                                         <div className="flex items-start gap-2">
                                             <div className="w-5 h-5 rounded bg-blue-500/10 text-blue-400 flex items-center justify-center text-[10px] shrink-0 mt-0.5 font-mono">
                                                 {i + 1}
@@ -829,37 +985,47 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 </select>
                             </div>
 
-                            <button
-                                onClick={handleSave}
-                                disabled={saving}
-                                className={cn(
-                                    "px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all",
-                                    saved ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "glow-btn"
-                                )}
-                            >
-                                {saving ? (
-                                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                ) : saved ? (
-                                    <><CheckCircle className="w-3.5 h-3.5" /> Saxlandı</>
-                                ) : (
-                                    <><Save className="w-3.5 h-3.5" /> Saxla</>
-                                )}
-                            </button>
-
-                            {language !== "html" && (
+                            <div className="flex items-center gap-2">
                                 <button
-                                    onClick={handleRun}
-                                    disabled={running}
-                                    className="px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
-                                >
-                                    {running ? (
-                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                    ) : (
-                                        <Play className="w-3.5 h-3.5" />
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className={cn(
+                                        "px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all",
+                                        saved ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "glow-btn"
                                     )}
-                                    Çalışdır
+                                >
+                                    {saving ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : saved ? (
+                                        <><CheckCircle className="w-3.5 h-3.5" /> Saxlandı</>
+                                    ) : (
+                                        <><Save className="w-3.5 h-3.5" /> Saxla</>
+                                    )}
                                 </button>
-                            )}
+
+                                {language !== "html" && (
+                                    <button
+                                        onClick={handleRun}
+                                        disabled={running}
+                                        className="px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
+                                    >
+                                        {running ? (
+                                            <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        ) : (
+                                            <Play className="w-3.5 h-3.5" />
+                                        )}
+                                        Çalışdır
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={handleDeleteWorkspace}
+                                    className="px-2 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
+                                    title="Faylı Sil"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
                         </div>
                         <div className={cn("flex-1 relative min-h-0 flex flex-col", showOutput && "flex-[2]")}>
                             <div className="flex-1 relative min-h-0">
@@ -934,6 +1100,37 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                     </div>
                 )}
             </div>
+
+            {/* View Task Modal */}
+            {viewingTask && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingTask(null)}>
+                    <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-6 shrink-0 gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+                                    <ClipboardList className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
+                                    <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
+                                        <Clock className="w-3 h-3" />
+                                        {new Date(viewingTask.createdAt).toLocaleDateString('az-AZ')}
+                                    </span>
+                                </div>
+                            </div>
+                            <button onClick={() => setViewingTask(null)} className="text-[var(--text-secondary)] hover:text-white transition-colors shrink-0 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
+                            {viewingTask.description || "Təsvir yoxdur"}
+                        </div>
+                        <div className="shrink-0 pt-4 border-t border-[var(--border-color)] text-right">
+                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">Bağla</button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

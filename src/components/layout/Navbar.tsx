@@ -12,7 +12,7 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b border-[var(--border-color)] bg-black/80 backdrop-blur-md">
             <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-14">
                 {/* Logo */}
-                <Link href="/" className="flex items-center gap-2 group">
+                <Link href={session ? "/dashboard" : "/"} className="flex items-center gap-2 group">
                     <div className="w-6 h-6 border border-white/20 bg-white/5 rounded flex items-center justify-center group-hover:bg-white/10 transition-colors">
                         <Code2 className="w-3.5 h-3.5 text-white" />
                     </div>
@@ -25,12 +25,6 @@ export function Navbar() {
                 <div className="flex items-center gap-3">
                     {session ? (
                         <>
-                            <Link href="/dashboard">
-                                <button className="flex items-center gap-2 px-3 py-1.5 rounded border border-[var(--border-color)] hover:bg-[var(--bg-elevated)] transition-colors text-xs text-[var(--text-secondary)] hover:text-white">
-                                    <LayoutDashboard className="w-3.5 h-3.5" />
-                                    <span className="hidden sm:inline">Panel</span>
-                                </button>
-                            </Link>
                             <Link href="/profile" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] hover:border-[var(--border-hover)] transition-colors cursor-pointer">
                                 <User className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                                 <span className="text-xs text-white">{session.user?.name}</span>
@@ -39,7 +33,7 @@ export function Navbar() {
                                 </span>
                             </Link>
                             <button
-                                onClick={() => signOut()}
+                                onClick={() => signOut({ callbackUrl: '/' })}
                                 className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white transition-colors border border-transparent hover:border-[var(--border-color)]"
                                 title="Çıxış"
                             >

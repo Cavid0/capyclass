@@ -9,6 +9,7 @@ import { cn } from "@/lib/utils";
 
 export default function DashboardPage() {
     const { data: session, status } = useSession();
+    const userName = session?.user?.name?.split(' ')[0] || "İstifadəçi";
     const [classrooms, setClassrooms] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
@@ -115,32 +116,39 @@ export default function DashboardPage() {
             <Navbar />
 
             <main className="max-w-6xl mx-auto px-6 py-10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-6 mb-10">
-                    <div>
-                        <h1 className="text-3xl font-semibold tracking-tight text-white mb-1">
-                            {isTeacher ? "Sinifləriniz" : "Dərsləriniz"}
+                <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
+                    <div className="space-y-2">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-[var(--text-secondary)] mb-2">
+                            <span className="relative flex h-2 w-2">
+                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
+                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
+                            </span>
+                            Sistem aktivdir
+                        </div>
+                        <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-3">
+                            Salam, {userName}! 👋
                         </h1>
-                        <p className="text-[var(--text-secondary)] text-sm">
-                            {isTeacher ? "Yeni sinif yaradın və idarə edin" : "Qoşulduğunuz dərslər və tapşırıqlar"}
+                        <p className="text-[var(--text-secondary)] text-base max-w-lg">
+                            {isTeacher ? "Siniflərinizi buradan asanlıqla idarə edə və yeni kurslar yarada bilərsiniz." : "Dərslərinizə nəzər salın, tapşırıqları vaxtında həll edin."}
                         </p>
                     </div>
 
                     <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="relative flex-1 sm:w-64">
-                            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
+                        <div className="relative flex-1 sm:w-72 group">
+                            <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="text"
                                 placeholder="Axtarış..."
                                 value={search}
                                 onChange={(e) => setSearch(e.target.value)}
-                                className="input-field pl-9 block w-full bg-[var(--bg-card)] border-[var(--border-color)] focus:border-white focus:bg-[var(--bg-card)]"
+                                className="input-field !pl-[42px] !pr-4 !bg-[var(--bg-card)]/50 backdrop-blur-sm !border-white/5 !shadow-inner focus:!border-indigo-500/50 hover:!border-white/10"
                             />
                         </div>
 
                         {isTeacher ? (
                             <button
                                 onClick={() => setShowCreateModal(true)}
-                                className="glow-btn px-4 py-[11px] h-[40px] flex items-center gap-2 whitespace-nowrap text-sm"
+                                className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Yeni Sinif</span>
@@ -148,7 +156,7 @@ export default function DashboardPage() {
                         ) : (
                             <button
                                 onClick={() => setShowJoinModal(true)}
-                                className="glow-btn px-4 py-[11px] h-[40px] flex items-center gap-2 whitespace-nowrap text-sm"
+                                className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
                             >
                                 <UserPlus className="w-4 h-4" />
                                 <span className="hidden sm:inline">Sinfə Qoşul</span>
@@ -162,26 +170,34 @@ export default function DashboardPage() {
                         <div className="spinner" />
                     </div>
                 ) : filteredClasses.length === 0 ? (
-                    <div className="glass-card p-12 flex flex-col items-center justify-center text-center border-dashed border-[var(--border-color)] bg-[var(--bg-secondary)]">
-                        <div className="w-12 h-12 rounded-full border border-[var(--border-color)] bg-[var(--bg-card)] mb-4 flex items-center justify-center">
-                            <AlertCircle className="w-5 h-5 text-[var(--text-secondary)]" />
+                    <div className="glass-card p-14 flex flex-col items-center justify-center text-center border-dashed border-[var(--border-color)] bg-gradient-to-b from-[var(--bg-secondary)] to-transparent rounded-2xl relative overflow-hidden group">
+                        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="w-16 h-16 rounded-2xl border border-white/10 bg-white/5 mb-6 flex items-center justify-center shadow-2xl backdrop-blur-xl relative z-10">
+                            <AlertCircle className="w-8 h-8 text-[var(--text-secondary)]" />
                         </div>
-                        <h3 className="text-lg font-medium text-white mb-2 tracking-tight">
-                            {search ? "Nəticə tapılmadı" : "Heç bir sinif yoxdur"}
+                        <h3 className="text-xl font-semibold text-white mb-3 tracking-tight relative z-10">
+                            {search ? "Nəticə tapılmadı" : (isTeacher ? "İlk sinfinizi yaradın" : "Heç bir sinif tapılmadı")}
                         </h3>
-                        <p className="text-[var(--text-secondary)] text-sm max-w-sm mb-6">
+                        <p className="text-[var(--text-secondary)] text-sm max-w-md mb-8 relative z-10 leading-relaxed">
                             {isTeacher
-                                ? "Başlamaq üçün yeni bir sinif yaradın və tələbələrinizi dəvət edin."
-                                : "Müəlliminizin verdiyi dəvət kodu ilə bir sinfə qoşulun."}
+                                ? "Platformada tələbələriniz üçün kodlaşdırma dərsləri hazırlamaq üçün ilk sinfinizi yaradın."
+                                : "Müəlliminizin sizə verdiyi xüsusi dəvət kodu vasitəsilə dərslərə daxil ola bilərsiniz."}
                         </p>
-                        {isTeacher && !search && (
+                        {isTeacher && !search ? (
                             <button
                                 onClick={() => setShowCreateModal(true)}
-                                className="glow-btn px-4 py-2 text-sm flex items-center gap-2"
+                                className="glow-btn px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 relative z-10 hover:scale-105 transition-transform"
                             >
-                                <Plus className="w-4 h-4" /> İlk Sinfinizi Yaradın
+                                <Plus className="w-4 h-4" /> Sinif Yarat
                             </button>
-                        )}
+                        ) : !isTeacher && !search ? (
+                            <button
+                                onClick={() => setShowJoinModal(true)}
+                                className="glow-btn px-6 py-2.5 text-sm font-medium flex items-center gap-2.5 relative z-10 hover:scale-105 transition-transform"
+                            >
+                                <UserPlus className="w-4 h-4" /> Sinfə Qoşul
+                            </button>
+                        ) : null}
                     </div>
                 ) : (
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -189,67 +205,72 @@ export default function DashboardPage() {
                             const title = item.name;
 
                             return (
-                                <div key={item.id} className="glass-card flex flex-col group hover:shadow-lg transition-all">
-                                    <div className="p-5 flex-1 border-b border-[var(--border-color)]">
-                                        <div className="flex justify-between items-start mb-3">
-                                            <div className="w-10 h-10 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-center text-white">
-                                                <Code2 className="w-5 h-5" />
+                                <div key={item.id} className="glass-card flex flex-col group hover:shadow-2xl hover:border-white/20 transition-all duration-300 relative overflow-hidden bg-gradient-to-b from-[var(--bg-secondary)] to-[var(--bg-primary)]">
+                                    <div className="absolute top-0 inset-x-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent"></div>
+                                    <div className="p-6 flex-1 border-b border-[var(--border-color)] relative z-10">
+                                        <div className="flex justify-between items-start mb-5">
+                                            <div className="w-12 h-12 rounded-xl border border-white/10 bg-white/5 flex items-center justify-center text-white shadow-inner group-hover:scale-110 transition-transform duration-300">
+                                                <Code2 className="w-6 h-6 text-indigo-400" />
                                             </div>
 
                                             {!isTeacher && (
                                                 <span className={cn(
-                                                    "status-badge",
-                                                    item.status === "PASS" ? "text-emerald-400 border-emerald-900/50 bg-emerald-900/20" :
-                                                        item.status === "FAIL" ? "text-rose-400 border-rose-900/50 bg-rose-900/20" :
-                                                            "text-[var(--text-secondary)]"
+                                                    "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full border shadow-sm",
+                                                    item.status === "PASS" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
+                                                        item.status === "FAIL" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" :
+                                                            "text-indigo-400 border-indigo-500/30 bg-indigo-500/10"
                                                 )}>
-                                                    {item.status}
+                                                    {item.status || "AKTİV"}
                                                 </span>
                                             )}
                                         </div>
 
-                                        <h3 className="text-lg font-medium text-white tracking-tight mb-2 truncate">
+                                        <h3 className="text-xl font-semibold text-white tracking-tight mb-2 truncate group-hover:text-indigo-200 transition-colors">
                                             {title}
                                         </h3>
 
                                         {isTeacher ? (
-                                            <div className="flex flex-col gap-2 mt-4 text-xs text-[var(--text-secondary)]">
-                                                <div className="flex items-center gap-2">
-                                                    <Users className="w-3.5 h-3.5" />
-                                                    <span>{item._count?.enrollments || 0} tələbə</span>
+                                            <div className="flex flex-col gap-2.5 mt-5 text-sm text-[var(--text-secondary)]">
+                                                <div className="flex items-center gap-2.5 bg-white/5 rounded-md px-3 py-2 border border-white/5">
+                                                    <Users className="w-4 h-4 text-blue-400" />
+                                                    <span className="font-medium text-gray-300">{item._count?.enrollments || 0} Tələbə</span>
                                                 </div>
-                                                <div className="flex items-center gap-2">
-                                                    <Clock className="w-3.5 h-3.5" />
-                                                    <span>Tarix: {new Date(item.createdAt).toLocaleDateString('az-AZ')}</span>
+                                                <div className="flex items-center gap-2.5 px-3 py-1">
+                                                    <Clock className="w-4 h-4 opacity-70" />
+                                                    <span className="text-xs">Yaradılıb: {new Date(item.createdAt).toLocaleDateString('az-AZ')}</span>
                                                 </div>
                                             </div>
                                         ) : (
-                                            <div className="mt-4 text-xs text-[var(--text-secondary)]">
-                                                Müəllim: {item.teacherName || "Bilinmir"}
+                                            <div className="mt-5 text-sm text-[var(--text-secondary)] flex items-center gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/5">
+                                                <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center">
+                                                    <span className="text-xs font-bold text-indigo-300">M</span>
+                                                </div>
+                                                Müəllim: <span className="text-gray-300 font-medium">{item.teacherName || "Bilinmir"}</span>
                                             </div>
                                         )}
                                     </div>
 
-                                    <div className="p-3 bg-[var(--bg-secondary)] flex items-center justify-between gap-3 text-sm rounded-b-lg">
+                                    <div className="p-4 bg-[var(--bg-card)]/50 backdrop-blur-sm flex items-center justify-between gap-3 text-sm rounded-b-xl border-t border-white/5 relative z-10">
                                         {isTeacher && item.inviteCode ? (
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     copyToClipboard(item.inviteCode!);
                                                 }}
-                                                className="flex items-center gap-1.5 px-3 py-1.5 rounded bg-[var(--bg-card)] border border-[var(--border-color)] text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-hover)] transition-colors text-xs"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--text-secondary)] hover:text-white hover:bg-white/10 transition-all text-xs font-medium group/copy"
+                                                title="Tələbələri dəvət etmək üçün kodu kopyala"
                                             >
                                                 {copiedCode === item.inviteCode ? (
-                                                    <><Check className="w-3.5 h-3.5 text-emerald-500" /> Kopyalandı</>
+                                                    <><Check className="w-4 h-4 text-emerald-500" /> <span className="text-emerald-400 hidden sm:inline">Kopyalandı</span></>
                                                 ) : (
-                                                    <><Copy className="w-3.5 h-3.5" /> Dəvət: <b>{item.inviteCode}</b></>
+                                                    <><Copy className="w-4 h-4 group-hover/copy:scale-110 transition-transform" /> <span className="font-mono tracking-wider text-gray-300">{item.inviteCode}</span></>
                                                 )}
                                             </button>
                                         ) : <div />}
 
                                         <Link href={`/classroom/${item.id}`}>
-                                            <button className="secondary-btn px-4 py-1.5 text-xs">
-                                                Daxil ol
+                                            <button className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-medium border border-white/10 hover:border-white/30">
+                                                Daxil ol <ArrowRight className="w-3.5 h-3.5" />
                                             </button>
                                         </Link>
                                     </div>
@@ -280,7 +301,7 @@ export default function DashboardPage() {
                                     autoFocus
                                     value={newClassName}
                                     onChange={(e) => setNewClassName(e.target.value)}
-                                    className="input-field"
+                                    className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-white/20 transition-all duration-200 shadow-inner"
                                     placeholder="Məs: Python - Qrup 12"
                                 />
                             </div>
@@ -330,16 +351,19 @@ export default function DashboardPage() {
                                 <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
                                     Dəvət Kodu
                                 </label>
-                                <input
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    value={joinCode}
-                                    onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                                    className="input-field text-center font-mono text-lg tracking-[0.3em] uppercase"
-                                    placeholder="ABC123"
-                                    maxLength={10}
-                                />
+                                <div className="relative">
+                                    <input
+                                        type="text"
+                                        required
+                                        autoFocus
+                                        value={joinCode}
+                                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                                        className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-2xl px-4 py-4 text-center text-white placeholder-white/10 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 hover:border-white/20 transition-all duration-200 font-mono text-2xl tracking-[0.25em] uppercase shadow-inner"
+                                        placeholder="ABC123"
+                                        maxLength={10}
+                                    />
+                                    <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/5"></div>
+                                </div>
                             </div>
 
                             <div className="flex gap-3 justify-end pt-4">

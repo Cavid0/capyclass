@@ -197,7 +197,7 @@ export default function ProfilePage() {
                                         type="text"
                                         value={name}
                                         onChange={(e) => setName(e.target.value)}
-                                        className="input-field pl-10"
+                                        className="input-field !pl-[42px]"
                                         placeholder="Adınızı daxil edin"
                                     />
                                     <User className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
@@ -213,7 +213,7 @@ export default function ProfilePage() {
                                         type="email"
                                         value={profile?.email || ""}
                                         disabled
-                                        className="input-field pl-10 opacity-50 cursor-not-allowed"
+                                        className="input-field !pl-[42px] opacity-50 cursor-not-allowed"
                                     />
                                     <Mail className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
                                 </div>
@@ -229,7 +229,7 @@ export default function ProfilePage() {
                                         type="text"
                                         value={isTeacher ? "Müəllim" : "Tələbə"}
                                         disabled
-                                        className="input-field pl-10 opacity-50 cursor-not-allowed"
+                                        className="input-field !pl-[42px] opacity-50 cursor-not-allowed"
                                     />
                                     <Shield className="absolute left-3.5 top-3 w-4 h-4 text-[#71717a]" />
                                 </div>
