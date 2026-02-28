@@ -270,6 +270,10 @@ export default function DashboardPage() {
                                                     <Users className="w-4 h-4 text-blue-400" />
                                                     <span className="font-medium text-gray-300">{item._count?.enrollments || 0} Tələbə</span>
                                                 </div>
+                                                <div className="flex items-center gap-2.5 px-3 py-1">
+                                                    <Clock className="w-4 h-4 opacity-70" />
+                                                    <span className="text-xs">Yaradılıb: {new Date(item.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                                </div>
                                             </div>
                                         ) : (
                                             <div className="mt-5 text-sm text-[var(--text-secondary)] flex items-center gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/5">

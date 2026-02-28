@@ -438,9 +438,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                     </span>
                                                 </button>
                                                 <div className="flex items-center gap-2">
-                                                    <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none" title="Qoşulma vaxtı">
-                                                        {new Date(en.joinedAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                                    </div>
+
                                                     <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none">
                                                         {studentWorkspaces.length} fayl
                                                     </div>
