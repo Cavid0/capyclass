@@ -147,17 +147,7 @@ export default function ProfilePage() {
                                 Sinif sayı
                             </div>
                         </div>
-                        <div className="bg-[var(--bg-secondary)] border border-[var(--border-color)] rounded-lg p-3 text-center">
-                            <div className="flex items-center justify-center gap-1.5 mb-1">
-                                <Calendar className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                            </div>
-                            <div className="text-sm font-bold text-white">
-                                {profile?.createdAt ? new Date(profile.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}
-                            </div>
-                            <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
-                                Qoşulub
-                            </div>
-                        </div>
+
                     </div>
                 </div>
 
