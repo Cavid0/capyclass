@@ -543,10 +543,6 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                         {t.description && (
                                             <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{t.description}</p>
                                         )}
-                                        <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(t.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </div>
                                     </div>
                                 ))
                             )}
@@ -775,10 +771,6 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
-                                    <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
-                                        <Clock className="w-3 h-3" />
-                                        {new Date(viewingTask.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                    </span>
                                 </div>
                             </div>
                             <button onClick={() => setViewingTask(null)} className="text-[var(--text-secondary)] hover:text-white transition-colors shrink-0 p-1">
@@ -1041,10 +1033,6 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                         {t.description && (
                                             <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{t.description}</p>
                                         )}
-                                        <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
-                                            <Clock className="w-3 h-3" />
-                                            {new Date(t.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                        </div>
                                     </div>
                                 ))
                             )}
@@ -1278,10 +1266,6 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 </div>
                                 <div>
                                     <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
-                                    <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
-                                        <Clock className="w-3 h-3" />
-                                        {new Date(viewingTask.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
-                                    </span>
                                 </div>
                             </div>
                             <button onClick={() => setViewingTask(null)} className="text-[var(--text-secondary)] hover:text-white transition-colors shrink-0 p-1">

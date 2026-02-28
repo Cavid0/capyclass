@@ -30,50 +30,6 @@
   --btn-hover: #e5e5e5;
 }
 
-:root.light {
-  --bg-primary: #f8f9fa;
-  /* Soft almost-white, not blinding */
-  --bg-secondary: #ffffff;
-  --bg-card: #ffffff;
-  --bg-elevated: #f1f3f5;
-
-  --text-primary: #111827;
-  --text-secondary: #4b5563;
-
-  --border-color: #e5e7eb;
-  --border-hover: #d1d5db;
-
-  --accent-primary: #111827;
-  --accent-secondary: #4b5563;
-  --accent-glow: rgba(0, 0, 0, 0.05);
-
-  --success: #059669;
-  --danger: #dc2626;
-  --warning: #d97706;
-
-  --btn-bg: #000000;
-  --btn-text: #ffffff;
-  --btn-border: #000000;
-  --btn-hover: #1a1a1a;
-}
-
-/* Override specifically hardcoded Tailwind classes for light mode */
-.light select option {
-  background-color: var(--bg-card);
-  color: var(--text-primary);
-}
-
-.light .text-white {
-  color: var(--text-primary) !important;
-}
-
-.light .hover\:text-white:hover {
-  color: var(--text-primary) !important;
-}
-
-.light .border-white {
-  border-color: var(--text-primary) !important;
-}
 
 * {
   margin: 0;

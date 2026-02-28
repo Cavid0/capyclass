@@ -270,13 +270,7 @@ export default function DashboardPage() {
                                                     <Users className="w-4 h-4 text-blue-400" />
                                                     <span className="font-medium text-gray-300">{item._count?.enrollments || 0} Tələbə</span>
                                                 </div>
-                                                <div className="flex items-center gap-2.5 px-3 py-1">
-                                                    <Clock className="w-4 h-4 opacity-70" />
-                                                    <span className="text-xs">Yaradılıb: {new Date(item.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
-                                                </div>
                                             </div>
-                                        ) : (
-                                            <div className="mt-5 text-sm text-[var(--text-secondary)] flex items-center gap-2 bg-white/5 rounded-md px-3 py-2 border border-white/5">
                                                 <div className="w-6 h-6 rounded-full bg-indigo-500/20 flex items-center justify-center">
                                                     <span className="text-xs font-bold text-indigo-300">A</span>
                                                 </div>
@@ -310,117 +304,122 @@ export default function DashboardPage() {
                                         </Link>
                                     </div>
                                 </div>
-                            );
+                );
                         })}
+        </div>
+    )
+}
+            </main >
+
+    {/* Create Modal */ }
+{
+    showCreateModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
+            <div className="glass-card w-full max-w-md p-6 relative">
+                <h2 className="text-lg font-medium text-white mb-2 tracking-tight">Yeni Sinif</h2>
+                <p className="text-[var(--text-secondary)] text-sm mb-6">
+                    Sinif yaradın və tələbələrə tapşırıq vermək üçün dəvət kodu generasiya edin.
+                </p>
+
+                <form onSubmit={handleCreate} className="space-y-4 text-left">
+                    <div>
+                        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                            Sinfin Adı
+                        </label>
+                        <input
+                            type="text"
+                            required
+                            autoFocus
+                            value={newClassName}
+                            onChange={(e) => setNewClassName(e.target.value)}
+                            className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-white/20 transition-all duration-200 shadow-inner"
+                            placeholder="Məs: Python - Qrup 12"
+                        />
+                    </div>
+
+                    <div className="flex gap-3 justify-end pt-4">
+                        <button
+                            type="button"
+                            onClick={() => setShowCreateModal(false)}
+                            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                        >
+                            Ləğv et
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={creating || !newClassName.trim()}
+                            className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[100px]"
+                        >
+                            {creating ? <div className="spinner !w-4 !h-4" /> : "Yarat"}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    )
+}
+
+{/* Join Modal (Student) */ }
+{
+    showJoinModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
+            <div className="glass-card w-full max-w-md p-6 relative">
+                <div className="w-12 h-12 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center mx-auto mb-5">
+                    <UserPlus className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-lg font-medium text-white mb-2 tracking-tight text-center">Sinfə Qoşul</h2>
+                <p className="text-[var(--text-secondary)] text-sm mb-6 text-center">
+                    Müəlliminizdən aldığınız dəvət kodunu daxil edin
+                </p>
+
+                {joinError && (
+                    <div className="mb-4 p-3 rounded-md bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm">
+                        <AlertCircle className="w-4 h-4 flex-shrink-0" />
+                        <span>{joinError}</span>
                     </div>
                 )}
-            </main>
 
-            {/* Create Modal */}
-            {showCreateModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
-                    <div className="glass-card w-full max-w-md p-6 relative">
-                        <h2 className="text-lg font-medium text-white mb-2 tracking-tight">Yeni Sinif</h2>
-                        <p className="text-[var(--text-secondary)] text-sm mb-6">
-                            Sinif yaradın və tələbələrə tapşırıq vermək üçün dəvət kodu generasiya edin.
-                        </p>
-
-                        <form onSubmit={handleCreate} className="space-y-4 text-left">
-                            <div>
-                                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-                                    Sinfin Adı
-                                </label>
-                                <input
-                                    type="text"
-                                    required
-                                    autoFocus
-                                    value={newClassName}
-                                    onChange={(e) => setNewClassName(e.target.value)}
-                                    className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-xl px-4 py-3 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500 hover:border-white/20 transition-all duration-200 shadow-inner"
-                                    placeholder="Məs: Python - Qrup 12"
-                                />
-                            </div>
-
-                            <div className="flex gap-3 justify-end pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => setShowCreateModal(false)}
-                                    className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
-                                >
-                                    Ləğv et
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={creating || !newClassName.trim()}
-                                    className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[100px]"
-                                >
-                                    {creating ? <div className="spinner !w-4 !h-4" /> : "Yarat"}
-                                </button>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            )}
-
-            {/* Join Modal (Student) */}
-            {showJoinModal && (
-                <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
-                    <div className="glass-card w-full max-w-md p-6 relative">
-                        <div className="w-12 h-12 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center mx-auto mb-5">
-                            <UserPlus className="w-6 h-6 text-white" />
+                <form onSubmit={handleJoin} className="space-y-4 text-left">
+                    <div>
+                        <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
+                            Dəvət Kodu
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                required
+                                autoFocus
+                                value={joinCode}
+                                onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
+                                className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-2xl px-4 py-4 text-center text-white placeholder-white/10 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 hover:border-white/20 transition-all duration-200 font-mono text-2xl tracking-[0.25em] uppercase shadow-inner"
+                                placeholder="ABC123"
+                                maxLength={10}
+                            />
+                            <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/5"></div>
                         </div>
-                        <h2 className="text-lg font-medium text-white mb-2 tracking-tight text-center">Sinfə Qoşul</h2>
-                        <p className="text-[var(--text-secondary)] text-sm mb-6 text-center">
-                            Müəlliminizdən aldığınız dəvət kodunu daxil edin
-                        </p>
-
-                        {joinError && (
-                            <div className="mb-4 p-3 rounded-md bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm">
-                                <AlertCircle className="w-4 h-4 flex-shrink-0" />
-                                <span>{joinError}</span>
-                            </div>
-                        )}
-
-                        <form onSubmit={handleJoin} className="space-y-4 text-left">
-                            <div>
-                                <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">
-                                    Dəvət Kodu
-                                </label>
-                                <div className="relative">
-                                    <input
-                                        type="text"
-                                        required
-                                        autoFocus
-                                        value={joinCode}
-                                        onChange={(e) => setJoinCode(e.target.value.toUpperCase())}
-                                        className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-2xl px-4 py-4 text-center text-white placeholder-white/10 focus:outline-none focus:border-indigo-500 focus:ring-2 focus:ring-indigo-500/30 hover:border-white/20 transition-all duration-200 font-mono text-2xl tracking-[0.25em] uppercase shadow-inner"
-                                        placeholder="ABC123"
-                                        maxLength={10}
-                                    />
-                                    <div className="absolute inset-0 rounded-2xl pointer-events-none border border-white/5"></div>
-                                </div>
-                            </div>
-
-                            <div className="flex gap-3 justify-end pt-4">
-                                <button
-                                    type="button"
-                                    onClick={() => { setShowJoinModal(false); setJoinError(""); setJoinCode(""); }}
-                                    className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
-                                >
-                                    Ləğv et
-                                </button>
-                                <button
-                                    type="submit"
-                                    disabled={joining || !joinCode.trim()}
-                                    className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[120px]"
-                                >
-                                    {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ArrowRight className="w-4 h-4" /> Qoşul</>}
-                                </button>
-                            </div>
-                        </form>
                     </div>
-                </div>
-            )}
+
+                    <div className="flex gap-3 justify-end pt-4">
+                        <button
+                            type="button"
+                            onClick={() => { setShowJoinModal(false); setJoinError(""); setJoinCode(""); }}
+                            className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                        >
+                            Ləğv et
+                        </button>
+                        <button
+                            type="submit"
+                            disabled={joining || !joinCode.trim()}
+                            className="glow-btn px-4 py-2 text-sm flex items-center justify-center gap-2 min-w-[120px]"
+                        >
+                            {joining ? <Loader2 className="w-4 h-4 animate-spin" /> : <><ArrowRight className="w-4 h-4" /> Qoşul</>}
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
+    )
+}
+        </div >
     );
 }
