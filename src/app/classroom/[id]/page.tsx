@@ -438,6 +438,9 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                     </span>
                                                 </button>
                                                 <div className="flex items-center gap-2">
+                                                    <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none" title="Qoşulma vaxtı">
+                                                        {new Date(en.joinedAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
+                                                    </div>
                                                     <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none">
                                                         {studentWorkspaces.length} fayl
                                                     </div>
@@ -489,7 +492,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                                         )}
                                                                     </span>
                                                                     <span className="text-[9px] opacity-70 ml-2 shrink-0">
-                                                                        {new Date(w.updatedAt).toLocaleTimeString('az-AZ', { hour: '2-digit', minute: '2-digit' })}
+                                                                        {new Date(w.updatedAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                                                     </span>
                                                                 </button>
                                                             );
@@ -542,7 +545,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                         )}
                                         <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            {new Date(t.createdAt).toLocaleDateString('az-AZ')}
+                                            {new Date(t.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
                                 ))
@@ -774,7 +777,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                     <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
                                     <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
                                         <Clock className="w-3 h-3" />
-                                        {new Date(viewingTask.createdAt).toLocaleDateString('az-AZ')}
+                                        {new Date(viewingTask.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                             </div>
@@ -1040,7 +1043,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                         )}
                                         <div className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
                                             <Clock className="w-3 h-3" />
-                                            {new Date(t.createdAt).toLocaleDateString('az-AZ')}
+                                            {new Date(t.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                         </div>
                                     </div>
                                 ))
@@ -1277,7 +1280,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
                                     <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1 mt-1">
                                         <Clock className="w-3 h-3" />
-                                        {new Date(viewingTask.createdAt).toLocaleDateString('az-AZ')}
+                                        {new Date(viewingTask.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}
                                     </span>
                                 </div>
                             </div>

@@ -152,7 +152,7 @@ export default function ProfilePage() {
                                 <Calendar className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                             </div>
                             <div className="text-sm font-bold text-white">
-                                {profile?.createdAt ? new Date(profile.createdAt).toLocaleDateString('az-AZ', { month: 'short', year: 'numeric' }) : "—"}
+                                {profile?.createdAt ? new Date(profile.createdAt).toLocaleString('az-AZ', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}
                             </div>
                             <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">
                                 Qoşulub

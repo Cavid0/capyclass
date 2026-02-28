@@ -23,6 +23,51 @@
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
+
+  --btn-bg: #ffffff;
+  --btn-text: #000000;
+  --btn-border: #ffffff;
+  --btn-hover: #e5e5e5;
+}
+
+:root.light {
+  --bg-primary: #f8f9fa;
+  /* Soft almost-white, not blinding */
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --bg-elevated: #f1f3f5;
+
+  --text-primary: #111827;
+  --text-secondary: #4b5563;
+
+  --border-color: #e5e7eb;
+  --border-hover: #d1d5db;
+
+  --accent-primary: #111827;
+  --accent-secondary: #4b5563;
+  --accent-glow: rgba(0, 0, 0, 0.05);
+
+  --success: #059669;
+  --danger: #dc2626;
+  --warning: #d97706;
+
+  --btn-bg: #000000;
+  --btn-text: #ffffff;
+  --btn-border: #000000;
+  --btn-hover: #1a1a1a;
+}
+
+/* Override specifically hardcoded Tailwind classes for light mode */
+.light .text-white {
+  color: var(--text-primary) !important;
+}
+
+.light .hover\:text-white:hover {
+  color: var(--text-primary) !important;
+}
+
+.light .border-white {
+  border-color: var(--text-primary) !important;
 }
 
 * {
@@ -46,7 +91,7 @@ body {
 }
 
 ::selection {
-  background: rgba(255, 255, 255, 0.1);
+  background: rgba(161, 161, 170, 0.3);
 }
 
 /* Minimalist Card */
@@ -64,7 +109,7 @@ body {
 
 /* Text Gradients (Subtle) */
 .gradient-text {
-  background: linear-gradient(to right, #ffffff, #a1a1aa);
+  background: linear-gradient(to right, var(--text-primary), var(--text-secondary));
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -72,19 +117,19 @@ body {
 
 /* Base button */
 .glow-btn {
-  background: #ffffff;
-  color: #000000;
-  border: 1px solid #ffffff;
+  background: var(--btn-bg);
+  color: var(--btn-text);
+  border: 1px solid var(--btn-border);
   border-radius: 6px;
   font-weight: 500;
   cursor: pointer;
   transition: all 0.2s ease;
-  box-shadow: 0 0 10px rgba(255, 255, 255, 0);
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0);
 }
 
 .glow-btn:hover {
-  background: #e5e5e5;
-  border-color: #e5e5e5;
+  background: var(--btn-hover);
+  border-color: var(--btn-hover);
 }
 
 .glow-btn:active {
@@ -94,7 +139,7 @@ body {
 /* Secondary Button */
 .secondary-btn {
   background: transparent;
-  color: #ededed;
+  color: var(--text-primary);
   border: 1px solid var(--border-color);
   border-radius: 6px;
   font-weight: 500;
