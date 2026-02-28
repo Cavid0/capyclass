@@ -1099,7 +1099,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 <select
                                     value={language}
                                     onChange={(e) => handleLanguageChange(e.target.value)}
-                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white"
+                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white [&>option]:bg-[#1a1b26] [&>option]:text-white"
                                 >
                                     <option value="javascript">JavaScript</option>
                                     <option value="typescript">TypeScript</option>
