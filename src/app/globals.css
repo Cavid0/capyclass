@@ -58,6 +58,11 @@
 }
 
 /* Override specifically hardcoded Tailwind classes for light mode */
+.light select option {
+  background-color: var(--bg-card);
+  color: var(--text-primary);
+}
+
 .light .text-white {
   color: var(--text-primary) !important;
 }
