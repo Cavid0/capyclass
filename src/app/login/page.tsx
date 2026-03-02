@@ -2,17 +2,28 @@
 
 import { useState, useEffect } from "react";
 import { signIn, useSession } from "next-auth/react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Mail, Lock, AlertCircle, Code2, ArrowRight, Layers } from "lucide-react";
+import { Mail, Lock, AlertCircle, ArrowRight, Layers, CheckCircle2 } from "lucide-react";
+import { Suspense } from "react";
 
-export default function LoginPage() {
+function LoginForm() {
     const router = useRouter();
     const { data: session, status } = useSession();
+    const searchParams = useSearchParams();
+    const verified = searchParams.get("verified") === "true";
     const [email, setEmail] = useState("");
     const [password, setPassword] = useState("");
     const [error, setError] = useState("");
     const [loading, setLoading] = useState(false);
+    const [showVerified, setShowVerified] = useState(verified);
+
+    useEffect(() => {
+        if (verified) {
+            const t = setTimeout(() => setShowVerified(false), 3500);
+            return () => clearTimeout(t);
+        }
+    }, [verified]);
 
     useEffect(() => {
         if (status === "authenticated") {
@@ -76,6 +87,13 @@ export default function LoginPage() {
                         </p>
                     </div>
 
+                    {showVerified && (
+                        <div className="mb-5 p-3 rounded-md bg-green-500/10 border border-green-500/20 flex items-center gap-2 text-green-400 text-sm transition-opacity duration-500">
+                            <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
+                            <span>Email təsdiqləndi! Artıq daxil ola bilərsiniz.</span>
+                        </div>
+                    )}
+
                     {error && (
                         <div className="mb-6 p-3 rounded-md bg-red-500/10 border border-red-500/20 flex flex-col items-center gap-2 text-red-500 text-sm">
                             <AlertCircle className="w-4 h-4" />
@@ -129,6 +147,12 @@ export default function LoginPage() {
                                 <>Giriş <ArrowRight className="w-3.5 h-3.5" /></>
                             )}
                         </button>
+
+                        <div className="text-center mt-3">
+                            <Link href="/forgot-password" className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors underline underline-offset-4">
+                                Şifrəmi unutdum
+                            </Link>
+                        </div>
                     </form>
 
                     <div className="mt-6 pt-6 border-t border-[var(--border-color)] text-center text-sm">
@@ -140,5 +164,13 @@ export default function LoginPage() {
                 </div>
             </div>
         </div>
+    );
+}
+
+export default function LoginPage() {
+    return (
+        <Suspense fallback={<div className="min-h-screen bg-black" />}>
+            <LoginForm />
+        </Suspense>
     );
 }

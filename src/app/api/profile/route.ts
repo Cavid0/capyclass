@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { hash, compare } from "bcryptjs";
+import { hash } from "bcryptjs";
 
 // GET: Get current user profile
 export async function GET() {
@@ -52,7 +52,7 @@ export async function PUT(req: NextRequest) {
         }
 
         const userId = (session.user as any).id;
-        const { name, currentPassword, newPassword } = await req.json();
+        const { name, otp, newPassword } = await req.json();
 
         // Build update data
         const updateData: any = {};
@@ -61,11 +61,11 @@ export async function PUT(req: NextRequest) {
             updateData.name = name.trim();
         }
 
-        // Handle password change
+        // Handle password change (OTP verified)
         if (newPassword) {
-            if (!currentPassword) {
+            if (!otp) {
                 return NextResponse.json(
-                    { error: "Cari şifrəni daxil edin" },
+                    { error: "OTP kodu tələb olunur" },
                     { status: 400 }
                 );
             }
@@ -78,10 +78,9 @@ export async function PUT(req: NextRequest) {
                 return NextResponse.json({ error: "İstifadəçi tapılmadı" }, { status: 404 });
             }
 
-            const isValid = await compare(currentPassword, user.hashedPassword);
-            if (!isValid) {
+            if (user.verificationToken !== otp) {
                 return NextResponse.json(
-                    { error: "Cari şifrə yanlışdır" },
+                    { error: "OTP kodu yanlışdır" },
                     { status: 400 }
                 );
             }
@@ -94,6 +93,7 @@ export async function PUT(req: NextRequest) {
             }
 
             updateData.hashedPassword = await hash(newPassword, 12);
+            updateData.verificationToken = null;
         }
 
         if (Object.keys(updateData).length === 0) {

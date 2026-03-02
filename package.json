@@ -17,6 +17,7 @@
     "lucide-react": "^0.575.0",
     "next": "14.2.35",
     "next-auth": "^4.24.13",
+    "nodemailer": "^7.0.13",
     "react": "^18",
     "react-dom": "^18",
     "sonner": "^2.0.7",
@@ -25,6 +26,7 @@
   "devDependencies": {
     "@types/bcryptjs": "^2.4.6",
     "@types/node": "^20",
+    "@types/nodemailer": "^7.0.11",
     "@types/react": "^18",
     "@types/react-dom": "^18",
     "@types/uuid": "^10.0.0",

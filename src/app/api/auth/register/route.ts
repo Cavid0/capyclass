@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
+import { sendVerificationEmail } from "@/lib/email";
 
 export async function POST(req: NextRequest) {
     try {
@@ -25,22 +26,24 @@ export async function POST(req: NextRequest) {
         }
 
         const hashedPassword = await hash(password, 12);
+        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        const user = await prisma.user.create({
+        await prisma.user.create({
             data: {
                 name,
                 email,
                 hashedPassword,
                 role: role === "TEACHER" ? "TEACHER" : "STUDENT",
+                emailVerified: false,
+                verificationToken: verificationCode,
             },
         });
 
+        await sendVerificationEmail(email, verificationCode);
+
         return NextResponse.json(
             {
-                id: user.id,
-                name: user.name,
-                email: user.email,
-                role: user.role,
+                message: "Qeydiyyat uğurlu oldu. Email-inizə göndərilən 6 rəqəmli kodu daxil edin.",
             },
             { status: 201 }
         );

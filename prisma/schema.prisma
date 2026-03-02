@@ -20,13 +20,15 @@ enum WorkspaceStatus {
 }
 
 model User {
-  id             String       @id @default(cuid())
-  name           String
-  email          String       @unique
-  hashedPassword String
-  role           Role         @default(STUDENT)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  id                String    @id @default(cuid())
+  name              String
+  email             String    @unique
+  hashedPassword    String
+  role              Role      @default(STUDENT)
+  emailVerified     Boolean   @default(false)
+  verificationToken String?   @unique
+  createdAt         DateTime  @default(now())
+  updatedAt         DateTime  @updatedAt
 
   classrooms   Classroom[]  @relation("TeacherClassrooms")
   enrollments  Enrollment[]

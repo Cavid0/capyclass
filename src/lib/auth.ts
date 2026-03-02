@@ -24,6 +24,10 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("İstifadəçi tapılmadı");
                 }
 
+                if (!user.emailVerified) {
+                    throw new Error("Email ünvanınız hələ təsdiqlənməyib. Zəhmət olmasa email-inizi yoxlayın.");
+                }
+
                 const isPasswordValid = await compare(
                     credentials.password,
                     user.hashedPassword
