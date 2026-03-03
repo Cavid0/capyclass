@@ -28,7 +28,7 @@ export async function POST(req: NextRequest) {
         const hashedPassword = await hash(password, 12);
         const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
 
-        await prisma.user.create({
+        const user = await prisma.user.create({
             data: {
                 name,
                 email,
@@ -39,7 +39,17 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        await sendVerificationEmail(email, verificationCode);
+        try {
+            await sendVerificationEmail(email, verificationCode);
+        } catch (emailError: any) {
+            console.error("Register email error:", emailError?.message);
+            // Email göndərilmədisə hesabı silək ki, yenidən qeydiyyatdan keçə bilsin
+            await prisma.user.delete({ where: { id: user.id } });
+            return NextResponse.json(
+                { error: "Təsdiq emaili göndərilə bilmədi. Zəhmət olmasa bir az sonra yenidən cəhd edin." },
+                { status: 500 }
+            );
+        }
 
         return NextResponse.json(
             {

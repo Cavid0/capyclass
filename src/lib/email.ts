@@ -1,32 +1,36 @@
 import nodemailer from "nodemailer";
 
 function createTransporter() {
+    const user = process.env.SMTP_USER;
+    const pass = process.env.SMTP_PASS;
+
+    if (!user || !pass) {
+        console.error("[EMAIL] SMTP_USER or SMTP_PASS is missing!", { user: !!user, pass: !!pass });
+        throw new Error("SMTP konfiqurasiyası tapılmadı. SMTP_USER və SMTP_PASS .env faylında olmalıdır.");
+    }
+
     return nodemailer.createTransport({
         host: "smtp.gmail.com",
         port: 587,
         secure: false,
-        auth: {
-            user: process.env.SMTP_USER,
-            pass: process.env.SMTP_PASS,
-        },
-        tls: {
-            rejectUnauthorized: false,
-        },
+        auth: { user, pass },
+        tls: { rejectUnauthorized: false },
     });
 }
-
-const FROM_NAME = "CapyClass";
 
 export async function sendVerificationEmail(email: string, code: string) {
     const digits = code.split("");
     const transporter = createTransporter();
 
-    await transporter.sendMail({
-        from: `"${FROM_NAME}" <info@capyclass.com>`,
-        replyTo: "info@capyclass.com",
-        to: email,
-        subject: `CapyClass - Təsdiq kodunuz: ${code}`,
-        html: `
+    console.log("[EMAIL] Sending verification email to:", email);
+
+    try {
+        await transporter.sendMail({
+            from: `"CapyClass" <${process.env.SMTP_USER}>`,
+            replyTo: process.env.SMTP_USER,
+            to: email,
+            subject: `CapyClass - Təsdiq kodunuz: ${code}`,
+            html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /></head>
@@ -63,5 +67,10 @@ export async function sendVerificationEmail(email: string, code: string) {
   </table>
 </body>
 </html>`,
-    });
+        });
+        console.log("[EMAIL] Verification email sent successfully to:", email);
+    } catch (error: any) {
+        console.error("[EMAIL] Failed to send email:", error?.message || error);
+        throw new Error(`Email göndərilə bilmədi: ${error?.message || "Naməlum xəta"}`);
+    }
 }
