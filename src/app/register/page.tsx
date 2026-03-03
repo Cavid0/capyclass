@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { useSession } from "next-auth/react";
-import { Mail, Lock, User, AlertCircle, ArrowRight, Layers, ShieldCheck } from "lucide-react";
+import { Mail, Lock, User, AlertCircle, ArrowRight, ShieldCheck } from "lucide-react";
+import Image from "next/image";
 
 export default function RegisterPage() {
     const router = useRouter();
@@ -146,16 +147,16 @@ export default function RegisterPage() {
     const isOtpFull = otp.every((d) => d !== "");
 
     return (
-        <div className="min-h-screen flex items-center justify-center bg-black px-4 py-12 relative overflow-hidden">
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[800px] h-[400px] bg-white/[0.02] blur-[100px] rounded-full pointer-events-none" />
+        <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4 py-12 relative overflow-hidden">
+            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[400px] bg-amber-600/[0.04] blur-[120px] rounded-full pointer-events-none" />
 
             <div className="w-full max-w-sm z-10">
                 <div className="flex justify-center mb-8">
-                    <Link href="/" className="flex items-center gap-2 group">
-                        <div className="w-8 h-8 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center group-hover:border-white transition-colors">
-                            <Layers className="w-4 h-4 text-white" />
+                    <Link href="/" className="flex items-center gap-2.5 group">
+                        <div className="w-8 h-8 rounded-lg overflow-hidden border border-amber-500/20 group-hover:border-amber-500/40 transition-colors">
+                            <Image src="/capybara.png" alt="CapyClass" width={32} height={32} className="w-full h-full object-cover" />
                         </div>
-                        <span className="text-xl font-bold text-white tracking-tight">ClassFlow</span>
+                        <span className="text-xl font-bold text-[var(--text-primary)] tracking-tight">CapyClass</span>
                     </Link>
                 </div>
 

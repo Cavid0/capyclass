@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import Link from "next/link";
 import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
@@ -196,9 +197,18 @@ export default function DashboardPage() {
                     </div>
                 ) : filteredClasses.length === 0 ? (
                     <div className="glass-card p-14 flex flex-col items-center justify-center text-center border-dashed border-[var(--border-color)] bg-gradient-to-b from-[var(--bg-secondary)] to-transparent rounded-2xl relative overflow-hidden group">
-                        <div className="absolute inset-0 bg-gradient-to-tr from-indigo-500/5 to-purple-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
-                        <div className="w-16 h-16 rounded-2xl border border-white/10 bg-white/5 mb-6 flex items-center justify-center shadow-2xl backdrop-blur-xl relative z-10">
-                            <AlertCircle className="w-8 h-8 text-[var(--text-secondary)]" />
+                        <div className="absolute inset-0 bg-gradient-to-tr from-amber-500/5 to-orange-500/5 opacity-0 group-hover:opacity-100 transition-opacity duration-500"></div>
+                        <div className="relative z-10 mb-6">
+                            <div className="relative">
+                                <div className="absolute -inset-4 bg-gradient-to-br from-amber-500/10 to-orange-500/5 blur-2xl rounded-full pointer-events-none" />
+                                <Image
+                                    src="/capybara.png"
+                                    alt="Capybara mascot"
+                                    width={240}
+                                    height={135}
+                                    className="rounded-2xl mx-auto opacity-85 group-hover:opacity-100 transition-opacity relative z-10 border border-amber-500/10"
+                                />
+                            </div>
                         </div>
                         <h3 className="text-xl font-semibold text-white mb-3 tracking-tight relative z-10">
                             {search ? "Nəticə tapılmadı" : "Heç bir sinif tapılmadı"}

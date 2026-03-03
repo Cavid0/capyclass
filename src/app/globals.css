@@ -5,29 +5,29 @@
 @tailwind utilities;
 
 :root {
-  --bg-primary: #000000;
-  --bg-secondary: #0a0a0a;
-  --bg-card: #111111;
-  --bg-elevated: #1a1a1a;
+  --bg-primary: #0a0908;
+  --bg-secondary: #0f0e0c;
+  --bg-card: #141210;
+  --bg-elevated: #1c1916;
 
-  --text-primary: #ededed;
-  --text-secondary: #a1a1aa;
+  --text-primary: #f0ece4;
+  --text-secondary: #a8a08e;
 
-  --border-color: #27272a;
-  --border-hover: #3f3f46;
+  --border-color: #2a2520;
+  --border-hover: #3d362e;
 
-  --accent-primary: #ededed;
-  --accent-secondary: #a1a1aa;
-  --accent-glow: rgba(255, 255, 255, 0.05);
+  --accent-primary: #e8a849;
+  --accent-secondary: #c4863a;
+  --accent-glow: rgba(232, 168, 73, 0.08);
 
   --success: #10b981;
   --danger: #ef4444;
   --warning: #f59e0b;
 
-  --btn-bg: #ffffff;
-  --btn-text: #000000;
-  --btn-border: #ffffff;
-  --btn-hover: #e5e5e5;
+  --btn-bg: #e8a849;
+  --btn-text: #0a0908;
+  --btn-border: #e8a849;
+  --btn-hover: #d4952f;
 }
 
 
@@ -52,7 +52,7 @@ body {
 }
 
 ::selection {
-  background: rgba(161, 161, 170, 0.3);
+  background: rgba(232, 168, 73, 0.3);
 }
 
 /* Minimalist Card */
@@ -195,13 +195,13 @@ body {
 }
 
 .input-field:focus {
-  border-color: #52525b;
+  border-color: #4a3f34;
   background: var(--bg-card);
-  box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.03);
+  box-shadow: 0 0 0 3px rgba(232, 168, 73, 0.06);
 }
 
 .input-field::placeholder {
-  color: #3f3f46;
+  color: #3a3329;
 }
 
 /* Spinner */

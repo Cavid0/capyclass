@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useSession, signOut } from "next-auth/react";
 import { LogOut } from "lucide-react";
-import { Code2, LayoutDashboard, User, Layers } from "lucide-react";
+import { User } from "lucide-react";
 
 export function Navbar() {
     const { data: session } = useSession();
@@ -12,12 +13,12 @@ export function Navbar() {
         <nav className="sticky top-0 z-50 w-full border-b border-[var(--border-color)] bg-[var(--bg-primary)]/80 backdrop-blur-md">
             <div className="max-w-6xl mx-auto flex items-center justify-between px-6 h-14">
                 {/* Logo */}
-                <Link href={session ? "/dashboard" : "/"} className="flex items-center gap-2 group">
-                    <div className="w-6 h-6 border border-white/20 bg-white/5 rounded flex items-center justify-center group-hover:bg-white/10 transition-colors">
-                        <Layers className="w-3.5 h-3.5 text-white" />
+                <Link href={session ? "/dashboard" : "/"} className="flex items-center gap-2.5 group">
+                    <div className="w-7 h-7 rounded-lg overflow-hidden border border-amber-500/20 group-hover:border-amber-500/40 transition-colors">
+                        <Image src="/capybara.png" alt="CapyClass" width={28} height={28} className="w-full h-full object-cover" />
                     </div>
-                    <span className="text-sm font-semibold text-white tracking-tight">
-                        ClassFlow
+                    <span className="text-sm font-bold text-[var(--text-primary)] tracking-tight">
+                        CapyClass
                     </span>
                 </Link>
 
@@ -27,11 +28,11 @@ export function Navbar() {
                         <>
                             <Link href="/profile" className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded border border-[var(--border-color)] bg-[var(--bg-secondary)] hover:bg-[var(--bg-elevated)] hover:border-[var(--border-hover)] transition-colors cursor-pointer">
                                 <User className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                                <span className="text-xs text-white">{session.user?.name}</span>
+                                <span className="text-xs text-[var(--text-primary)]">{session.user?.name}</span>
                             </Link>
                             <button
                                 onClick={() => signOut({ callbackUrl: '/' })}
-                                className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white transition-colors border border-transparent hover:border-[var(--border-color)]"
+                                className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border-color)]"
                                 title="Çıxış"
                             >
                                 <LogOut className="w-3.5 h-3.5" />
@@ -40,7 +41,7 @@ export function Navbar() {
                     ) : (
                         <>
                             <Link href="/login">
-                                <button className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
+                                <button className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
                                     Giriş
                                 </button>
                             </Link>

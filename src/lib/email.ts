@@ -13,7 +13,7 @@ const transporter = nodemailer.createTransport({
     },
 });
 
-const FROM_NAME = "ClassFlow";
+const FROM_NAME = "CapyClass";
 
 export async function sendVerificationEmail(email: string, code: string) {
     const digits = code.split("");
@@ -21,37 +21,37 @@ export async function sendVerificationEmail(email: string, code: string) {
     await transporter.sendMail({
         from: `"${FROM_NAME}" <${process.env.SMTP_USER}>`,
         to: email,
-        subject: `ClassFlow - Təsdiq kodunuz: ${code}`,
+        subject: `CapyClass - Təsdiq kodunuz: ${code}`,
         html: `
 <!DOCTYPE html>
 <html>
 <head><meta charset="utf-8" /><meta name="viewport" content="width=device-width,initial-scale=1.0" /></head>
-<body style="margin:0;padding:0;background:#0a0a0a;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0a0a;padding:40px 20px;">
+<body style="margin:0;padding:0;background:#0a0908;font-family:'Helvetica Neue',Helvetica,Arial,sans-serif;">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#0a0908;padding:40px 20px;">
     <tr><td align="center">
-      <table width="480" cellpadding="0" cellspacing="0" style="background:#111111;border:1px solid #222222;border-radius:12px;overflow:hidden;">
+      <table width="480" cellpadding="0" cellspacing="0" style="background:#141210;border:1px solid #2a2520;border-radius:12px;overflow:hidden;">
         <tr>
-          <td style="padding:32px 40px 24px;border-bottom:1px solid #1f1f1f;">
-            <p style="margin:0;font-size:22px;font-weight:700;color:#ffffff;letter-spacing:-0.5px;">ClassFlow</p>
+          <td style="padding:32px 40px 24px;border-bottom:1px solid #2a2520;">
+            <p style="margin:0;font-size:22px;font-weight:700;color:#e8a849;letter-spacing:-0.5px;">🐹 CapyClass</p>
           </td>
         </tr>
         <tr>
           <td style="padding:32px 40px;text-align:center;">
-            <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#ffffff;">Email təsdiq kodu</h1>
-            <p style="margin:0 0 28px;font-size:14px;color:#888888;line-height:1.6;">
+            <h1 style="margin:0 0 8px;font-size:20px;font-weight:600;color:#f0ece4;">Email təsdiq kodu</h1>
+            <p style="margin:0 0 28px;font-size:14px;color:#a8a08e;line-height:1.6;">
               Aşağıdakı 6 rəqəmli kodu qeydiyyat səhifəsindəki xanaya daxil edin.
             </p>
             <div style="display:inline-flex;gap:8px;margin-bottom:28px;">
-              ${digits.map(d => `<span style="display:inline-block;width:44px;height:52px;line-height:52px;text-align:center;background:#1a1a1a;border:1px solid #333333;border-radius:8px;font-size:24px;font-weight:700;color:#ffffff;">${d}</span>`).join("")}
+              ${digits.map(d => `<span style="display:inline-block;width:44px;height:52px;line-height:52px;text-align:center;background:#1c1916;border:1px solid #3d362e;border-radius:8px;font-size:24px;font-weight:700;color:#e8a849;">${d}</span>`).join("")}
             </div>
-            <p style="margin:0;font-size:12px;color:#555555;line-height:1.6;">
+            <p style="margin:0;font-size:12px;color:#6b6355;line-height:1.6;">
               Bu kod 15 dəqiqə ərzində keçərlidir. Əgər siz qeydiyyatdan keçməmisinizsə, bu emaili nəzərə almayın.
             </p>
           </td>
         </tr>
         <tr>
-          <td style="padding:20px 40px;border-top:1px solid #1f1f1f;">
-            <p style="margin:0;font-size:12px;color:#444444;">© 2026 ClassFlow. Bütün hüquqlar qorunur.</p>
+          <td style="padding:20px 40px;border-top:1px solid #2a2520;">
+            <p style="margin:0;font-size:12px;color:#6b6355;">© 2026 CapyClass. Bütün hüquqlar qorunur.</p>
           </td>
         </tr>
       </table>
