@@ -10,7 +10,7 @@ import { Suspense } from "react";
 
 function LoginForm() {
     const router = useRouter();
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const searchParams = useSearchParams();
     const verified = searchParams.get("verified") === "true";
     const [email, setEmail] = useState("");

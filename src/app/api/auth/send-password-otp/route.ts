@@ -5,7 +5,7 @@ import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
 
-export async function POST(req: NextRequest) {
+export async function POST(_req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {

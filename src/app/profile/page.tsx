@@ -7,10 +7,10 @@ import {
     User, Mail, Calendar, BookOpen,
     Save, Lock, CheckCircle, AlertCircle, Loader2, ShieldCheck, KeyRound, Trash2
 } from "lucide-react";
-import { cn } from "@/lib/utils";
+
 
 export default function ProfilePage() {
-    const { data: session, status } = useSession();
+    const { status } = useSession();
     const [profile, setProfile] = useState<any>(null);
     const [loading, setLoading] = useState(true);
 

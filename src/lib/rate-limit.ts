@@ -37,9 +37,9 @@ export function rateLimit(key: string, maxRequests: number, windowMs: number): b
 // Clean up expired entries every 5 minutes
 setInterval(() => {
     const now = Date.now();
-    for (const [key, value] of rateMap.entries()) {
+    rateMap.forEach((value, key) => {
         if (now > value.resetAt) {
             rateMap.delete(key);
         }
-    }
+    });
 }, 5 * 60 * 1000);

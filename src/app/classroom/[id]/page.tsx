@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, Clock, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, MessageSquare, XCircle, ChevronDown, Play, Terminal, X, Edit2, Trash2
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, XCircle, Play, Terminal, X, Edit2, Trash2
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -73,6 +73,7 @@ export default function ClassroomPage() {
             }, 5000);
             return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
         }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status, session, fetchClassroom]);
 
     if (loading || status === "loading") {
@@ -160,7 +161,8 @@ export default function ClassroomPage() {
 // TEACHER VIEW
 // =============================================================
 function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated, onRefresh }: any) {
-    const workspaces = classroom.workspaces || [];
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const workspaces = useMemo(() => classroom.workspaces || [], [classroom.workspaces]);
     const enrollments = classroom.enrollments || [];
 
     const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspaceId);
@@ -220,7 +222,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 setOutput(data.error || "An error occurred");
                 setOutputError(true);
             }
-        } catch (error) {
+        } catch (_error) {
             setOutput("Network error. Please try again.");
             setOutputError(true);
         } finally {
@@ -972,7 +974,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                 setOutput(data.error || "An error occurred");
                 setOutputError(true);
             }
-        } catch (error) {
+        } catch (_error) {
             setOutput("Network error. Please try again.");
             setOutputError(true);
         } finally {
