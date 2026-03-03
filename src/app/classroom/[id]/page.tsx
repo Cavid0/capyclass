@@ -696,7 +696,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)]">
                         <Folder className="w-12 h-12 mb-4 opacity-20" />
-                        <p className="text-sm">Select a student's file from the sidebar to view</p>
+                        <p className="text-sm">Select a student&apos;s file from the sidebar to view</p>
                     </div>
                 )}
             </div>

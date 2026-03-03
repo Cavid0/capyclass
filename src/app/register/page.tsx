@@ -211,7 +211,7 @@ export default function RegisterPage() {
                         </>
                     )}
 
-                    {/* ── Step 2: Enter OTP code ── */}}
+                    {/* ── Step 2: Enter OTP code ── */}
                     {step === "verify" && (
                         <>
                             <div className="flex justify-center mb-5">
