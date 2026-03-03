@@ -7,7 +7,7 @@ export async function POST(req: NextRequest) {
 
         if (!email || !code) {
             return NextResponse.json(
-                { error: "Email və kod tələb olunur" },
+                { error: "Email and code are required" },
                 { status: 400 }
             );
         }
@@ -18,18 +18,18 @@ export async function POST(req: NextRequest) {
 
         if (!user) {
             return NextResponse.json(
-                { error: "İstifadəçi tapılmadı" },
+                { error: "User not found" },
                 { status: 404 }
             );
         }
 
         if (user.emailVerified) {
-            return NextResponse.json({ message: "Email artıq təsdiqlənib" });
+            return NextResponse.json({ message: "Email is already verified" });
         }
 
         if (user.verificationToken !== code) {
             return NextResponse.json(
-                { error: "Kod yanlışdır. Yenidən cəhd edin." },
+                { error: "Invalid code. Please try again." },
                 { status: 400 }
             );
         }
@@ -42,10 +42,10 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        return NextResponse.json({ message: "Email uğurla təsdiqləndi! İndi daxil ola bilərsiniz." });
+        return NextResponse.json({ message: "Email verified successfully! You can now log in." });
     } catch (error: any) {
         return NextResponse.json(
-            { error: error?.message || "Xəta baş verdi" },
+            { error: error?.message || "An error occurred" },
             { status: 500 }
         );
     }

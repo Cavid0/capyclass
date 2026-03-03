@@ -8,7 +8,7 @@ export async function POST(req: NextRequest) {
 
         if (!email) {
             return NextResponse.json(
-                { error: "Email tələb olunur" },
+                { error: "Email is required" },
                 { status: 400 }
             );
         }
@@ -16,13 +16,13 @@ export async function POST(req: NextRequest) {
         const user = await prisma.user.findUnique({ where: { email } });
 
         if (!user) {
-            // Güvenlik üçün eyni cavabı qaytarırıq
-            return NextResponse.json({ message: "Əgər hesab mövcuddursa, kod göndərildi" });
+            // Security: return the same response regardless
+            return NextResponse.json({ message: "If the account exists, a code has been sent" });
         }
 
         if (user.emailVerified) {
             return NextResponse.json(
-                { error: "Bu hesab artıq təsdiqlənib" },
+                { error: "This account is already verified" },
                 { status: 400 }
             );
         }
@@ -36,10 +36,10 @@ export async function POST(req: NextRequest) {
 
         await sendVerificationEmail(email, newCode);
 
-        return NextResponse.json({ message: "Yeni kod göndərildi" });
+        return NextResponse.json({ message: "New code sent" });
     } catch (error: any) {
         return NextResponse.json(
-            { error: error?.message || "Xəta baş verdi" },
+            { error: error?.message || "An error occurred" },
             { status: 500 }
         );
     }

@@ -13,7 +13,7 @@ export const authOptions: NextAuthOptions = {
             },
             async authorize(credentials) {
                 if (!credentials?.email || !credentials?.password) {
-                    throw new Error("Email və şifrə tələb olunur");
+                    throw new Error("Email and password are required");
                 }
 
                 const user = await prisma.user.findUnique({
@@ -21,11 +21,11 @@ export const authOptions: NextAuthOptions = {
                 });
 
                 if (!user) {
-                    throw new Error("İstifadəçi tapılmadı");
+                    throw new Error("User not found");
                 }
 
                 if (!user.emailVerified) {
-                    throw new Error("Email ünvanınız hələ təsdiqlənməyib. Zəhmət olmasa email-inizi yoxlayın.");
+                    throw new Error("Your email has not been verified yet. Please check your inbox.");
                 }
 
                 const isPasswordValid = await compare(
@@ -34,7 +34,7 @@ export const authOptions: NextAuthOptions = {
                 );
 
                 if (!isPasswordValid) {
-                    throw new Error("Şifrə yanlışdır");
+                    throw new Error("Incorrect password");
                 }
 
                 return {
@@ -65,6 +65,20 @@ export const authOptions: NextAuthOptions = {
     session: {
         strategy: "jwt",
         maxAge: 6 * 60 * 60, // 6 hours
+    },
+    cookies: {
+        sessionToken: {
+            name: process.env.NODE_ENV === "production"
+                ? "__Secure-next-auth.session-token"
+                : "next-auth.session-token",
+            options: {
+                httpOnly: true,
+                sameSite: "lax",
+                path: "/",
+                secure: process.env.NODE_ENV === "production",
+                // No maxAge = session cookie — expires when browser closes
+            },
+        },
     },
     pages: {
         signIn: "/login",

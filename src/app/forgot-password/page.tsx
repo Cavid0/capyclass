@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
                 body: JSON.stringify({ email }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+            if (!res.ok) throw new Error(data.error || "An error occurred");
             setStep("otp");
             setResendCooldown(60);
         } catch (err: any) {
@@ -90,7 +90,7 @@ export default function ForgotPasswordPage() {
     const handleVerifyOtp = (e: React.FormEvent) => {
         e.preventDefault();
         const code = otp.join("");
-        if (code.length < 6) { setOtpError("Bütün 6 rəqəmi daxil edin"); return; }
+        if (code.length < 6) { setOtpError("Enter all 6 digits"); return; }
         setOtpError("");
         setStep("newpass");
     };
@@ -116,8 +116,8 @@ export default function ForgotPasswordPage() {
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setPwdError("");
-        if (!newPassword || newPassword.length < 6) { setPwdError("Şifrə minimum 6 simvol olmalıdır"); return; }
-        if (newPassword !== confirmPassword) { setPwdError("Şifrələr uyğun gəlmir"); return; }
+        if (!newPassword || newPassword.length < 6) { setPwdError("Password must be at least 6 characters"); return; }
+        if (newPassword !== confirmPassword) { setPwdError("Passwords do not match"); return; }
         setPwdLoading(true);
         try {
             const res = await fetch("/api/auth/reset-password", {
@@ -126,7 +126,7 @@ export default function ForgotPasswordPage() {
                 body: JSON.stringify({ email, code: otp.join(""), newPassword }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+            if (!res.ok) throw new Error(data.error || "An error occurred");
             router.push("/login?verified=true");
         } catch (err: any) {
             setPwdError(err.message);
@@ -157,8 +157,8 @@ export default function ForgotPasswordPage() {
                     {step === "email" && (
                         <>
                             <div className="mb-6">
-                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Şifrəni bərpa et</h1>
-                                <p className="text-[var(--text-secondary)] text-sm">Email ünvanınıza doğrulama kodu göndərəcəyik</p>
+                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Reset Password</h1>
+                                <p className="text-[var(--text-secondary)] text-sm">We’ll send a verification code to your email</p>
                             </div>
 
                             {emailError && (
@@ -178,7 +178,7 @@ export default function ForgotPasswordPage() {
                                             value={email}
                                             onChange={(e) => setEmail(e.target.value)}
                                             className="input-field !pl-[42px]"
-                                            placeholder="mail@unvan.az"
+                                            placeholder="mail@example.com"
                                         />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <Mail className="w-4 h-4 text-[#71717a]" />
@@ -188,14 +188,14 @@ export default function ForgotPasswordPage() {
                                 <button type="submit" disabled={emailLoading} className="glow-btn w-full py-2.5 mt-2 flex items-center justify-center gap-2 text-sm">
                                     {emailLoading
                                         ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                        : <>OTP Göndər <ArrowRight className="w-3.5 h-3.5" /></>
+                                        : <>Send OTP <ArrowRight className="w-3.5 h-3.5" /></>
                                     }
                                 </button>
                             </form>
 
                             <div className="mt-6 pt-6 border-t border-[var(--border-color)] text-center text-sm">
                                 <Link href="/login" className="text-[var(--text-secondary)] hover:text-white transition-colors">
-                                    ← Girişə qayıt
+                                    ← Back to Login
                                 </Link>
                             </div>
                         </>
@@ -210,9 +210,9 @@ export default function ForgotPasswordPage() {
                                 </div>
                             </div>
                             <div className="mb-6 text-center">
-                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Kodu daxil edin</h1>
+                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Enter Code</h1>
                                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
-                                    <span className="text-white font-medium">{email}</span> ünvanına<br />6 rəqəmli kod göndərildi
+                                    <span className="text-white font-medium">{email}</span><br />A 6-digit code has been sent
                                 </p>
                             </div>
 
@@ -250,22 +250,22 @@ export default function ForgotPasswordPage() {
                                     disabled={!isOtpFull}
                                     className="glow-btn w-full py-2.5 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
-                                    <>Kodu Təsdiqlə <ArrowRight className="w-3.5 h-3.5" /></>
+                                    <>Verify Code <ArrowRight className="w-3.5 h-3.5" /></>
                                 </button>
                             </form>
 
                             <div className="mt-5 text-center text-sm">
-                                <span className="text-[var(--text-secondary)]">Kod gəlmədi? </span>
+                                <span className="text-[var(--text-secondary)]">Didn’t receive the code? </span>
                                 {resendCooldown > 0
-                                    ? <span className="text-[var(--text-secondary)]">{resendCooldown}s gözləyin</span>
+                                    ? <span className="text-[var(--text-secondary)]">{resendCooldown}s wait</span>
                                     : <button onClick={handleResend} disabled={emailLoading} className="text-white hover:underline underline-offset-4 disabled:opacity-50">
-                                        Yenidən göndər
+                                        Resend
                                     </button>
                                 }
                             </div>
                             <div className="mt-3 text-center">
                                 <button onClick={() => { setStep("email"); setOtp(["", "", "", "", "", ""]); setOtpError(""); }} className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
-                                    ← Geri qayıt
+                                    ← Go back
                                 </button>
                             </div>
                         </>
@@ -280,8 +280,8 @@ export default function ForgotPasswordPage() {
                                 </div>
                             </div>
                             <div className="mb-6 text-center">
-                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Yeni şifrə</h1>
-                                <p className="text-[var(--text-secondary)] text-sm">Yeni şifrənizi daxil edin</p>
+                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">New Password</h1>
+                                <p className="text-[var(--text-secondary)] text-sm">Enter your new password</p>
                             </div>
 
                             {pwdError && (
@@ -293,7 +293,7 @@ export default function ForgotPasswordPage() {
 
                             <form onSubmit={handleResetPassword} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Yeni Şifrə *</label>
+                                    <label className="text-xs font-medium text-[var(--text-secondary)]">New Password *</label>
                                     <div className="relative">
                                         <input
                                             type="password"
@@ -310,7 +310,7 @@ export default function ForgotPasswordPage() {
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Təkrar Şifrə *</label>
+                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Confirm Password *</label>
                                     <div className="relative">
                                         <input
                                             type="password"
@@ -329,7 +329,7 @@ export default function ForgotPasswordPage() {
                                 <button type="submit" disabled={pwdLoading} className="glow-btn w-full py-2.5 mt-2 flex items-center justify-center gap-2 text-sm">
                                     {pwdLoading
                                         ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                        : <><CheckCircle2 className="w-3.5 h-3.5" /> Şifrəni Dəyişdir</>
+                                        : <><CheckCircle2 className="w-3.5 h-3.5" /> Change Password</>
                                     }
                                 </button>
                             </form>

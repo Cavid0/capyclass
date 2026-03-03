@@ -13,7 +13,7 @@ export async function GET(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -27,7 +27,7 @@ export async function GET(
         });
 
         if (!classroom) {
-            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
         const isTeacher = classroom.teacherId === userId;
@@ -70,7 +70,7 @@ export async function GET(
             });
 
             if (!enrollment) {
-                return NextResponse.json({ error: "Bu sinifə qoşulmamısınız" }, { status: 403 });
+                return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
             }
 
             // Return all student's workspaces in this classroom
@@ -95,7 +95,7 @@ export async function GET(
         }
     } catch (error) {
         console.error("Get classroom error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }
 
@@ -106,7 +106,7 @@ export async function DELETE(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -117,11 +117,11 @@ export async function DELETE(
         });
 
         if (!classroom) {
-            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
         if (classroom.teacherId !== userId) {
-            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
         // Delete dependencies first
@@ -135,6 +135,6 @@ export async function DELETE(
         return NextResponse.json({ success: true });
     } catch (error) {
         console.error("Delete classroom error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

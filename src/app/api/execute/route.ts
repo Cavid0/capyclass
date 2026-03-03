@@ -30,22 +30,22 @@ export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const { code, language } = await req.json();
 
         if (!code || !language) {
-            return NextResponse.json({ error: "Kod və dil tələb olunur" }, { status: 400 });
+            return NextResponse.json({ error: "Code and language are required" }, { status: 400 });
         }
 
         if (language === "html") {
-            return NextResponse.json({ error: "HTML/CSS icra edilə bilməz" }, { status: 400 });
+            return NextResponse.json({ error: "HTML/CSS cannot be executed" }, { status: 400 });
         }
 
         const compiler = COMPILER_MAP[language];
         if (!compiler) {
-            return NextResponse.json({ error: `"${language}" dili dəstəklənmir` }, { status: 400 });
+            return NextResponse.json({ error: `Language "${language}" is not supported` }, { status: 400 });
         }
 
         let finalCode = code;
@@ -68,7 +68,7 @@ export async function POST(req: NextRequest) {
             const errorText = await response.text();
             console.error("Wandbox API error:", response.status, errorText);
             return NextResponse.json({
-                error: "Kod icra edilərkən xəta baş verdi",
+                error: "An error occurred while executing the code",
                 output: errorText
             }, { status: 500 });
         }
@@ -96,7 +96,7 @@ export async function POST(req: NextRequest) {
         } else if (compilerOutput) {
             output = compilerOutput;
         } else {
-            output = "(Çıxış yoxdur)";
+            output = "(No output)";
         }
 
         // If there was a signal (like SIGSEGV)
@@ -111,6 +111,6 @@ export async function POST(req: NextRequest) {
         });
     } catch (error) {
         console.error("Execute code error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

@@ -33,7 +33,7 @@ export function Navbar() {
                             <button
                                 onClick={() => signOut({ callbackUrl: '/' })}
                                 className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors border border-transparent hover:border-[var(--border-color)]"
-                                title="Çıxış"
+                                title="Log Out"
                             >
                                 <LogOut className="w-3.5 h-3.5" />
                             </button>
@@ -42,12 +42,12 @@ export function Navbar() {
                         <>
                             <Link href="/login">
                                 <button className="px-3 py-1.5 text-xs text-[var(--text-secondary)] hover:text-[var(--text-primary)] transition-colors">
-                                    Giriş
+                                    Log In
                                 </button>
                             </Link>
                             <Link href="/register">
                                 <button className="glow-btn px-4 py-1.5 text-xs font-medium">
-                                    Qeydiyyat
+                                    Sign Up
                                 </button>
                             </Link>
                         </>

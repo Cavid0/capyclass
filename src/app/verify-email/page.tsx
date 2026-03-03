@@ -17,7 +17,7 @@ function VerifyEmailContent() {
     useEffect(() => {
         if (!token) {
             setStatus("error");
-            setMessage("Token tapılmadı.");
+            setMessage("Token not found.");
             return;
         }
 
@@ -29,13 +29,13 @@ function VerifyEmailContent() {
                     setMessage(data.error);
                 } else {
                     setStatus("success");
-                    setMessage(data.message || "Email uğurla təsdiqləndi!");
+                    setMessage(data.message || "Email verified successfully!");
                     setTimeout(() => router.push("/login"), 3000);
                 }
             })
             .catch(() => {
                 setStatus("error");
-                setMessage("Xəta baş verdi. Yenidən cəhd edin.");
+                setMessage("An error occurred. Please try again.");
             });
     }, [token, router]);
 
@@ -59,9 +59,9 @@ function VerifyEmailContent() {
                             <div className="flex justify-center mb-4">
                                 <Loader2 className="w-12 h-12 text-white animate-spin" />
                             </div>
-                            <h1 className="text-lg font-semibold text-white mb-2">Yoxlanılır...</h1>
+                            <h1 className="text-lg font-semibold text-white mb-2">Verifying...</h1>
                             <p className="text-[var(--text-secondary)] text-sm">
-                                Email ünvanınız təsdiqlənir, zəhmət olmasa gözləyin.
+                                Your email is being verified, please wait.
                             </p>
                         </>
                     )}
@@ -71,18 +71,18 @@ function VerifyEmailContent() {
                             <div className="flex justify-center mb-4">
                                 <CheckCircle2 className="w-12 h-12 text-green-400" />
                             </div>
-                            <h1 className="text-lg font-semibold text-white mb-2">Təsdiqləndi!</h1>
+                            <h1 className="text-lg font-semibold text-white mb-2">Verified!</h1>
                             <p className="text-[var(--text-secondary)] text-sm mb-6">
                                 {message}
                             </p>
                             <p className="text-[var(--text-secondary)] text-xs mb-4">
-                                3 saniyə ərzində giriş səhifəsinə yönləndiriləcəksiniz...
+                                You will be redirected to the login page in 3 seconds...
                             </p>
                             <Link
                                 href="/login"
                                 className="inline-block w-full py-2.5 bg-white text-black text-sm font-semibold rounded-lg hover:bg-white/90 transition-colors text-center"
                             >
-                                Daxil ol
+                                Log In
                             </Link>
                         </>
                     )}
@@ -92,7 +92,7 @@ function VerifyEmailContent() {
                             <div className="flex justify-center mb-4">
                                 <XCircle className="w-12 h-12 text-red-400" />
                             </div>
-                            <h1 className="text-lg font-semibold text-white mb-2">Xəta baş verdi</h1>
+                            <h1 className="text-lg font-semibold text-white mb-2">An Error Occurred</h1>
                             <p className="text-[var(--text-secondary)] text-sm mb-6">
                                 {message}
                             </p>
@@ -100,7 +100,7 @@ function VerifyEmailContent() {
                                 href="/register"
                                 className="inline-block w-full py-2.5 bg-white text-black text-sm font-semibold rounded-lg hover:bg-white/90 transition-colors text-center"
                             >
-                                Yenidən qeydiyyat
+                                Register Again
                             </Link>
                         </>
                     )}

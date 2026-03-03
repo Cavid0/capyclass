@@ -11,7 +11,7 @@ export async function GET(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -23,12 +23,12 @@ export async function GET(
         });
 
         if (!classroom) {
-            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
         const role = (session.user as any).role;
         if (role === "TEACHER" && classroom.teacherId !== userId) {
-            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
         if (role === "STUDENT") {
@@ -36,7 +36,7 @@ export async function GET(
                 where: { studentId_classroomId: { studentId: userId, classroomId } },
             });
             if (!enrollment) {
-                return NextResponse.json({ error: "Bu sinifə qoşulmamısınız" }, { status: 403 });
+                return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
             }
         }
 
@@ -48,7 +48,7 @@ export async function GET(
         return NextResponse.json(tasks);
     } catch (error) {
         console.error("List tasks error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }
 
@@ -60,12 +60,12 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const role = (session.user as any).role;
         if (role !== "TEACHER") {
-            return NextResponse.json({ error: "Yalnız müəllimlər tapşırıq yarada bilər" }, { status: 403 });
+            return NextResponse.json({ error: "Only teachers can create tasks" }, { status: 403 });
         }
 
         const userId = (session.user as any).id;
@@ -77,13 +77,13 @@ export async function POST(
         });
 
         if (!classroom || classroom.teacherId !== userId) {
-            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
         const { title, description } = await req.json();
 
         if (!title?.trim()) {
-            return NextResponse.json({ error: "Tapşırıq başlığı tələb olunur" }, { status: 400 });
+            return NextResponse.json({ error: "Task title is required" }, { status: 400 });
         }
 
         const task = await prisma.task.create({
@@ -97,6 +97,6 @@ export async function POST(
         return NextResponse.json(task, { status: 201 });
     } catch (error) {
         console.error("Create task error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

@@ -53,13 +53,13 @@ function LoginForm() {
             });
 
             if (res?.error) {
-                setError("Email və ya şifrə yanlışdır.");
+                setError("Invalid email or password.");
             } else {
                 router.push("/dashboard");
                 router.refresh();
             }
         } catch {
-            setError("Xəta baş verdi. Zəhmət olmasa yenidən cəhd edin.");
+            setError("An error occurred. Please try again.");
         } finally {
             setLoading(false);
         }
@@ -82,16 +82,16 @@ function LoginForm() {
 
                 <div className="glass-card p-6 sm:p-8">
                     <div className="mb-6">
-                        <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Giriş</h1>
+                        <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Log In</h1>
                         <p className="text-[var(--text-secondary)] text-sm">
-                            Sistemə daxil olmaq üçün məlumatları doldurun
+                            Enter your credentials to access the system
                         </p>
                     </div>
 
                     {showVerified && (
                         <div className="mb-5 p-3 rounded-md bg-green-500/10 border border-green-500/20 flex items-center gap-2 text-green-400 text-sm transition-opacity duration-500">
                             <CheckCircle2 className="w-4 h-4 flex-shrink-0" />
-                            <span>Email təsdiqləndi! Artıq daxil ola bilərsiniz.</span>
+                            <span>Email verified! You can now log in.</span>
                         </div>
                     )}
 
@@ -112,7 +112,7 @@ function LoginForm() {
                                     value={email}
                                     onChange={(e) => setEmail(e.target.value)}
                                     className="input-field !pl-[42px]"
-                                    placeholder="mail@unvan.az"
+                                    placeholder="mail@example.com"
                                 />
                                 <div className="absolute left-3.5 top-1/2 -translate-y-1/2 h-5 w-5 flex items-center justify-center pointer-events-none">
                                     <Mail className="w-4 h-4 text-[#71717a]" />
@@ -121,7 +121,7 @@ function LoginForm() {
                         </div>
 
                         <div className="space-y-1.5">
-                            <label className="text-xs font-medium text-[var(--text-secondary)]">Şifrə *</label>
+                            <label className="text-xs font-medium text-[var(--text-secondary)]">Password *</label>
                             <div className="relative">
                                 <input
                                     type="password"
@@ -145,21 +145,21 @@ function LoginForm() {
                             {loading ? (
                                 <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                             ) : (
-                                <>Giriş <ArrowRight className="w-3.5 h-3.5" /></>
+                                <>Log In <ArrowRight className="w-3.5 h-3.5" /></>
                             )}
                         </button>
 
                         <div className="text-center mt-3">
                             <Link href="/forgot-password" className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors underline underline-offset-4">
-                                Şifrəmi unutdum
+                                Forgot Password
                             </Link>
                         </div>
                     </form>
 
                     <div className="mt-6 pt-6 border-t border-[var(--border-color)] text-center text-sm">
-                        <span className="text-[var(--text-secondary)]">Hesabınız yoxdur? </span>
+                        <span className="text-[var(--text-secondary)]">Don’t have an account? </span>
                         <Link href="/register" className="text-white hover:underline underline-offset-4">
-                            Qeydiyyat
+                            Sign Up
                         </Link>
                     </div>
                 </div>

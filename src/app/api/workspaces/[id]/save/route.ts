@@ -11,7 +11,7 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -23,11 +23,11 @@ export async function POST(
         });
 
         if (!workspace) {
-            return NextResponse.json({ error: "Fayl tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "File not found" }, { status: 404 });
         }
 
         if (workspace.studentId !== userId) {
-            return NextResponse.json({ error: "İcazə yoxdur" }, { status: 403 });
+            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
         const { code, language } = await req.json();
@@ -42,7 +42,7 @@ export async function POST(
     } catch (error) {
         console.error("Save workspace error:", error);
         return NextResponse.json(
-            { error: "Kod saxlanarkən xəta baş verdi" },
+            { error: "Error saving code" },
             { status: 500 }
         );
     }

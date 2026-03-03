@@ -21,15 +21,15 @@ export default function NotFound() {
                 </div>
 
                 <h1 className="text-7xl font-black text-transparent bg-clip-text bg-gradient-to-br from-amber-400 to-orange-500 mb-4">404</h1>
-                <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-3">Səhifə tapılmadı</h2>
+                <h2 className="text-xl font-semibold text-[var(--text-primary)] mb-3">Page Not Found</h2>
                 <p className="text-sm text-[var(--text-secondary)] mb-8 leading-relaxed">
-                    Capybara hər yeri axtardı amma bu səhifəni tapa bilmədi 🔍
+                    Capybara searched everywhere but couldn’t find this page 🔍
                 </p>
                 <Link
                     href="/"
                     className="glow-btn inline-block px-6 py-2.5 text-sm font-medium w-full"
                 >
-                    Ana Səhifəyə Qayıt
+                    Back to Home
                 </Link>
             </div>
         </div>

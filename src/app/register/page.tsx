@@ -62,7 +62,7 @@ export default function RegisterPage() {
                 body: JSON.stringify({ name, email, password, role: "STUDENT" }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+            if (!res.ok) throw new Error(data.error || "An error occurred");
             setStep("verify");
             setResendCooldown(60);
         } catch (err: any) {
@@ -100,7 +100,7 @@ export default function RegisterPage() {
     const handleVerify = async (e: React.FormEvent) => {
         e.preventDefault();
         const code = otp.join("");
-        if (code.length < 6) { setVerifyError("Bütün 6 rəqəmi daxil edin"); return; }
+        if (code.length < 6) { setVerifyError("Enter all 6 digits"); return; }
         setVerifyError("");
         setVerifyLoading(true);
         try {
@@ -113,7 +113,7 @@ export default function RegisterPage() {
             if (!res.ok) {
                 setOtp(["", "", "", "", "", ""]);
                 inputRefs.current[0]?.focus();
-                throw new Error(data.error || "Xəta baş verdi");
+                throw new Error(data.error || "An error occurred");
             }
             router.push("/login?verified=true");
         } catch (err: any) {
@@ -133,7 +133,7 @@ export default function RegisterPage() {
                 body: JSON.stringify({ email }),
             });
             const data = await res.json();
-            if (!res.ok) throw new Error(data.error || "Xəta baş verdi");
+            if (!res.ok) throw new Error(data.error || "An error occurred");
             setOtp(["", "", "", "", "", ""]);
             inputRefs.current[0]?.focus();
             setResendCooldown(60);
@@ -162,12 +162,12 @@ export default function RegisterPage() {
 
                 <div className="glass-card p-6 sm:p-8">
 
-                    {/* ── Addım 1: Qeydiyyat formu ── */}
+                    {/* ── Step 1: Registration form ── */}
                     {step === "register" && (
                         <>
                             <div className="mb-6">
-                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Hesab yarat</h1>
-                                <p className="text-[var(--text-secondary)] text-sm">Məlumatları doldurun</p>
+                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Create Account</h1>
+                                <p className="text-[var(--text-secondary)] text-sm">Fill in your details</p>
                             </div>
 
                             {error && (
@@ -179,39 +179,39 @@ export default function RegisterPage() {
 
                             <form onSubmit={handleSubmit} className="space-y-4">
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Ad Soyad *</label>
+                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Full Name *</label>
                                     <div className="relative">
-                                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input-field !pl-[42px]" placeholder="Ad Soyad" />
+                                        <input type="text" required value={name} onChange={(e) => setName(e.target.value)} className="input-field !pl-[42px]" placeholder="Full Name" />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"><User className="w-4 h-4 text-[#71717a]" /></div>
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-[var(--text-secondary)]">Email *</label>
                                     <div className="relative">
-                                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-field !pl-[42px]" placeholder="mail@unvan.az" />
+                                        <input type="email" required value={email} onChange={(e) => setEmail(e.target.value)} className="input-field !pl-[42px]" placeholder="mail@example.com" />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"><Mail className="w-4 h-4 text-[#71717a]" /></div>
                                     </div>
                                 </div>
                                 <div className="space-y-1.5">
-                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Şifrə *</label>
+                                    <label className="text-xs font-medium text-[var(--text-secondary)]">Password *</label>
                                     <div className="relative">
                                         <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field !pl-[42px] tracking-widest" placeholder="••••••••" />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"><Lock className="w-4 h-4 text-[#71717a]" /></div>
                                     </div>
                                 </div>
                                 <button type="submit" disabled={loading} className="glow-btn w-full py-2.5 mt-4 flex items-center justify-center gap-2 text-sm">
-                                    {loading ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <>Hesab Yarat <ArrowRight className="w-3.5 h-3.5" /></>}
+                                    {loading ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <>Create Account <ArrowRight className="w-3.5 h-3.5" /></>}
                                 </button>
                             </form>
 
                             <div className="mt-6 pt-6 border-t border-[var(--border-color)] text-center text-sm">
-                                <span className="text-[var(--text-secondary)]">Təkrar istifadəçi? </span>
-                                <Link href="/login" className="text-white hover:underline underline-offset-4">Giriş edin</Link>
+                                <span className="text-[var(--text-secondary)]">Already have an account? </span>
+                                <Link href="/login" className="text-white hover:underline underline-offset-4">Log In</Link>
                             </div>
                         </>
                     )}
 
-                    {/* ── Addım 2: OTP kodu daxil et ── */}
+                    {/* ── Step 2: Enter OTP code ── */}}
                     {step === "verify" && (
                         <>
                             <div className="flex justify-center mb-5">
@@ -220,9 +220,9 @@ export default function RegisterPage() {
                                 </div>
                             </div>
                             <div className="mb-6 text-center">
-                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Kodu daxil edin</h1>
+                                <h1 className="text-xl font-semibold text-white tracking-tight mb-1">Enter Code</h1>
                                 <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
-                                    <span className="text-white font-medium">{email}</span> ünvanına<br />6 rəqəmli doğrulama kodu göndərildi
+                                    <span className="text-white font-medium">{email}</span><br />A 6-digit verification code has been sent
                                 </p>
                             </div>
 
@@ -263,22 +263,22 @@ export default function RegisterPage() {
                                 >
                                     {verifyLoading
                                         ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
-                                        : <>Təsdiqlə <ShieldCheck className="w-3.5 h-3.5" /></>}
+                                        : <>Verify <ShieldCheck className="w-3.5 h-3.5" /></>}
                                 </button>
                             </form>
 
                             <div className="mt-5 text-center text-sm">
-                                <span className="text-[var(--text-secondary)]">Kod gəlmədi? </span>
+                                <span className="text-[var(--text-secondary)]">Didn’t receive the code? </span>
                                 {resendCooldown > 0
-                                    ? <span className="text-[var(--text-secondary)]">{resendCooldown}s gözləyin</span>
+                                    ? <span className="text-[var(--text-secondary)]">{resendCooldown}s wait</span>
                                     : <button onClick={handleResend} disabled={resendLoading} className="text-white hover:underline underline-offset-4 disabled:opacity-50">
-                                        {resendLoading ? "Göndərilir..." : "Yenidən göndər"}
+                                        {resendLoading ? "Sending..." : "Resend"}
                                     </button>
                                 }
                             </div>
                             <div className="mt-3 text-center">
                                 <button onClick={() => { setStep("register"); setOtp(["", "", "", "", "", ""]); setVerifyError(""); }} className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors">
-                                    ← Geri qayıt
+                                    ← Go back
                                 </button>
                             </div>
                         </>

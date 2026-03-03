@@ -2,14 +2,22 @@ import { NextRequest, NextResponse } from "next/server";
 import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
 
 export async function POST(req: NextRequest) {
     try {
+        const ip = req.headers.get("x-forwarded-for") || "unknown";
+        if (!rateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
+            return NextResponse.json(
+                { error: "Rate limit exceeded. Please try again in 15 minutes." },
+                { status: 429 }
+            );
+        }
         const { name, email, password, role } = await req.json();
 
         if (!name || !email || !password) {
             return NextResponse.json(
-                { error: "Ad, email və şifrə tələb olunur" },
+                { error: "Name, email, and password are required" },
                 { status: 400 }
             );
         }
@@ -20,7 +28,7 @@ export async function POST(req: NextRequest) {
 
         if (existingUser) {
             return NextResponse.json(
-                { error: "Bu email artıq qeydiyyatdan keçib" },
+                { error: "This email is already registered" },
                 { status: 400 }
             );
         }
@@ -43,24 +51,24 @@ export async function POST(req: NextRequest) {
             await sendVerificationEmail(email, verificationCode);
         } catch (emailError: any) {
             console.error("Register email error:", emailError?.message);
-            // Email göndərilmədisə hesabı silək ki, yenidən qeydiyyatdan keçə bilsin
+            // If email failed, delete the account so they can register again
             await prisma.user.delete({ where: { id: user.id } });
             return NextResponse.json(
-                { error: "Təsdiq emaili göndərilə bilmədi. Zəhmət olmasa bir az sonra yenidən cəhd edin." },
+                { error: "Failed to send verification email. Please try again later." },
                 { status: 500 }
             );
         }
 
         return NextResponse.json(
             {
-                message: "Qeydiyyat uğurlu oldu. Email-inizə göndərilən 6 rəqəmli kodu daxil edin.",
+                message: "Registration successful. Enter the 6-digit code sent to your email.",
             },
             { status: 201 }
         );
     } catch (error: any) {
         console.error("Register error:", error);
         return NextResponse.json(
-            { error: error?.message || "Qeydiyyat zamanı xəta baş verdi" },
+            { error: error?.message || "An error occurred during registration" },
             { status: 500 }
         );
     }

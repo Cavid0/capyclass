@@ -9,7 +9,7 @@ export async function GET() {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -75,7 +75,7 @@ export async function GET() {
     } catch (error) {
         console.error("List classrooms error:", error);
         return NextResponse.json(
-            { error: "Xəta baş verdi" },
+            { error: "An error occurred" },
             { status: 500 }
         );
     }
@@ -86,13 +86,13 @@ export async function POST(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const { name, description } = await req.json();
         if (!name) {
             return NextResponse.json(
-                { error: "Sinif adı tələb olunur" },
+                { error: "Classroom name is required" },
                 { status: 400 }
             );
         }
@@ -110,7 +110,7 @@ export async function POST(req: NextRequest) {
     } catch (error) {
         console.error("Create classroom error:", error);
         return NextResponse.json(
-            { error: "Sinif yaradılarkən xəta baş verdi" },
+            { error: "Error creating classroom" },
             { status: 500 }
         );
     }

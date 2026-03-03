@@ -11,7 +11,7 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -19,7 +19,7 @@ export async function POST(
         const classroomId = params.id;
 
         if (role !== "STUDENT") {
-            return NextResponse.json({ error: "Yalnız tələbələr fərdi kod sahəsi yarada bilər" }, { status: 403 });
+            return NextResponse.json({ error: "Only students can create a workspace" }, { status: 403 });
         }
 
         const enrollment = await prisma.enrollment.findUnique({
@@ -32,7 +32,7 @@ export async function POST(
         });
 
         if (!enrollment) {
-            return NextResponse.json({ error: "Bu sinifə qoşulmamısınız" }, { status: 403 });
+            return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
         }
 
         const { title } = await req.json();
@@ -41,8 +41,8 @@ export async function POST(
             data: {
                 studentId: userId,
                 classroomId,
-                title: title || "Mənim Kodum",
-                code: "// Yeni kod\n",
+                title: title || "My Code",
+                code: "// New code\n",
                 language: "javascript",
             },
         });
@@ -50,6 +50,6 @@ export async function POST(
         return NextResponse.json(workspace, { status: 201 });
     } catch (error) {
         console.error("Create workspace error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

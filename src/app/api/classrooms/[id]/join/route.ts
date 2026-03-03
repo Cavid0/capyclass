@@ -11,7 +11,7 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -19,7 +19,7 @@ export async function POST(
 
         if (role !== "STUDENT") {
             return NextResponse.json(
-                { error: "Yalnız tələbələr sinifə qoşula bilər" },
+                { error: "Only students can join a classroom" },
                 { status: 403 }
             );
         }
@@ -29,7 +29,7 @@ export async function POST(
         });
 
         if (!classroom) {
-            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
         // Check if already enrolled
@@ -44,7 +44,7 @@ export async function POST(
 
         if (existingEnrollment) {
             return NextResponse.json({
-                message: "Artıq bu sinifə qoşulmusunuz",
+                message: "You are already enrolled in this classroom",
                 classroomId: classroom.id,
             });
         }
@@ -62,7 +62,7 @@ export async function POST(
                 data: {
                     studentId: userId,
                     classroomId: classroom.id,
-                    title: "Əsas fayl",
+                    title: "Main file",
                     code: getStarterCode(classroom.name),
                     language: "javascript",
                 },
@@ -73,7 +73,7 @@ export async function POST(
 
         return NextResponse.json(
             {
-                message: "Sinifə uğurla qoşuldunuz!",
+                message: "Successfully joined the classroom!",
                 classroomId: classroom.id,
                 workspaceId: result.workspace.id,
             },
@@ -82,21 +82,21 @@ export async function POST(
     } catch (error) {
         console.error("Join classroom error:", error);
         return NextResponse.json(
-            { error: "Sinifə qoşularkən xəta baş verdi" },
+            { error: "Error joining classroom" },
             { status: 500 }
         );
     }
 }
 
 function getStarterCode(classroomName: string): string {
-    return `// ${classroomName} - Tapşırıq
-// Xoş gəldiniz! Kodunuzu buraya yazın.
-// AI sizin kodunuzu analiz edəcək və kömək edəcək 🚀
+    return `// ${classroomName} - Assignment
+// Welcome! Write your code here.
+// AI will analyze your code and help you \uD83D\uDE80
 
-function salam() {
-  console.log("Salam, dünya!");
+function hello() {
+  console.log("Hello, world!");
 }
 
-salam();
+hello();
 `;
 }

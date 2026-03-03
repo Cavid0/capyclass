@@ -10,7 +10,7 @@ export async function POST(
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const classroomId = params.id;
@@ -18,7 +18,7 @@ export async function POST(
         const { newTeacherId } = await req.json();
 
         if (!newTeacherId) {
-            return NextResponse.json({ error: "Yeni admin ID tələb olunur" }, { status: 400 });
+            return NextResponse.json({ error: "New admin ID is required" }, { status: 400 });
         }
 
         const classroom = await prisma.classroom.findUnique({
@@ -27,12 +27,12 @@ export async function POST(
         });
 
         if (!classroom) {
-            return NextResponse.json({ error: "Sinif tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
         if (classroom.teacherId !== currentUserId) {
             return NextResponse.json(
-                { error: "Yalnız sinfin mövcud admini hüquqları köçürə bilər" },
+                { error: "Only the current admin can transfer rights" },
                 { status: 403 }
             );
         }
@@ -41,7 +41,7 @@ export async function POST(
         const isStudentEnrolled = classroom.enrollments.some(e => e.studentId === newTeacherId);
         if (!isStudentEnrolled) {
             return NextResponse.json(
-                { error: "Yeni admin sinfə daxil olan tələbə olmalıdır" },
+                { error: "New admin must be an enrolled student" },
                 { status: 400 }
             );
         }
@@ -69,11 +69,11 @@ export async function POST(
             }),
         ]);
 
-        return NextResponse.json({ message: "Admin hüquqları uğurla köçürüldü" });
+        return NextResponse.json({ message: "Admin rights transferred successfully" });
     } catch (error) {
         console.error("Transfer teacher error:", error);
         return NextResponse.json(
-            { error: "Hüquqlar köçürülərkən xəta baş verdi" },
+            { error: "Error transferring rights" },
             { status: 500 }
         );
     }

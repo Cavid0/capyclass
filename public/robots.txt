@@ -1,3 +1,9 @@
 User-agent: *
-Disallow: /_next/
+Allow: /
 Disallow: /api/
+Disallow: /dashboard
+Disallow: /profile
+Disallow: /classroom/
+Disallow: /_next/
+
+Sitemap: https://capyclass.com/sitemap.xml

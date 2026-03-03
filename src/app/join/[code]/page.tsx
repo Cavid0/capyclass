@@ -35,10 +35,10 @@ export default function JoinPage({ params }: { params: { code: string } }) {
             if (res.ok) {
                 router.push(`/classroom/${data.classroomId}`);
             } else {
-                setError(data.error || "Xəta baş verdi");
+                setError(data.error || "An error occurred");
             }
         } catch {
-            setError("Bağlantı xətası");
+            setError("Connection error");
         } finally {
             setLoading(false);
         }
@@ -64,9 +64,9 @@ export default function JoinPage({ params }: { params: { code: string } }) {
                         <Code2 className="w-8 h-8 text-white" />
                     </div>
 
-                    <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Sinfə Qoşulmaq</h1>
+                    <h1 className="text-2xl font-bold text-white mb-2 tracking-tight">Join Classroom</h1>
                     <p className="text-[var(--text-secondary)] text-sm mb-8">
-                        Dəvət kodu: <span className="font-mono bg-[var(--bg-secondary)] text-white px-2 py-1 rounded ml-1 border border-[var(--border-color)]">{inviteCode}</span>
+                        Invite code: <span className="font-mono bg-[var(--bg-secondary)] text-white px-2 py-1 rounded ml-1 border border-[var(--border-color)]">{inviteCode}</span>
                     </p>
 
                     {error && (
@@ -79,25 +79,25 @@ export default function JoinPage({ params }: { params: { code: string } }) {
                     {status === "unauthenticated" ? (
                         <div className="space-y-4">
                             <p className="text-sm text-[var(--text-secondary)] mb-6">
-                                Sinfə qoşulmaq və tapşırıqları işləmək üçün hesabınıza daxil olun və ya yeni hesab yaradın.
+                                Log in to your account or create a new one to join the classroom and work on tasks.
                             </p>
 
                             <Link href={`/login?callbackUrl=/join/${inviteCode}`} className="block">
                                 <button className="glow-btn w-full py-2.5 flex items-center justify-center gap-2 text-sm">
-                                    <LogIn className="w-4 h-4" /> Giriş Et <ArrowRight className="w-3.5 h-3.5" />
+                                    <LogIn className="w-4 h-4" /> Log In <ArrowRight className="w-3.5 h-3.5" />
                                 </button>
                             </Link>
 
                             <Link href={`/register?callbackUrl=/join/${inviteCode}`} className="block">
                                 <button className="secondary-btn w-full py-2.5 flex items-center justify-center gap-2 text-sm">
-                                    <UserPlus className="w-4 h-4" /> Yeni Hesab Yarat
+                                    <UserPlus className="w-4 h-4" /> Create New Account
                                 </button>
                             </Link>
                         </div>
                     ) : (
                         <div className="py-6 flex flex-col items-center">
                             <div className="spinner !w-6 !h-6 mb-4" />
-                            <p className="text-sm text-[var(--text-secondary)]">Sinfə qoşulursunuz, lütfən gözləyin...</p>
+                            <p className="text-sm text-[var(--text-secondary)]">Joining the classroom, please wait...</p>
                         </div>
                     )}
                 </div>

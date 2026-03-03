@@ -7,8 +7,27 @@ import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 
 export default function HomePage() {
+  const jsonLd = {
+    "@context": "https://schema.org",
+    "@type": "WebApplication",
+    "name": "CapyClass",
+    "url": "https://capyclass.com",
+    "description": "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
+    "applicationCategory": "EducationalApplication",
+    "operatingSystem": "Web",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+    },
+  };
+
   return (
     <div className="min-h-screen bg-[#0a0908] text-[#f0ece4] selection:bg-amber-500/30 overflow-x-hidden">
+      <script
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+      />
       <Navbar />
 
       {/* Hero Section */}
@@ -32,7 +51,7 @@ export default function HomePage() {
                 className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] shadow-lg backdrop-blur-md mb-8"
               >
                 <span className="text-xs font-semibold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300 uppercase">
-                  Təhsilin Gələcəyi Buradadır
+                  The Future of Education is Here
                 </span>
               </motion.div>
 
@@ -42,11 +61,11 @@ export default function HomePage() {
                 transition={{ duration: 0.8, delay: 0.1, ease: [0.16, 1, 0.3, 1] }}
                 className="text-4xl md:text-6xl lg:text-7xl font-extrabold tracking-tight mb-6 leading-[1.08]"
               >
-                Kodlaşdırmanı <br className="hidden md:block" />
-                öyrənməyin {" "}
+                The {" "}
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-amber-400 via-orange-400 to-yellow-500">
-                  ən asan
-                </span> {" "} yolu
+                  easiest
+                </span> {" "} way <br className="hidden md:block" />
+                to learn coding
               </motion.h1>
 
               <motion.p
@@ -55,8 +74,8 @@ export default function HomePage() {
                 transition={{ duration: 0.8, delay: 0.2, ease: [0.16, 1, 0.3, 1] }}
                 className="text-lg md:text-xl text-[#a8a08e] max-w-xl mx-auto lg:mx-0 mb-10 font-light leading-relaxed"
               >
-                Dərslərinizi asanlıqla idarə edin, kodlaşdırma tapşırıqları verin və {" "}
-                <span className="text-[#f0ece4] font-medium">real vaxt rəylər</span> alın.
+                Manage your classes with ease, assign coding tasks, and get {" "}
+                <span className="text-[#f0ece4] font-medium">real-time feedback</span>.
               </motion.p>
 
               <motion.div
@@ -72,7 +91,7 @@ export default function HomePage() {
                     className="px-8 py-3.5 bg-amber-500 text-[#0a0908] text-sm font-semibold rounded-2xl hover:bg-amber-400 transition-all shadow-[0_0_40px_rgba(232,168,73,0.25)] flex items-center justify-center gap-2 group"
                   >
                     <Terminal className="w-4 h-4" />
-                    Başla
+                    Get Started
                     <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform" />
                   </motion.button>
                 </Link>
@@ -82,7 +101,7 @@ export default function HomePage() {
                     whileTap={{ scale: 0.97 }}
                     className="px-8 py-3.5 bg-transparent border border-[#2a2520] text-[#f0ece4] text-sm font-medium rounded-2xl hover:bg-white/[0.04] hover:border-[#3d362e] transition-all flex items-center justify-center gap-2"
                   >
-                    Qeydiyyat
+                    Sign Up
                   </motion.button>
                 </Link>
               </motion.div>
@@ -99,7 +118,7 @@ export default function HomePage() {
               <div className="relative rounded-3xl overflow-hidden border border-amber-500/15 shadow-[0_20px_60px_rgba(232,168,73,0.12)]">
                 <Image
                   src="/capybara.png"
-                  alt="CapyClass Mascot - Kod yazan Capybara"
+                  alt="CapyClass Mascot - Coding Capybara"
                   width={800}
                   height={450}
                   className="w-full h-auto"
@@ -112,7 +131,7 @@ export default function HomePage() {
                 transition={{ duration: 3, repeat: Infinity, ease: "easeInOut" }}
                 className="absolute -bottom-3 -left-3 px-4 py-2 bg-[#141210] border border-amber-500/20 rounded-2xl shadow-lg backdrop-blur-md"
               >
-                <span className="text-xs font-semibold text-amber-400">🧑‍💻 Kod yaz, öyrən!</span>
+                <span className="text-xs font-semibold text-amber-400">🧑‍💻 Code & Learn!</span>
               </motion.div>
             </motion.div>
           </div>
@@ -128,10 +147,10 @@ export default function HomePage() {
           className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-3xl bg-amber-500/[0.02] border border-amber-500/10 backdrop-blur-xl shadow-2xl"
         >
           {[
-            { label: "Mühərrik", value: "Realtime", desc: "Sürətli kod analizi" },
-            { label: "İzolyasiya", value: "100%", desc: "Mütləq təhlükəsizlik" },
-            { label: "Editor", value: "Monaco", desc: "VS Code infrastrukturu" },
-            { label: "Gecikmə", value: "< 2s", desc: "Real vaxt reaksiyalar" },
+            { label: "Engine", value: "Realtime", desc: "Fast code analysis" },
+            { label: "Isolation", value: "100%", desc: "Absolute security" },
+            { label: "Editor", value: "Monaco", desc: "VS Code infrastructure" },
+            { label: "Latency", value: "< 2s", desc: "Real-time responses" },
           ].map((stat, i) => (
             <div key={i} className="p-6 text-center rounded-2xl hover:bg-amber-500/[0.03] transition-colors border border-transparent hover:border-amber-500/10 relative overflow-hidden group">
               <div className="absolute inset-0 bg-gradient-to-b from-amber-500/0 to-amber-500/0 group-hover:from-amber-500/5 group-hover:to-transparent transition-all duration-500" />
@@ -150,11 +169,11 @@ export default function HomePage() {
         <div className="max-w-6xl mx-auto">
           <div className="text-center md:text-left mb-20 max-w-3xl">
             <h2 className="text-4xl md:text-5xl font-bold text-[#f0ece4] mb-6 tracking-tight">
-              Mükəmməl tədris mühiti <br />
-              <span className="text-[#a8a08e]">tək platformada.</span>
+              The perfect teaching environment <br />
+              <span className="text-[#a8a08e]">in one platform.</span>
             </h2>
             <p className="text-[#a8a08e] text-lg md:text-xl font-light leading-relaxed">
-              Ənənəvi dərslərdən gələcəyə addımlayın. Tələbələriniz üçün sürətli, ağıllı və kəsintisiz bir tədris təcrübəsi yaradın.
+              Step into the future from traditional classes. Create a fast, smart, and seamless teaching experience for your students.
             </p>
           </div>
 
@@ -162,20 +181,20 @@ export default function HomePage() {
             {[
               {
                 icon: Layers,
-                title: "Sadə İdarəetmə",
-                desc: "Cəmi bir kliklə sinif yaradın. Unikal linkləri paylaşaraq tələbələri dərhal proqramlaşdırma mühitinə daxil edin.",
+                title: "Easy Management",
+                desc: "Create a class with just one click. Share unique links to instantly bring students into the coding environment.",
                 delay: 0.1,
               },
               {
                 icon: Brain,
-                title: "Fasiləsiz Dəstək",
-                desc: "Sistem hər saniyə yazılan kodu analiz edir. Səhvləri aşkar edib asan anlaşılan dildə izah edir.",
+                title: "Continuous Support",
+                desc: "The system analyzes every line of code in real time. It detects errors and explains them in easy-to-understand language.",
                 delay: 0.2,
               },
               {
                 icon: Rocket,
-                title: "Sənaye Standartı",
-                desc: "VS Code infrastrukturunda işləyən Monaco editoru ilə inkişaf etmiş avtamamlama və sintaksis rəngləməsindən yararlanın.",
+                title: "Industry Standard",
+                desc: "Leverage advanced autocomplete and syntax highlighting with the Monaco editor running on VS Code infrastructure.",
                 delay: 0.3,
               },
             ].map((feature, i) => (
@@ -219,13 +238,13 @@ export default function HomePage() {
             </div>
 
             <div className="flex gap-8 text-sm text-[#a8a08e] font-medium">
-              <Link href="#" className="hover:text-[#f0ece4] transition-colors">Haqqımızda</Link>
-              <Link href="#" className="hover:text-[#f0ece4] transition-colors">Xidmətlər</Link>
-              <Link href="#" className="hover:text-[#f0ece4] transition-colors">Əlaqə</Link>
+              <Link href="#" className="hover:text-[#f0ece4] transition-colors">About</Link>
+              <Link href="#" className="hover:text-[#f0ece4] transition-colors">Services</Link>
+              <Link href="#" className="hover:text-[#f0ece4] transition-colors">Contact</Link>
             </div>
 
             <p className="text-[#6b6355] text-sm">
-              © 2026 CapyClass. Bütün hüquqlar qorunur.
+              © 2026 CapyClass. All rights reserved.
             </p>
           </div>
         </div>

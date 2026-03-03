@@ -108,11 +108,11 @@ export default function ClassroomPage() {
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-1.5 text-[10px] text-emerald-400">
                             <span className="w-1.5 h-1.5 rounded-full bg-emerald-400 animate-pulse" />
-                            CANLI
+                            LIVE
                         </div>
                         <button
                             onClick={() => fetchClassroom(true)}
-                            title="Yenilə"
+                            title="Refresh"
                             className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white transition-colors"
                         >
                             <RefreshCw className="w-3.5 h-3.5" />
@@ -120,7 +120,7 @@ export default function ClassroomPage() {
                         <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
-                            <span>{classroom.enrollments?.length || 0} tələbə</span>
+                            <span>{classroom.enrollments?.length || 0} students</span>
                         </div>
                         <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded">
@@ -214,14 +214,14 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
             });
             const data = await res.json();
             if (res.ok) {
-                setOutput(data.output || "(Çıxış yoxdur)");
+                setOutput(data.output || "(No output)");
                 setOutputError(data.hasError);
             } else {
-                setOutput(data.error || "Xəta baş verdi");
+                setOutput(data.error || "An error occurred");
                 setOutputError(true);
             }
         } catch (error) {
-            setOutput("Şəbəkə xətası. Yenidən cəhd edin.");
+            setOutput("Network error. Please try again.");
             setOutputError(true);
         } finally {
             setRunning(false);
@@ -244,7 +244,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
             if (newUpdates.length > 0) {
                 const newNotifs = newUpdates.map((w: any) => ({
                     id: Math.random().toString(),
-                    message: `${w.student.name} "${w.title}" faylını yadda saxladı`,
+                    message: `${w.student.name} saved file "${w.title}"`,
                     workspaceId: w.id
                 }));
 
@@ -288,9 +288,9 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     };
 
     const handleDeleteTask = async (taskId: string) => {
-        toast("Bu tapşırığı silmək istədiyinizə əminsiniz?", {
+        toast("Are you sure you want to delete this task?", {
             action: {
-                label: "Bəli, Sil",
+                label: "Yes, Delete",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/tasks/${taskId}`, { method: "DELETE" });
@@ -307,17 +307,17 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     };
 
     const handleRemoveStudent = async (studentId: string) => {
-        toast("Bu tələbəni sinifdən silmək istədiyinizə əminsiniz?", {
-            description: "Onların yaratdığı fayllar da silinəcək.",
+        toast("Are you sure you want to remove this student?", {
+            description: "Their files will also be deleted.",
             action: {
-                label: "Bəli, Sil",
+                label: "Yes, Remove",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/classrooms/${classroom.id}/enrollments/${studentId}`, { method: "DELETE" });
                         if (res.ok) {
                             onRefresh();
                         } else {
-                            toast.error("Xəta baş verdi");
+                            toast.error("An error occurred");
                         }
                     } catch (error) {
                         console.error(error);
@@ -328,10 +328,10 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     };
 
     const handleTransferAdmin = async (studentId: string) => {
-        toast("Admin hüquqlarını bu tələbəyə vermək istədiyinizə əminsiniz?", {
-            description: "Siz artıq bu sinfin admini olmayacaqsınız.",
+        toast("Are you sure you want to transfer admin rights to this student?", {
+            description: "You will no longer be the admin of this classroom.",
             action: {
-                label: "Bəli",
+                label: "Yes",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/classrooms/${classroom.id}/transfer`, {
@@ -343,7 +343,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             window.location.reload(); // Reload context to become student view
                         } else {
                             const data = await res.json();
-                            toast.error(data.error || "Xəta baş verdi");
+                            toast.error(data.error || "An error occurred");
                         }
                     } catch (error) {
                         console.error(error);
@@ -392,7 +392,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         )}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        Tələbələr ({enrollments.length})
+                        Students ({enrollments.length})
                     </button>
                     <button
                         onClick={() => setActiveTab("tasks")}
@@ -404,7 +404,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         )}
                     >
                         <ClipboardList className="w-3.5 h-3.5" />
-                        Tapşırıqlar ({tasks.length})
+                        Tasks ({tasks.length})
                     </button>
                 </div>
 
@@ -414,7 +414,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         <div className="p-2 space-y-2">
                             {enrollments.length === 0 ? (
                                 <div className="text-center p-6 text-[var(--text-secondary)] text-sm">
-                                    Sinfə hələ heç kim qoşulmayıb
+                                    No one has joined the class yet
                                 </div>
                             ) : (
                                 enrollments.map((en: any) => {
@@ -440,19 +440,19 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                 <div className="flex items-center gap-2">
 
                                                     <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none">
-                                                        {studentWorkspaces.length} fayl
+                                                        {studentWorkspaces.length} files
                                                     </div>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleTransferAdmin(en.studentId); }}
                                                         className="h-7 px-2 rounded flex items-center justify-center text-[10px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-all border border-blue-500/20"
-                                                        title="Admin hüquqlarını ver"
+                                                        title="Transfer admin rights"
                                                     >
                                                         Admin Et
                                                     </button>
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleRemoveStudent(en.studentId); }}
                                                         className="w-7 h-7 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-red-500/30"
-                                                        title="Tələbəni sinifdən sil"
+                                                        title="Remove student from class"
                                                     >
                                                         <Trash2 className="w-3.5 h-3.5" />
                                                     </button>
@@ -463,7 +463,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                 <div className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] p-1.5 space-y-1">
                                                     {studentWorkspaces.length === 0 ? (
                                                         <div className="text-xs text-[var(--text-secondary)] p-2 text-center">
-                                                            Hələ fayl yaradılmayıb
+                                                            No files created yet
                                                         </div>
                                                     ) : (
                                                         studentWorkspaces.map((w: any) => {
@@ -485,7 +485,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                                         {wasSaved && (
                                                                             <span className="flex items-center gap-0.5 text-[9px] text-emerald-400 bg-emerald-500/10 px-1.5 py-0.5 rounded-full shrink-0">
                                                                                 <CheckCircle className="w-2.5 h-2.5" />
-                                                                                Göndərilib
+                                                                                Submitted
                                                                             </span>
                                                                         )}
                                                                     </span>
@@ -509,12 +509,12 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 onClick={openCreateTask}
                                 className="w-full p-3 rounded-lg border border-dashed border-[var(--border-color)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-hover)] transition-all flex items-center justify-center gap-2"
                             >
-                                <Plus className="w-4 h-4" /> Yeni Tapşırıq
+                                <Plus className="w-4 h-4" /> New Task
                             </button>
 
                             {tasks.length === 0 ? (
                                 <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
-                                    Hələ tapşırıq yoxdur
+                                    No tasks yet
                                 </div>
                             ) : (
                                 tasks.map((t: any) => (
@@ -525,7 +525,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                 <button
                                                     onClick={() => openEditTask(t)}
                                                     className="p-1 text-[var(--text-secondary)] hover:text-blue-400 hover:bg-blue-500/10 rounded transition-all"
-                                                    title="Redaktə et"
+                                                    title="Edit"
                                                 >
                                                     <Edit2 className="w-3 h-3" />
                                                 </button>
@@ -572,12 +572,12 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 <div className="absolute top-2 right-4 z-10 flex gap-2">
                                     <div className="bg-[#161b22] border border-[#30363d] px-2.5 py-1 rounded-md text-[10px] text-[#8b949e] uppercase tracking-wider flex items-center gap-1.5">
                                         <span className="w-1.5 h-1.5 rounded-full bg-amber-500/70"></span>
-                                        Yalnız oxu
+                                        Read only
                                     </div>
                                     {activeWorkspaceData.language !== "html" && (
                                         <button onClick={handleRun} disabled={running} className="bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 px-2.5 py-1 rounded-md text-[10px] uppercase tracking-wider flex items-center gap-1.5 transition-colors">
                                             {running ? <Loader2 className="w-3 h-3 animate-spin" /> : <Play className="w-3 h-3" />}
-                                            İcra et
+                                            Run
                                         </button>
                                     )}
                                 </div>
@@ -605,7 +605,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                         {running ? (
                                             <div className="flex items-center gap-3 text-[#8b949e] text-sm">
                                                 <Loader2 className="w-4 h-4 animate-spin" />
-                                                <span>Proqram icra edilir...</span>
+                                                <span>Running program...</span>
                                             </div>
                                         ) : (
                                             <pre className={cn(
@@ -636,7 +636,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                     )}
                                     <div className="flex-1 min-w-0">
                                         <p className="text-sm font-medium">
-                                            {activeWorkspaceData.reviewStatus === "CORRECT" ? "Düzdür ✓" : "Səhvdir ✗"}
+                                            {activeWorkspaceData.reviewStatus === "CORRECT" ? "Correct ✓" : "Incorrect ✗"}
                                         </p>
                                         {activeWorkspaceData.reviewNote && (
                                             <p className="text-xs mt-1 opacity-80">{activeWorkspaceData.reviewNote}</p>
@@ -646,7 +646,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                         onClick={() => setReviewingId(activeWorkspaceData.id)}
                                         className="text-xs text-[var(--text-secondary)] hover:text-white transition-colors px-2 py-1 rounded hover:bg-white/5"
                                     >
-                                        Dəyiş
+                                        Edit
                                     </button>
                                 </div>
                             ) : null}
@@ -654,7 +654,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             {(!activeWorkspaceData.reviewStatus || reviewingId === activeWorkspaceData.id) && (
                                 <div className="space-y-3">
                                     {!activeWorkspaceData.reviewStatus && (
-                                        <p className="text-xs text-[var(--text-secondary)]">Bu faylı dəyərləndir:</p>
+                                        <p className="text-xs text-[var(--text-secondary)]">Review this file:</p>
                                     )}
                                     <div className="flex items-center gap-2">
                                         <input
@@ -662,7 +662,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                             value={reviewNote}
                                             onChange={e => setReviewNote(e.target.value)}
                                             className="input-field flex-1 text-sm"
-                                            placeholder="Qeyd (ixtiyari)..."
+                                            placeholder="Note (optional)..."
                                         />
                                         <button
                                             onClick={() => handleReview(activeWorkspaceData.id, "CORRECT")}
@@ -670,7 +670,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-emerald-500/10 border border-emerald-500/20 text-emerald-400 hover:bg-emerald-500/20 transition-all text-xs font-medium"
                                         >
                                             {submittingReview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsUp className="w-3.5 h-3.5" />}
-                                            Düzdü
+                                            Correct
                                         </button>
                                         <button
                                             onClick={() => handleReview(activeWorkspaceData.id, "INCORRECT")}
@@ -678,7 +678,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                             className="flex items-center gap-1.5 px-4 py-2.5 rounded-lg bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
                                         >
                                             {submittingReview ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <ThumbsDown className="w-3.5 h-3.5" />}
-                                            Səhvdi
+                                            Incorrect
                                         </button>
                                         {reviewingId && (
                                             <button
@@ -696,7 +696,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 ) : (
                     <div className="flex-1 flex flex-col items-center justify-center text-[var(--text-secondary)]">
                         <Folder className="w-12 h-12 mb-4 opacity-20" />
-                        <p className="text-sm">Ətraflı baxmaq üçün soldan tələbənin faylını seçin</p>
+                        <p className="text-sm">Select a student's file from the sidebar to view</p>
                     </div>
                 )}
             </div>
@@ -710,31 +710,31 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 <ClipboardList className="w-5 h-5 text-white" />
                             </div>
                             <div>
-                                <h3 className="text-lg font-semibold text-white">{editingTaskId ? "Tapşırığı Yenilə" : "Yeni Tapşırıq"}</h3>
-                                <p className="text-xs text-[var(--text-secondary)]">Bütün tələbələr bu tapşırığı görəcək</p>
+                                <h3 className="text-lg font-semibold text-white">{editingTaskId ? "Update Task" : "New Task"}</h3>
+                                <p className="text-xs text-[var(--text-secondary)]">All students will see this task</p>
                             </div>
                         </div>
 
                         <form onSubmit={handleTaskSubmit}>
                             <div className="space-y-4">
                                 <div>
-                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Başlıq *</label>
+                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Title *</label>
                                     <input
                                         type="text"
                                         value={taskTitle}
                                         onChange={e => setTaskTitle(e.target.value)}
                                         className="input-field"
-                                        placeholder="Məs: Fibonacci ardıcıllığını yazın"
+                                        placeholder="e.g. Write the Fibonacci sequence"
                                         autoFocus
                                     />
                                 </div>
                                 <div>
-                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Təsvir (ixtiyari)</label>
+                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Description (optional)</label>
                                     <textarea
                                         value={taskDesc}
                                         onChange={e => setTaskDesc(e.target.value)}
                                         className="input-field min-h-[100px] resize-none"
-                                        placeholder="Tapşırığın ətraflı təsviri..."
+                                        placeholder="Detailed description of the task..."
                                     />
                                 </div>
                             </div>
@@ -744,13 +744,13 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                     type="button"
                                     onClick={() => { setShowTaskModal(false); setEditingTaskId(null); }}
                                     className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
-                                >Ləğv et</button>
+                                >Cancel</button>
                                 <button
                                     type="submit"
                                     disabled={creatingTask || !taskTitle.trim()}
                                     className="glow-btn px-4 py-2 text-sm flex items-center gap-2"
                                 >
-                                    {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : editingTaskId ? <><Save className="w-4 h-4" /> Yadda saxla</> : <><Send className="w-4 h-4" /> Göndər</>}
+                                    {creatingTask ? <Loader2 className="w-4 h-4 animate-spin" /> : editingTaskId ? <><Save className="w-4 h-4" /> Save</> : <><Send className="w-4 h-4" /> Submit</>}
                                 </button>
                             </div>
                         </form>
@@ -776,13 +776,13 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
-                            {viewingTask.description || "Təsvir yoxdur"}
+                            {viewingTask.description || "No description"}
                             <div className="shrink-0 pt-4 border-t border-[var(--border-color)] flex items-center justify-between">
                                 <div className="flex items-center gap-2">
                                     <button
                                         onClick={() => { openEditTask(viewingTask); setViewingTask(null); }}
                                         className="p-2 text-[var(--text-secondary)] hover:text-blue-400 border border-transparent hover:border-blue-500/20 hover:bg-blue-500/10 rounded-md transition-all"
-                                        title="Redaktə et"
+                                        title="Edit"
                                     >
                                         <Edit2 className="w-4 h-4" />
                                     </button>
@@ -934,9 +934,9 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
 
     const handleDeleteWorkspace = async () => {
         if (!activeWorkspace) return;
-        toast("Bu faylı silmək istədiyinizə əminsiniz?", {
+        toast("Are you sure you want to delete this file?", {
             action: {
-                label: "Bəli, Sil",
+                label: "Yes, Delete",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, { method: "DELETE" });
@@ -966,14 +966,14 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
             });
             const data = await res.json();
             if (res.ok) {
-                setOutput(data.output || "(Çıxış yoxdur)");
+                setOutput(data.output || "(No output)");
                 setOutputError(data.hasError);
             } else {
-                setOutput(data.error || "Xəta baş verdi");
+                setOutput(data.error || "An error occurred");
                 setOutputError(true);
             }
         } catch (error) {
-            setOutput("Şəbəkə xətası. Yenidən cəhd edin.");
+            setOutput("Network error. Please try again.");
             setOutputError(true);
         } finally {
             setRunning(false);
@@ -998,7 +998,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                         )}
                     >
                         <ClipboardList className="w-3.5 h-3.5" />
-                        Tapşırıqlar
+                        Tasks
                     </button>
                     <button
                         onClick={() => setActiveTab("files")}
@@ -1010,7 +1010,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                         )}
                     >
                         <Folder className="w-3.5 h-3.5" />
-                        Fayllarım
+                        My Files
                     </button>
                 </div>
 
@@ -1020,7 +1020,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                             {tasks.length === 0 ? (
                                 <div className="text-center py-12 text-[var(--text-secondary)]">
                                     <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-20" />
-                                    <p className="text-sm">Hələ tapşırıq yoxdur</p>
+                                    <p className="text-sm">No tasks yet</p>
                                 </div>
                             ) : (
                                 tasks.map((t: any) => (
@@ -1043,7 +1043,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                 className="w-full text-left p-2 rounded-md hover:bg-[var(--bg-card)] text-sm text-[var(--text-secondary)] hover:text-white transition-colors flex items-center justify-center gap-2 border border-dashed border-[var(--border-color)] hover:border-[var(--border-hover)] mb-2"
                             >
                                 {creatingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
-                                Yeni Fayl
+                                New File
                             </button>
 
                             {workspaces.map((w: any) => {
@@ -1128,9 +1128,9 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     {saving ? (
                                         <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                     ) : saved ? (
-                                        <><CheckCircle className="w-3.5 h-3.5" /> Saxlandı</>
+                                        <><CheckCircle className="w-3.5 h-3.5" /> Saved</>
                                     ) : (
-                                        <><Save className="w-3.5 h-3.5" /> Saxla</>
+                                        <><Save className="w-3.5 h-3.5" /> Save</>
                                     )}
                                 </button>
 
@@ -1145,14 +1145,14 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                         ) : (
                                             <Play className="w-3.5 h-3.5" />
                                         )}
-                                        Çalışdır
+                                        Run
                                     </button>
                                 )}
 
                                 <button
                                     onClick={handleDeleteWorkspace}
                                     className="px-2 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
-                                    title="Faylı Sil"
+                                    title="Delete File"
                                 >
                                     <Trash2 className="w-3.5 h-3.5" />
                                 </button>
@@ -1173,7 +1173,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     <div className="flex items-center justify-between px-3 py-1.5 bg-[#0d1117] border-b border-[var(--border-color)]">
                                         <div className="flex items-center gap-2 text-xs">
                                             <Terminal className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
-                                            <span className="text-[var(--text-secondary)] font-medium">Çıxış</span>
+                                            <span className="text-[var(--text-secondary)] font-medium">Output</span>
                                             {running && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
                                         </div>
                                         <button
@@ -1187,7 +1187,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                         {running ? (
                                             <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs">
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                                                Kod icra edilir...
+                                                Running code...
                                             </div>
                                         ) : output !== null ? (
                                             <pre className={cn(
@@ -1195,7 +1195,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                                 outputError ? "text-red-400" : "text-emerald-300"
                                             )}>{output}</pre>
                                         ) : (
-                                            <p className="text-xs text-[var(--text-secondary)]">Çalışdırmaq üçün ▶ düyməsini basın</p>
+                                            <p className="text-xs text-[var(--text-secondary)]">Press ▶ to run</p>
                                         )}
                                     </div>
                                 </div>
@@ -1216,7 +1216,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                                     <ThumbsDown className="w-4 h-4 shrink-0" />
                                 )}
                                 <span className="text-sm font-medium">
-                                    Admin rəyi: {activeWorkspace.reviewStatus === "CORRECT" ? "Düzdür ✓" : "Səhvdir ✗"}
+                                    Admin review: {activeWorkspace.reviewStatus === "CORRECT" ? "Correct ✓" : "Incorrect ✗"}
                                 </span>
                                 {activeWorkspace.reviewNote && (
                                     <span className="text-xs opacity-80 ml-2">— {activeWorkspace.reviewNote}</span>
@@ -1227,7 +1227,7 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                 ) : (
                     <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)]">
                         <Folder className="w-12 h-12 mb-4 opacity-20" />
-                        <p className="text-sm">Soldan fayl seçin və ya yeni fayl yaradın</p>
+                        <p className="text-sm">Select a file from the sidebar or create a new one</p>
                     </div>
                 )}
             </div>
@@ -1235,19 +1235,19 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
             {showNewFileModal && (
                 <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowNewFileModal(false)}>
                     <div className="glass-card w-full max-w-sm p-6" onClick={e => e.stopPropagation()}>
-                        <h3 className="text-lg font-medium text-white mb-4">Yeni fayl yarat</h3>
+                        <h3 className="text-lg font-medium text-white mb-4">Create new file</h3>
                         <form onSubmit={submitCreateFile} className="space-y-4">
                             <input
                                 autoFocus
                                 type="text"
-                                placeholder="Faylın adı..."
+                                placeholder="File name..."
                                 value={newFileName}
                                 onChange={e => setNewFileName(e.target.value)}
                                 className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
                             />
                             <div className="flex gap-2 justify-end">
-                                <button type="button" onClick={() => setShowNewFileModal(false)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">Ləğv et</button>
-                                <button type="submit" disabled={!newFileName.trim()} className="glow-btn px-4 py-2 text-sm">Yarat</button>
+                                <button type="button" onClick={() => setShowNewFileModal(false)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">Cancel</button>
+                                <button type="submit" disabled={!newFileName.trim()} className="glow-btn px-4 py-2 text-sm">Create</button>
                             </div>
                         </form>
                     </div>
@@ -1271,10 +1271,10 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                             </button>
                         </div>
                         <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
-                            {viewingTask.description || "Təsvir yoxdur"}
+                            {viewingTask.description || "No description"}
                         </div>
                         <div className="shrink-0 pt-4 border-t border-[var(--border-color)] text-right">
-                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">Bağla</button>
+                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">Close</button>
                         </div>
                     </div>
                 </div>

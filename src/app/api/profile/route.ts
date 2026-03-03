@@ -9,7 +9,7 @@ export async function GET() {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -33,13 +33,13 @@ export async function GET() {
         });
 
         if (!user) {
-            return NextResponse.json({ error: "İstifadəçi tapılmadı" }, { status: 404 });
+            return NextResponse.json({ error: "User not found" }, { status: 404 });
         }
 
         return NextResponse.json(user);
     } catch (error) {
         console.error("Get profile error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }
 
@@ -48,7 +48,7 @@ export async function PUT(req: NextRequest) {
     try {
         const session = await getServerSession(authOptions);
         if (!session?.user) {
-            return NextResponse.json({ error: "Giriş tələb olunur" }, { status: 401 });
+            return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
         const userId = (session.user as any).id;
@@ -65,7 +65,7 @@ export async function PUT(req: NextRequest) {
         if (newPassword) {
             if (!otp) {
                 return NextResponse.json(
-                    { error: "OTP kodu tələb olunur" },
+                    { error: "OTP code is required" },
                     { status: 400 }
                 );
             }
@@ -75,19 +75,19 @@ export async function PUT(req: NextRequest) {
             });
 
             if (!user) {
-                return NextResponse.json({ error: "İstifadəçi tapılmadı" }, { status: 404 });
+                return NextResponse.json({ error: "User not found" }, { status: 404 });
             }
 
             if (user.verificationToken !== otp) {
                 return NextResponse.json(
-                    { error: "OTP kodu yanlışdır" },
+                    { error: "Invalid OTP code" },
                     { status: 400 }
                 );
             }
 
             if (newPassword.length < 6) {
                 return NextResponse.json(
-                    { error: "Yeni şifrə minimum 6 simvol olmalıdır" },
+                    { error: "New password must be at least 6 characters" },
                     { status: 400 }
                 );
             }
@@ -98,7 +98,7 @@ export async function PUT(req: NextRequest) {
 
         if (Object.keys(updateData).length === 0) {
             return NextResponse.json(
-                { error: "Heç bir dəyişiklik göndərilməyib" },
+                { error: "No changes submitted" },
                 { status: 400 }
             );
         }
@@ -117,6 +117,6 @@ export async function PUT(req: NextRequest) {
         return NextResponse.json(updatedUser);
     } catch (error) {
         console.error("Update profile error:", error);
-        return NextResponse.json({ error: "Xəta baş verdi" }, { status: 500 });
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

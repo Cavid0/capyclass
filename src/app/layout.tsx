@@ -4,17 +4,17 @@ import Providers from "./providers";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "CapyClass — Interaktiv Təhsil Platforması",
+  title: "CapyClass — Interactive Learning Platform",
   description:
-    "CapyClass — müəllimlər üçün sinif yaratma, tələbələr üçün izolasiya olunmuş kod mühiti və AI dəstəkli kod analizi platforması.",
-  keywords: ["CapyClass", "capyclass", "capy", "interaktiv təhsil", "kod mühiti", "AI kod analizi", "sinif platforması", "online sinif"],
+    "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
+  keywords: ["CapyClass", "capyclass", "capy", "interactive learning", "code environment", "AI code analysis", "classroom platform", "online classroom"],
   metadataBase: new URL("https://capyclass.com"),
   alternates: {
     canonical: "https://capyclass.com",
   },
   openGraph: {
-    title: "CapyClass — Interaktiv Təhsil Platforması",
-    description: "CapyClass — müəllimlər üçün sinif yaratma, tələbələr üçün izolasiya olunmuş kod mühiti və AI dəstəkli kod analizi platforması.",
+    title: "CapyClass — Interactive Learning Platform",
+    description: "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
     url: "https://capyclass.com",
     siteName: "CapyClass",
     images: [
@@ -25,13 +25,13 @@ export const metadata: Metadata = {
         alt: "CapyClass",
       },
     ],
-    locale: "az_AZ",
+    locale: "en_US",
     type: "website",
   },
   twitter: {
     card: "summary",
-    title: "CapyClass — Interaktiv Təhsil Platforması",
-    description: "CapyClass — müəllimlər üçün sinif yaratma, tələbələr üçün izolasiya olunmuş kod mühiti və AI dəstəkli kod analizi platforması.",
+    title: "CapyClass — Interactive Learning Platform",
+    description: "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
     images: ["/capybara.png"],
   },
   robots: {
@@ -54,7 +54,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="az">
+    <html lang="en">
       <head>
         <link rel="icon" href="/favicon.png" type="image/png" sizes="256x256" />
         <link rel="shortcut icon" href="/favicon.png" type="image/png" />

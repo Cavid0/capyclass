@@ -34,7 +34,17 @@ const nextConfig = {
                     {
                         key: 'Referrer-Policy',
                         value: 'origin-when-cross-origin'
-                    }
+                    },
+                    {
+                        // Clickjacking və iframe injection qarşısını alır
+                        key: 'Content-Security-Policy',
+                        value: "frame-ancestors 'self'"
+                    },
+                    {
+                        // Cross-Origin resursları izolyasiya edir
+                        key: 'Permissions-Policy',
+                        value: 'camera=(), microphone=(), geolocation=()'
+                    },
                 ]
             }
         ];
