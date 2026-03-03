@@ -1,7 +1,7 @@
 "use client";
 
 import { motion } from "framer-motion";
-import { Brain, ArrowRight, Sparkles, Terminal, Rocket, Layers } from "lucide-react";
+import { Brain, ArrowRight, Terminal, Rocket, Layers } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
@@ -31,7 +31,6 @@ export default function HomePage() {
                 transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
                 className="inline-flex items-center gap-2.5 px-4 py-2 rounded-full border border-amber-500/20 bg-amber-500/[0.06] shadow-lg backdrop-blur-md mb-8"
               >
-                <Sparkles className="w-4 h-4 text-amber-400" />
                 <span className="text-xs font-semibold tracking-wide text-transparent bg-clip-text bg-gradient-to-r from-amber-300 to-orange-300 uppercase">
                   Təhsilin Gələcəyi Buradadır
                 </span>

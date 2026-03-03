@@ -22,7 +22,8 @@ export async function sendVerificationEmail(email: string, code: string) {
     const transporter = createTransporter();
 
     await transporter.sendMail({
-        from: `"${FROM_NAME}" <${process.env.SMTP_USER}>`,
+        from: `"${FROM_NAME}" <info@capyclass.com>`,
+        replyTo: "info@capyclass.com",
         to: email,
         subject: `CapyClass - Təsdiq kodunuz: ${code}`,
         html: `
