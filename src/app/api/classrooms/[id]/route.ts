@@ -24,15 +24,6 @@ export async function GET(
             include: {
                 teacher: { select: { name: true, email: true } },
                 admins: { include: { user: { select: { id: true, name: true, email: true } } } },
-                groups: {
-                    include: {
-                        _count: { select: { enrollments: true } },
-                        enrollments: {
-                            include: { student: { select: { id: true, name: true } } },
-                        },
-                    },
-                    orderBy: { createdAt: "asc" },
-                },
             },
         });
 
@@ -69,7 +60,6 @@ export async function GET(
                 },
                 workspaces,
                 enrollments,
-                groups: classroom.groups,
                 admins: classroom.admins,
             });
         } else {
@@ -105,7 +95,6 @@ export async function GET(
                     teacherId: classroom.teacherId,
                 },
                 workspaces,
-                groups: classroom.groups,
             });
         }
     } catch (error) {
@@ -144,12 +133,6 @@ export async function DELETE(
         await prisma.enrollment.deleteMany({ where: { classroomId } });
         await prisma.task.deleteMany({ where: { classroomId } });
         await prisma.classroomAdmin.deleteMany({ where: { classroomId } });
-        // Delete groups (and their enrollments)
-        const groups = await prisma.group.findMany({ where: { classroomId } });
-        for (const group of groups) {
-            await prisma.groupEnrollment.deleteMany({ where: { groupId: group.id } });
-        }
-        await prisma.group.deleteMany({ where: { classroomId } });
 
         // Delete classroom
         await prisma.classroom.delete({ where: { id: classroomId } });

@@ -63,7 +63,7 @@ export async function POST(
                     studentId: userId,
                     classroomId: classroom.id,
                     title: "Main file",
-                    code: getStarterCode(classroom.name),
+                    code: 'console.log("Hello, World!");',
                     language: "javascript",
                 },
             });
@@ -88,15 +88,4 @@ export async function POST(
     }
 }
 
-function getStarterCode(classroomName: string): string {
-    return `// ${classroomName} - Assignment
-// Welcome! Write your code here.
-// AI will analyze your code and help you \uD83D\uDE80
 
-function hello() {
-  console.log("Hello, world!");
-}
-
-hello();
-`;
-}

@@ -34,7 +34,6 @@ model User {
   enrollments      Enrollment[]
   workspaces       Workspace[]
   classroomAdmins  ClassroomAdmin[]
-  groupEnrollments GroupEnrollment[]
 }
 
 model Classroom {
@@ -51,7 +50,6 @@ model Classroom {
   workspaces  Workspace[]
   tasks       Task[]
   admins      ClassroomAdmin[]
-  groups      Group[]
 }
 
 model ClassroomAdmin {
@@ -64,31 +62,6 @@ model ClassroomAdmin {
   user        User      @relation(fields: [userId], references: [id])
 
   @@unique([classroomId, userId])
-}
-
-model Group {
-  id          String    @id @default(cuid())
-  name        String
-  description String?
-  inviteCode  String    @unique
-  classroomId String
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  classroom    Classroom         @relation(fields: [classroomId], references: [id])
-  enrollments  GroupEnrollment[]
-}
-
-model GroupEnrollment {
-  id        String   @id @default(cuid())
-  studentId String
-  groupId   String
-  joinedAt  DateTime @default(now())
-
-  student   User  @relation(fields: [studentId], references: [id])
-  group     Group @relation(fields: [groupId], references: [id])
-
-  @@unique([studentId, groupId])
 }
 
 model Task {
