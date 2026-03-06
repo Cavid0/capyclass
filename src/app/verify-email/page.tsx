@@ -21,7 +21,11 @@ function VerifyEmailContent() {
             return;
         }
 
-        fetch(`/api/auth/verify-email?token=${token}`)
+        fetch(`/api/auth/verify-email`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ email: "", code: token }),
+        })
             .then((res) => res.json())
             .then((data) => {
                 if (data.error) {

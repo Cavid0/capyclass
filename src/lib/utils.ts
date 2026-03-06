@@ -9,7 +9,7 @@ export function cn(...classes: (string | undefined | false)[]): string {
 }
 
 export function formatDate(date: Date): string {
-    return new Intl.DateTimeFormat("az-AZ", {
+    return new Intl.DateTimeFormat("en-US", {
         year: "numeric",
         month: "long",
         day: "numeric",

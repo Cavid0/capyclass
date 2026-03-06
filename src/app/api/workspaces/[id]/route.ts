@@ -12,15 +12,17 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
         const workspace = await prisma.workspace.findUnique({
             where: { id },
-            include: { student: true, classroom: true }
+            include: { student: true, classroom: { include: { admins: true } } }
         });
 
         if (!workspace) return NextResponse.json({ error: "Workspace not found" }, { status: 404 });
 
         const user = await prisma.user.findUnique({ where: { email: session.user.email } });
 
-        // Let teacher delete any workspace in their class, or student delete their own workspace
-        if (!user || (user.id !== workspace.studentId && user.id !== workspace.classroom.teacherId)) {
+        // Let teacher/co-admin delete any workspace in their class, or student delete their own
+        const isOwner = user?.id === workspace.classroom.teacherId;
+        const isAdmin = workspace.classroom.admins.some((a: any) => a.userId === user?.id);
+        if (!user || (user.id !== workspace.studentId && !isOwner && !isAdmin)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

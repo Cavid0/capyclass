@@ -53,7 +53,7 @@ function LoginForm() {
             });
 
             if (res?.error) {
-                setError("Invalid email or password.");
+                setError(res.error);
             } else {
                 router.push("/dashboard");
                 router.refresh();

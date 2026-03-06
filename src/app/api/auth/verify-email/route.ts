@@ -5,20 +5,23 @@ export async function POST(req: NextRequest) {
     try {
         const { email, code } = await req.json();
 
-        if (!email || !code) {
+        if (!code) {
             return NextResponse.json(
-                { error: "Email and code are required" },
+                { error: "Verification code is required" },
                 { status: 400 }
             );
         }
 
-        const user = await prisma.user.findUnique({
-            where: { email },
-        });
+        let user;
+        if (email) {
+            user = await prisma.user.findUnique({ where: { email } });
+        } else {
+            user = await prisma.user.findFirst({ where: { verificationToken: code } });
+        }
 
         if (!user) {
             return NextResponse.json(
-                { error: "User not found" },
+                { error: "Invalid or expired verification link" },
                 { status: 404 }
             );
         }

@@ -70,7 +70,7 @@ CREATE TABLE IF NOT EXISTS "Task" (
 );
 CREATE INDEX IF NOT EXISTS "Task_classroomId_idx" ON "Task"("classroomId");
 
--- 7. İş sahələri (tələbə kodları)
+-- 7. Workspaces (student code)
 CREATE TABLE IF NOT EXISTS "Workspace" (
   "id"           TEXT              PRIMARY KEY,
   "title"        TEXT              NOT NULL DEFAULT 'My Code',

@@ -26,12 +26,13 @@ export async function GET(
             return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
-        const role = (session.user as any).role;
-        if (role === "TEACHER" && classroom.teacherId !== userId) {
-            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
-        }
+        // Check access: owner, co-admin, or enrolled student
+        const isOwner = classroom.teacherId === userId;
+        const isAdmin = !isOwner && await prisma.classroomAdmin.findUnique({
+            where: { classroomId_userId: { classroomId, userId } },
+        });
 
-        if (role === "STUDENT") {
+        if (!isOwner && !isAdmin) {
             const enrollment = await prisma.enrollment.findUnique({
                 where: { studentId_classroomId: { studentId: userId, classroomId } },
             });
@@ -63,21 +64,25 @@ export async function POST(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "TEACHER") {
-            return NextResponse.json({ error: "Only teachers can create tasks" }, { status: 403 });
-        }
-
         const userId = (session.user as any).id;
         const classroomId = params.id;
 
-        // Verify ownership
+        // Verify ownership or co-admin
         const classroom = await prisma.classroom.findUnique({
             where: { id: classroomId },
         });
 
-        if (!classroom || classroom.teacherId !== userId) {
-            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
+        if (!classroom) {
+            return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
+        }
+
+        const isOwner = classroom.teacherId === userId;
+        const isAdmin = !isOwner && await prisma.classroomAdmin.findUnique({
+            where: { classroomId_userId: { classroomId, userId } },
+        });
+
+        if (!isOwner && !isAdmin) {
+            return NextResponse.json({ error: "Only teachers and admins can create tasks" }, { status: 403 });
         }
 
         const { title, description } = await req.json();

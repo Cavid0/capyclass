@@ -12,16 +12,18 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         const body = await req.json();
         const { title, description } = body;
 
-        // Verify task exists and caller is teacher of this classroom
+        // Verify task exists and caller is teacher or co-admin
         const task = await prisma.task.findUnique({
             where: { id },
-            include: { classroom: true }
+            include: { classroom: { include: { admins: true } } }
         });
 
         if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
         const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        if (!user || user.id !== task.classroom.teacherId) {
+        const isOwner = user?.id === task.classroom.teacherId;
+        const isAdmin = task.classroom.admins.some((a: any) => a.userId === user?.id);
+        if (!user || (!isOwner && !isAdmin)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 
@@ -46,13 +48,15 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
 
         const task = await prisma.task.findUnique({
             where: { id },
-            include: { classroom: true }
+            include: { classroom: { include: { admins: true } } }
         });
 
         if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
 
         const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        if (!user || user.id !== task.classroom.teacherId) {
+        const isOwner = user?.id === task.classroom.teacherId;
+        const isAdmin = task.classroom.admins.some((a: any) => a.userId === user?.id);
+        if (!user || (!isOwner && !isAdmin)) {
             return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
         }
 

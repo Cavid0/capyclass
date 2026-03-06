@@ -338,10 +338,10 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
     };
 
     const handleAddAdmin = async (studentId: string) => {
-        toast("Bu tələbəyə admin hüququ vermək istəyirsiniz?", {
-            description: "Siz admin olaraq qalacaqsınız, tələbə sizinlə birlikdə admin olacaq.",
+        toast("Grant admin rights to this student?", {
+            description: "You will remain an admin. The student will become a co-admin alongside you.",
             action: {
-                label: "Bəli",
+                label: "Yes",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/classrooms/${classroom.id}/transfer`, {

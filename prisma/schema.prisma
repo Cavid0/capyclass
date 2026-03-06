@@ -89,7 +89,7 @@ model Enrollment {
 
 model Workspace {
   id           String          @id @default(cuid())
-  title        String          @default("Mənim Kodum")
+  title        String          @default("My Code")
   code         String          @default("")
   language     String          @default("javascript")
   status       WorkspaceStatus @default(PENDING)

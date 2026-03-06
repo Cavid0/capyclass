@@ -50,8 +50,12 @@ export async function POST(req: NextRequest) {
                 await tx.workspace.deleteMany({ where: { classroomId: { in: classroomIds } } });
                 await tx.task.deleteMany({ where: { classroomId: { in: classroomIds } } });
                 await tx.enrollment.deleteMany({ where: { classroomId: { in: classroomIds } } });
+                await tx.classroomAdmin.deleteMany({ where: { classroomId: { in: classroomIds } } });
                 await tx.classroom.deleteMany({ where: { teacherId: userId } });
             }
+
+            // User's co-admin records in other classrooms
+            await tx.classroomAdmin.deleteMany({ where: { userId } });
 
             // User's own workspaces and enrollments
             await tx.workspace.deleteMany({ where: { studentId: userId } });

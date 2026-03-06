@@ -438,7 +438,7 @@ export default function ProfilePage() {
 
                     {pwdStep === "form" && (
                         <form onSubmit={handleSendPasswordOtp} className="space-y-4">
-                            <div className="grid grid-cols-2 gap-3">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                                 <div>
                                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">New Password</label>
                                     <input type="password" value={newPassword} onChange={(e) => setNewPassword(e.target.value)} className="input-field" placeholder="••••••••" />
