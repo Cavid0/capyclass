@@ -14,19 +14,19 @@ export async function DELETE(
         }
 
         const userId = (session.user as any).id;
-        const role = (session.user as any).role;
         const classroomId = params.id;
         const studentToRemove = params.studentId;
 
-        if (role !== "TEACHER") {
-            return NextResponse.json({ error: "Permission denied" }, { status: 403 });
-        }
-
         const classroom = await prisma.classroom.findUnique({
-            where: { id: classroomId }
+            where: { id: classroomId },
+            include: { admins: true },
         });
 
-        if (!classroom || classroom.teacherId !== userId) {
+        const isAdmin =
+            classroom?.teacherId === userId ||
+            classroom?.admins.some((a) => a.userId === userId);
+
+        if (!classroom || !isAdmin) {
             return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
