@@ -27,8 +27,10 @@ export default function JoinPage({ params }: { params: { code: string } }) {
         setLoading(true);
         setError("");
         try {
-            const res = await fetch(`/api/classrooms/${inviteCode}/join`, {
+            const res = await fetch(`/api/join`, {
                 method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: inviteCode }),
             });
             const data = await res.json();
 

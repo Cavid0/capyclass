@@ -14,25 +14,24 @@ export async function POST(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const role = (session.user as any).role;
-        if (role !== "TEACHER") {
-            return NextResponse.json({ error: "Only teachers can review" }, { status: 403 });
-        }
-
         const userId = (session.user as any).id;
         const workspaceId = params.id;
 
-        // Find workspace and verify teacher owns the classroom
+        // Find workspace and verify user is classroom admin
         const workspace = await prisma.workspace.findUnique({
             where: { id: workspaceId },
-            include: { classroom: true },
+            include: { classroom: { include: { admins: true } } },
         });
 
         if (!workspace) {
             return NextResponse.json({ error: "File not found" }, { status: 404 });
         }
 
-        if (workspace.classroom.teacherId !== userId) {
+        const isAdmin =
+            workspace.classroom.teacherId === userId ||
+            workspace.classroom.admins.some((a) => a.userId === userId);
+
+        if (!isAdmin) {
             return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 

@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback, useRef, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
 import {
-    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, XCircle, Play, Terminal, X, Edit2, Trash2
+    Users, Code2, ChevronLeft, RefreshCw, Plus, ClipboardList, FileCode, Save, Send, Folder, Loader2, CheckCircle, Bell, ThumbsUp, ThumbsDown, XCircle, Play, Terminal, X, Edit2, Trash2, FolderOpen, Crown, Copy, FolderPlus
 } from "lucide-react";
 import Link from "next/link";
 import { CodeEditor } from "@/components/editor/CodeEditor";
@@ -34,6 +34,8 @@ export default function ClassroomPage() {
                 ...data.classroom,
                 workspaces: data.workspaces || [],
                 enrollments: data.enrollments || [],
+                groups: data.groups || [],
+                admins: data.admins || [],
             });
             // If student and no workspace selected, select first one if exists
             if (data.workspaces && data.workspaces.length > 0 && !selectedWorkspaceId && data.classroom?.teacherId !== (session?.user as any)?.id) {
@@ -86,7 +88,9 @@ export default function ClassroomPage() {
 
     if (!classroom) return null;
 
-    const isTeacher = classroom.teacherId === (session?.user as any)?.id;
+    const isTeacher =
+        classroom.teacherId === (session?.user as any)?.id ||
+        classroom.admins?.some((a: any) => a.userId === (session?.user as any)?.id);
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
@@ -141,12 +145,15 @@ export default function ClassroomPage() {
                         onSelectWorkspace={setSelectedWorkspaceId}
                         onTaskCreated={fetchTasks}
                         onRefresh={fetchClassroom}
+                        currentUserId={(session?.user as any)?.id}
                     />
                 ) : (
                     <StudentView
                         classroomId={classroom.id}
                         workspaces={classroom.workspaces || []}
                         tasks={tasks}
+                        groups={classroom.groups || []}
+                        currentUserId={(session?.user as any)?.id}
                         selectedWorkspaceId={selectedWorkspaceId}
                         onSelectWorkspace={setSelectedWorkspaceId}
                         onWorkspaceCreated={fetchClassroom}
@@ -160,20 +167,31 @@ export default function ClassroomPage() {
 // =============================================================
 // TEACHER VIEW
 // =============================================================
-function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated, onRefresh }: any) {
+function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated, onRefresh, currentUserId }: any) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const workspaces = useMemo(() => classroom.workspaces || [], [classroom.workspaces]);
     const enrollments = classroom.enrollments || [];
+    const admins: any[] = classroom.admins || [];
+    const groups: any[] = classroom.groups || [];
 
     const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspaceId);
 
-    const [activeTab, setActiveTab] = useState<"students" | "tasks">("students");
+    const [activeTab, setActiveTab] = useState<"students" | "tasks" | "groups">("students");
     const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
     const [showTaskModal, setShowTaskModal] = useState(false);
     const [taskTitle, setTaskTitle] = useState("");
     const [taskDesc, setTaskDesc] = useState("");
     const [creatingTask, setCreatingTask] = useState(false);
     const [editingTaskId, setEditingTaskId] = useState<string | null>(null);
+
+    // Group state
+    const [showGroupModal, setShowGroupModal] = useState(false);
+    const [groupName, setGroupName] = useState("");
+    const [groupDesc, setGroupDesc] = useState("");
+    const [creatingGroup, setCreatingGroup] = useState(false);
+    const [copiedCode, setCopiedCode] = useState<string | null>(null);
+
+    const isOwner = classroom.teacherId === currentUserId;
 
     const openCreateTask = () => {
         setEditingTaskId(null);
@@ -329,11 +347,11 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
         });
     };
 
-    const handleTransferAdmin = async (studentId: string) => {
-        toast("Are you sure you want to transfer admin rights to this student?", {
-            description: "You will no longer be the admin of this classroom.",
+    const handleAddAdmin = async (studentId: string) => {
+        toast("Bu tələbəyə admin hüququ vermək istəyirsiniz?", {
+            description: "Siz admin olaraq qalacaqsınız, tələbə sizinlə birlikdə admin olacaq.",
             action: {
-                label: "Yes",
+                label: "Bəli",
                 onClick: async () => {
                     try {
                         const res = await fetch(`/api/classrooms/${classroom.id}/transfer`, {
@@ -342,10 +360,11 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                             body: JSON.stringify({ newTeacherId: studentId })
                         });
                         if (res.ok) {
-                            window.location.reload(); // Reload context to become student view
+                            toast.success("Admin hüququ verildi");
+                            onRefresh();
                         } else {
                             const data = await res.json();
-                            toast.error(data.error || "An error occurred");
+                            toast.error(data.error || "Xəta baş verdi");
                         }
                     } catch (error) {
                         console.error(error);
@@ -353,6 +372,77 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 }
             }
         });
+    };
+
+    const handleRemoveAdmin = async (adminUserId: string) => {
+        try {
+            const res = await fetch(`/api/classrooms/${classroom.id}/transfer`, {
+                method: "DELETE",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ adminId: adminUserId }),
+            });
+            if (res.ok) {
+                toast.success("Admin hüququ geri alındı");
+                onRefresh();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "Xəta baş verdi");
+            }
+        } catch (error) {
+            console.error(error);
+        }
+    };
+
+    const handleCreateGroup = async (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!groupName.trim()) return;
+        setCreatingGroup(true);
+        try {
+            const res = await fetch(`/api/classrooms/${classroom.id}/groups`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ name: groupName, description: groupDesc }),
+            });
+            if (res.ok) {
+                setShowGroupModal(false);
+                setGroupName("");
+                setGroupDesc("");
+                onRefresh();
+            } else {
+                const data = await res.json();
+                toast.error(data.error || "Xəta baş verdi");
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCreatingGroup(false);
+        }
+    };
+
+    const handleDeleteGroup = async (groupId: string) => {
+        toast("Bu qrupu silmək istəyirsiniz?", {
+            action: {
+                label: "Bəli, Sil",
+                onClick: async () => {
+                    try {
+                        const res = await fetch(`/api/groups/${groupId}`, { method: "DELETE" });
+                        if (res.ok) {
+                            onRefresh();
+                        } else {
+                            toast.error("Xəta baş verdi");
+                        }
+                    } catch (error) {
+                        console.error(error);
+                    }
+                }
+            }
+        });
+    };
+
+    const copyToClipboard = (code: string) => {
+        navigator.clipboard.writeText(`${window.location.origin}/join/${code}`);
+        setCopiedCode(code);
+        setTimeout(() => setCopiedCode(null), 2000);
     };
 
     const handleReview = async (workspaceId: string, status: "CORRECT" | "INCORRECT") => {
@@ -394,7 +484,19 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         )}
                     >
                         <Users className="w-3.5 h-3.5" />
-                        Students ({enrollments.length})
+                        Tələbələr ({enrollments.length})
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("groups")}
+                        className={cn(
+                            "flex-1 py-3 text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5",
+                            activeTab === "groups"
+                                ? "text-white border-b-2 border-white bg-[var(--bg-card)]"
+                                : "text-[var(--text-secondary)] hover:text-white"
+                        )}
+                    >
+                        <FolderOpen className="w-3.5 h-3.5" />
+                        Qruplar ({groups.length})
                     </button>
                     <button
                         onClick={() => setActiveTab("tasks")}
@@ -406,7 +508,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                         )}
                     >
                         <ClipboardList className="w-3.5 h-3.5" />
-                        Tasks ({tasks.length})
+                        Tapşırıqlar ({tasks.length})
                     </button>
                 </div>
 
@@ -422,6 +524,7 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                 enrollments.map((en: any) => {
                                     const studentWorkspaces = workspaces.filter((w: any) => w.studentId === en.studentId);
                                     const isExpanded = expandedStudent === en.studentId;
+                                    const isCoAdmin = admins.some((a: any) => a.userId === en.studentId);
 
                                     return (
                                         <div key={en.id} className="border border-[var(--border-color)] rounded-lg overflow-hidden bg-[var(--bg-card)]">
@@ -438,19 +541,32 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                                     <span className="text-sm font-medium text-white">
                                                         {en.student.name}
                                                     </span>
+                                                    {isCoAdmin && (
+                                                        <span className="flex items-center gap-0.5 text-[9px] text-amber-400 bg-amber-500/10 px-1.5 py-0.5 rounded-full border border-amber-500/20">
+                                                            <Crown className="w-2.5 h-2.5" />
+                                                            Admin
+                                                        </span>
+                                                    )}
                                                 </button>
                                                 <div className="flex items-center gap-2">
-
                                                     <div className="text-[10px] text-[var(--text-secondary)] bg-[var(--bg-primary)] px-2 py-0.5 rounded pointer-events-none">
                                                         {studentWorkspaces.length} files
                                                     </div>
-                                                    <button
-                                                        onClick={(e) => { e.stopPropagation(); handleTransferAdmin(en.studentId); }}
-                                                        className="h-7 px-2 rounded flex items-center justify-center text-[10px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-all border border-blue-500/20"
-                                                        title="Transfer admin rights"
-                                                    >
-                                                        Admin Et
-                                                    </button>
+                                                    {isCoAdmin && isOwner ? (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleRemoveAdmin(en.studentId); }}
+                                                            className="h-7 px-2 rounded flex items-center justify-center text-[10px] bg-amber-500/10 text-amber-400 hover:bg-amber-500/20 opacity-0 group-hover:opacity-100 transition-all border border-amber-500/20"
+                                                        >
+                                                            Admin Al
+                                                        </button>
+                                                    ) : !isCoAdmin ? (
+                                                        <button
+                                                            onClick={(e) => { e.stopPropagation(); handleAddAdmin(en.studentId); }}
+                                                            className="h-7 px-2 rounded flex items-center justify-center text-[10px] bg-blue-500/10 text-blue-400 hover:bg-blue-500/20 opacity-0 group-hover:opacity-100 transition-all border border-blue-500/20"
+                                                        >
+                                                            Admin Et
+                                                        </button>
+                                                    ) : null}
                                                     <button
                                                         onClick={(e) => { e.stopPropagation(); handleRemoveStudent(en.studentId); }}
                                                         className="w-7 h-7 rounded flex items-center justify-center text-[var(--text-secondary)] hover:bg-red-500/10 hover:text-red-400 opacity-0 group-hover:opacity-100 transition-all border border-transparent hover:border-red-500/30"
@@ -503,6 +619,69 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                                         </div>
                                     );
                                 })
+                            )}
+                        </div>
+                    ) : activeTab === "groups" ? (
+                        <div className="p-3 space-y-2">
+                            <button
+                                onClick={() => setShowGroupModal(true)}
+                                className="w-full p-3 rounded-lg border border-dashed border-[var(--border-color)] text-sm text-[var(--text-secondary)] hover:text-white hover:border-[var(--border-hover)] transition-all flex items-center justify-center gap-2"
+                            >
+                                <FolderPlus className="w-4 h-4" /> Yeni Qrup
+                            </button>
+
+                            {groups.length === 0 ? (
+                                <div className="text-center py-8 text-[var(--text-secondary)] text-sm">
+                                    Hələ heç bir qrup yoxdur
+                                </div>
+                            ) : (
+                                groups.map((g: any) => (
+                                    <div key={g.id} className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] group hover:border-[var(--border-hover)] transition-all">
+                                        <div className="flex items-start justify-between mb-2">
+                                            <div className="flex items-center gap-2">
+                                                <FolderOpen className="w-4 h-4 text-blue-400 shrink-0" />
+                                                <h4 className="text-sm font-medium text-white">{g.name}</h4>
+                                            </div>
+                                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button
+                                                    onClick={() => handleDeleteGroup(g.id)}
+                                                    className="p-1 text-[var(--text-secondary)] hover:text-red-400 hover:bg-red-500/10 rounded transition-all"
+                                                >
+                                                    <Trash2 className="w-3 h-3" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        {g.description && (
+                                            <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{g.description}</p>
+                                        )}
+                                        <div className="flex items-center justify-between mt-2 flex-wrap gap-2">
+                                            <div className="flex items-center gap-1.5 text-[10px] text-[var(--text-secondary)]">
+                                                <Users className="w-3 h-3" />
+                                                <span>{g._count?.enrollments ?? g.enrollments?.length ?? 0} üzv</span>
+                                            </div>
+                                            <button
+                                                onClick={() => copyToClipboard(g.inviteCode)}
+                                                className="flex items-center gap-1 text-[10px] font-mono bg-[var(--bg-primary)] border border-[var(--border-color)] hover:border-[var(--border-hover)] px-2 py-1 rounded transition-all text-[var(--text-secondary)] hover:text-white"
+                                            >
+                                                {copiedCode === g.inviteCode ? (
+                                                    <><CheckCircle className="w-3 h-3 text-emerald-400" /> Kopyalandı</>
+                                                ) : (
+                                                    <><Copy className="w-3 h-3" /> {g.inviteCode}</>
+                                                )}
+                                            </button>
+                                        </div>
+                                        {/* Members list */}
+                                        {g.enrollments && g.enrollments.length > 0 && (
+                                            <div className="mt-2 pt-2 border-t border-[var(--border-color)] flex flex-wrap gap-1">
+                                                {g.enrollments.map((ge: any) => (
+                                                    <span key={ge.id} className="text-[10px] bg-[var(--bg-secondary)] border border-[var(--border-color)] px-1.5 py-0.5 rounded text-[var(--text-secondary)]">
+                                                        {ge.student.name}
+                                                    </span>
+                                                ))}
+                                            </div>
+                                        )}
+                                    </div>
+                                ))
                             )}
                         </div>
                     ) : (
@@ -802,6 +981,53 @@ function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace,
                 </div>
             )}
 
+            {/* Create Group Modal */}
+            {showGroupModal && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowGroupModal(false)}>
+                    <div className="glass-card p-6 w-full max-w-md" onClick={e => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-6">
+                            <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center">
+                                <FolderPlus className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-lg font-semibold text-white">Yeni Qrup</h3>
+                                <p className="text-xs text-[var(--text-secondary)]">Alt sinif yaradın, tələbələr qrupu dəvət kodu ilə katıla biləcəklər</p>
+                            </div>
+                        </div>
+                        <form onSubmit={handleCreateGroup}>
+                            <div className="space-y-4">
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Qrup adı *</label>
+                                    <input
+                                        type="text"
+                                        value={groupName}
+                                        onChange={e => setGroupName(e.target.value)}
+                                        className="input-field"
+                                        placeholder="məs. Qrup A, 1-ci Dəstə..."
+                                        autoFocus
+                                    />
+                                </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Açıqlama (istəyə bağlı)</label>
+                                    <textarea
+                                        value={groupDesc}
+                                        onChange={e => setGroupDesc(e.target.value)}
+                                        className="input-field min-h-[80px] resize-none"
+                                        placeholder="Qrup haqqında qısa məlumat..."
+                                    />
+                                </div>
+                            </div>
+                            <div className="flex gap-3 justify-end pt-6">
+                                <button type="button" onClick={() => setShowGroupModal(false)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">Ləğv et</button>
+                                <button type="submit" disabled={creatingGroup || !groupName.trim()} className="glow-btn px-4 py-2 text-sm flex items-center gap-2">
+                                    {creatingGroup ? <Loader2 className="w-4 h-4 animate-spin" /> : <><FolderPlus className="w-4 h-4" /> Yarat</>}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
             {/* Notifications */}
             <div className="fixed bottom-6 right-6 z-50 flex flex-col gap-2">
                 {notifications.map(n => (
@@ -840,8 +1066,13 @@ const DEFAULT_CODE: Record<string, string> = {
     kotlin: 'fun main() {\n    println("Hello, World!")\n}',
     html: '<!DOCTYPE html>\n<html>\n<head>\n  <title>Hello World</title>\n</head>\n<body>\n  <h1>Hello, World!</h1>\n</body>\n</html>'
 };
-function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: any) {
+function StudentView({ classroomId, workspaces, tasks, groups, currentUserId, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: any) {
     const activeWorkspace = workspaces.find((w: any) => w.id === selectedWorkspaceId);
+
+    // Find which groups this student belongs to
+    const myGroups = (groups || []).filter((g: any) =>
+        g.enrollments?.some((ge: any) => ge.studentId === currentUserId)
+    );
 
     const [code, setCode] = useState("");
     const [language, setLanguage] = useState("javascript");
@@ -1017,6 +1248,25 @@ function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSe
                 </div>
 
                 <div className="flex-1 bg-[var(--bg-primary)] overflow-y-auto custom-scrollbar">
+                    {/* My groups section */}
+                    {myGroups.length > 0 && (
+                        <div className="p-3 border-b border-[var(--border-color)]">
+                            <p className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider mb-2 flex items-center gap-1.5">
+                                <FolderOpen className="w-3 h-3" /> Mənim Qruplarım
+                            </p>
+                            <div className="space-y-1">
+                                {myGroups.map((g: any) => (
+                                    <div key={g.id} className="flex items-center justify-between bg-[var(--bg-card)] border border-[var(--border-color)] rounded-md px-2.5 py-1.5">
+                                        <span className="text-xs text-white font-medium">{g.name}</span>
+                                        <span className="text-[10px] text-[var(--text-secondary)] flex items-center gap-1">
+                                            <Users className="w-3 h-3" />
+                                            {g._count?.enrollments ?? g.enrollments?.length ?? 0} üzv
+                                        </span>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+                    )}
                     {activeTab === "tasks" ? (
                         <div className="p-3 space-y-3">
                             {tasks.length === 0 ? (
