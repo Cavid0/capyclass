@@ -38,12 +38,16 @@ const nextConfig = {
                     {
                         // Clickjacking və iframe injection qarşısını alır
                         key: 'Content-Security-Policy',
-                        value: "frame-ancestors 'self'"
+                        value: "default-src 'self'; script-src 'self' 'unsafe-eval' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; font-src 'self' data:; connect-src 'self' https://wandbox.org https://cdn.jsdelivr.net; frame-ancestors 'none'; base-uri 'self'; form-action 'self'"
                     },
                     {
                         // Cross-Origin resursları izolyasiya edir
                         key: 'Permissions-Policy',
-                        value: 'camera=(), microphone=(), geolocation=()'
+                        value: 'camera=(), microphone=(), geolocation=(), payment=()'
+                    },
+                    {
+                        key: 'X-Permitted-Cross-Domain-Policies',
+                        value: 'none'
                     },
                 ]
             }

@@ -7,7 +7,7 @@ export default function sitemap(): MetadataRoute.Sitemap {
         {
             url: baseUrl,
             lastModified: new Date(),
-            changeFrequency: "weekly",
+            changeFrequency: "daily",
             priority: 1.0,
         },
         {
@@ -21,6 +21,12 @@ export default function sitemap(): MetadataRoute.Sitemap {
             lastModified: new Date(),
             changeFrequency: "monthly",
             priority: 0.8,
+        },
+        {
+            url: `${baseUrl}/forgot-password`,
+            lastModified: new Date(),
+            changeFrequency: "monthly",
+            priority: 0.5,
         },
     ];
 }

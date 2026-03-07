@@ -3,6 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
+import { verifyOtpToken } from "@/lib/utils";
+import { logAudit } from "@/lib/audit";
 
 // GET: Get current user profile
 export async function GET() {
@@ -12,7 +14,7 @@ export async function GET() {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
 
         const user = await prisma.user.findUnique({
             where: { id: userId },
@@ -51,7 +53,7 @@ export async function PUT(req: NextRequest) {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const { name, otp, newPassword } = await req.json();
 
         // Build update data
@@ -70,17 +72,11 @@ export async function PUT(req: NextRequest) {
                 );
             }
 
-            const user = await prisma.user.findUnique({
-                where: { id: userId },
-            });
-
-            if (!user) {
-                return NextResponse.json({ error: "User not found" }, { status: 404 });
-            }
-
-            if (user.verificationToken !== otp) {
+            // Verify OTP with purpose and brute-force protection
+            const otpResult = await verifyOtpToken(userId, otp, "PASSWORD_CHANGE");
+            if (!otpResult.valid) {
                 return NextResponse.json(
-                    { error: "Invalid OTP code" },
+                    { error: otpResult.error },
                     { status: 400 }
                 );
             }
@@ -93,7 +89,7 @@ export async function PUT(req: NextRequest) {
             }
 
             updateData.hashedPassword = await hash(newPassword, 12);
-            updateData.verificationToken = null;
+            await logAudit(userId, "PASSWORD_CHANGED", "User", userId);
         }
 
         if (Object.keys(updateData).length === 0) {

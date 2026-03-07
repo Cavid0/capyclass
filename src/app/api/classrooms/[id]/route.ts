@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export const dynamic = "force-dynamic";
 
@@ -16,14 +17,14 @@ export async function GET(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const classroomId = params.id;
 
         const classroom = await prisma.classroom.findUnique({
             where: { id: classroomId },
             include: {
-                teacher: { select: { name: true, email: true } },
-                admins: { include: { user: { select: { id: true, name: true, email: true } } } },
+                teacher: { select: { id: true, name: true } },
+                admins: { include: { user: { select: { id: true, name: true } } } },
             },
         });
 
@@ -36,14 +37,25 @@ export async function GET(
             classroom.admins.some((a) => a.userId === userId);
 
         if (isTeacher) {
-            // Get all workspaces with student info
+            // Support optional pagination via query params
+            const { searchParams } = new URL(req.url);
+            const cursor = searchParams.get("cursor");
+            const limit = Math.min(parseInt(searchParams.get("limit") || "50") || 50, 100);
+
+            // Get all workspaces with student info (paginated)
             const workspaces = await prisma.workspace.findMany({
                 where: { classroomId },
                 include: {
                     student: { select: { id: true, name: true, email: true } },
                 },
                 orderBy: { updatedAt: "desc" },
+                take: limit + 1,
+                ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
             });
+
+            const hasMore = workspaces.length > limit;
+            if (hasMore) workspaces.pop();
+            const nextCursor = hasMore ? workspaces[workspaces.length - 1]?.id : null;
 
             // Also get all enrolled students (some might not have workspaces yet)
             const enrollments = await prisma.enrollment.findMany({
@@ -61,6 +73,7 @@ export async function GET(
                 workspaces,
                 enrollments,
                 admins: classroom.admins,
+                nextCursor,
             });
         } else {
             // Student: must be enrolled
@@ -86,6 +99,11 @@ export async function GET(
                 orderBy: { updatedAt: "desc" },
             });
 
+            // Get enrollment count for student
+            const enrollmentCount = await prisma.enrollment.count({
+                where: { classroomId },
+            });
+
             return NextResponse.json({
                 classroom: {
                     id: classroom.id,
@@ -93,6 +111,7 @@ export async function GET(
                     description: classroom.description,
                     teacherName: classroom.teacher.name,
                     teacherId: classroom.teacherId,
+                    memberCount: enrollmentCount,
                 },
                 workspaces,
             });
@@ -113,7 +132,7 @@ export async function DELETE(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const classroomId = params.id;
 
         const classroom = await prisma.classroom.findUnique({
@@ -128,14 +147,16 @@ export async function DELETE(
             return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
-        // Delete dependencies first
-        await prisma.workspace.deleteMany({ where: { classroomId } });
-        await prisma.enrollment.deleteMany({ where: { classroomId } });
-        await prisma.task.deleteMany({ where: { classroomId } });
-        await prisma.classroomAdmin.deleteMany({ where: { classroomId } });
+        // Delete all related data in a single transaction
+        await prisma.$transaction([
+            prisma.workspace.deleteMany({ where: { classroomId } }),
+            prisma.task.deleteMany({ where: { classroomId } }),
+            prisma.enrollment.deleteMany({ where: { classroomId } }),
+            prisma.classroomAdmin.deleteMany({ where: { classroomId } }),
+            prisma.classroom.delete({ where: { id: classroomId } }),
+        ]);
 
-        // Delete classroom
-        await prisma.classroom.delete({ where: { id: classroomId } });
+        await logAudit(userId, "CLASSROOM_DELETED", "Classroom", classroomId, classroom.name);
 
         return NextResponse.json({ success: true });
     } catch (error) {

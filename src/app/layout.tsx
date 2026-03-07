@@ -4,17 +4,28 @@ import Providers from "./providers";
 import { Toaster } from "sonner";
 
 export const metadata: Metadata = {
-  title: "CapyClass — Interactive Learning Platform",
+  title: {
+    default: "CapyClass — Interactive Coding Classroom Platform",
+    template: "%s | CapyClass",
+  },
   description:
-    "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
-  keywords: ["CapyClass", "capyclass", "capy", "interactive learning", "code environment", "AI code analysis", "classroom platform", "online classroom"],
+    "CapyClass is the interactive coding classroom platform where teachers create classrooms, assign coding tasks, and students write & run code in real-time with AI-powered analysis. Free online code editor for education.",
+  keywords: [
+    "CapyClass", "capyclass", "capy class", "capy", "capyclass.com",
+    "interactive coding platform", "online code editor", "classroom coding",
+    "coding education", "learn programming", "code environment",
+    "AI code analysis", "classroom platform", "online classroom",
+    "programming education", "coding tasks", "student coding",
+    "teacher coding platform", "Monaco editor", "real-time coding",
+    "free coding platform", "education technology", "edtech",
+  ],
   metadataBase: new URL("https://capyclass.com"),
   alternates: {
     canonical: "https://capyclass.com",
   },
   openGraph: {
-    title: "CapyClass — Interactive Learning Platform",
-    description: "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
+    title: "CapyClass — Interactive Coding Classroom Platform",
+    description: "Create classrooms, assign coding tasks, and let students write & run code in real-time. Free interactive coding platform for education.",
     url: "https://capyclass.com",
     siteName: "CapyClass",
     images: [
@@ -22,17 +33,18 @@ export const metadata: Metadata = {
         url: "/capybara.png",
         width: 512,
         height: 512,
-        alt: "CapyClass",
+        alt: "CapyClass - Interactive Coding Classroom Platform",
       },
     ],
     locale: "en_US",
     type: "website",
   },
   twitter: {
-    card: "summary",
-    title: "CapyClass — Interactive Learning Platform",
-    description: "CapyClass — a platform for teachers to create classrooms, students to code in isolated environments, and get AI-powered code analysis.",
+    card: "summary_large_image",
+    title: "CapyClass — Interactive Coding Classroom Platform",
+    description: "Create classrooms, assign coding tasks, and let students write & run code in real-time. Free interactive coding platform for education.",
     images: ["/capybara.png"],
+    creator: "@capyclass",
   },
   robots: {
     index: true,
@@ -40,12 +52,20 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
+      "max-video-preview": -1,
+      "max-image-preview": "large",
+      "max-snippet": -1,
     },
   },
   icons: {
     icon: '/favicon.png',
     apple: '/favicon.png',
   },
+  verification: {
+    // Add Google Search Console verification when available
+    // google: "your-verification-code",
+  },
+  category: "education",
 };
 
 export default function RootLayout({

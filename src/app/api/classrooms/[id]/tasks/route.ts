@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { isCleanText } from "@/lib/utils";
+import { notifyMany } from "@/lib/notifications";
 
 // GET: List tasks for a classroom
 export async function GET(
@@ -14,7 +16,7 @@ export async function GET(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const classroomId = params.id;
 
         // Verify access
@@ -64,7 +66,7 @@ export async function POST(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const classroomId = params.id;
 
         // Verify ownership or co-admin
@@ -85,10 +87,25 @@ export async function POST(
             return NextResponse.json({ error: "Only teachers and admins can create tasks" }, { status: 403 });
         }
 
-        const { title, description } = await req.json();
+        const { title, description, dueDate } = await req.json();
 
         if (!title?.trim()) {
             return NextResponse.json({ error: "Task title is required" }, { status: 400 });
+        }
+        if (title.length > 200 || !isCleanText(title)) {
+            return NextResponse.json({ error: "Invalid task title" }, { status: 400 });
+        }
+        if (description && (description.length > 5000 || !isCleanText(description))) {
+            return NextResponse.json({ error: "Invalid task description" }, { status: 400 });
+        }
+
+        // Validate dueDate if provided
+        let parsedDueDate: Date | null = null;
+        if (dueDate) {
+            parsedDueDate = new Date(dueDate);
+            if (isNaN(parsedDueDate.getTime())) {
+                return NextResponse.json({ error: "Invalid due date" }, { status: 400 });
+            }
         }
 
         const task = await prisma.task.create({
@@ -96,8 +113,23 @@ export async function POST(
                 title: title.trim(),
                 description: description?.trim() || "",
                 classroomId,
+                dueDate: parsedDueDate,
             },
         });
+
+        // Notify enrolled students about the new task
+        const enrollments = await prisma.enrollment.findMany({
+            where: { classroomId },
+            select: { studentId: true },
+        });
+        const studentIds = enrollments.map((e) => e.studentId);
+        await notifyMany(
+            studentIds,
+            "NEW_TASK",
+            "New task assigned",
+            `New task: ${title.trim()}`,
+            `/classroom/${classroomId}`
+        );
 
         return NextResponse.json(task, { status: 201 });
     } catch (error) {

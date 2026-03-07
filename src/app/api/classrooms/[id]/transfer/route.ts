@@ -15,7 +15,7 @@ export async function POST(
         }
 
         const classroomId = params.id;
-        const currentUserId = (session.user as any).id;
+        const currentUserId = session.user.id;
         const { newTeacherId } = await req.json();
 
         if (!newTeacherId) {
@@ -80,7 +80,7 @@ export async function DELETE(
         }
 
         const classroomId = params.id;
-        const currentUserId = (session.user as any).id;
+        const currentUserId = session.user.id;
         const { adminId } = await req.json();
 
         const classroom = await prisma.classroom.findUnique({

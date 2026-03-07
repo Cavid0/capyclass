@@ -1,7 +1,8 @@
-// Simple in-memory rate limiter
-// For production, use Redis-based solution
+// In-memory rate limiter with sliding window and memory protection
+// For production at scale, use Redis-based solution
 
 const rateMap = new Map<string, { count: number; resetAt: number }>();
+const MAX_MAP_SIZE = 50_000; // Prevent memory exhaustion from DDoS
 
 /**
  * Rate limiter — limits the maximum number of requests within a given time window
@@ -12,9 +13,27 @@ const rateMap = new Map<string, { count: number; resetAt: number }>();
  */
 export function rateLimit(key: string, maxRequests: number, windowMs: number): boolean {
     const now = Date.now();
+
+    // Memory protection: evict oldest entries if map is too large
+    if (rateMap.size > MAX_MAP_SIZE) {
+        const entriesToDelete: string[] = [];
+        rateMap.forEach((v, k) => {
+            if (now > v.resetAt) entriesToDelete.push(k);
+        });
+        entriesToDelete.forEach((k) => rateMap.delete(k));
+
+        // If still too large after cleaning expired, remove oldest
+        if (rateMap.size > MAX_MAP_SIZE) {
+            const keys = Array.from(rateMap.keys());
+            for (let i = 0; i < keys.length / 2; i++) {
+                rateMap.delete(keys[i]);
+            }
+        }
+    }
+
     const entry = rateMap.get(key);
 
-    // Clean up expired entries
+    // Clean up expired entry
     if (entry && now > entry.resetAt) {
         rateMap.delete(key);
     }
@@ -34,12 +53,20 @@ export function rateLimit(key: string, maxRequests: number, windowMs: number): b
     return true;
 }
 
-// Clean up expired entries every 5 minutes
+/** Get remaining time until rate limit resets (in seconds) */
+export function getRateLimitReset(key: string): number {
+    const entry = rateMap.get(key);
+    if (!entry) return 0;
+    const remaining = Math.max(0, entry.resetAt - Date.now());
+    return Math.ceil(remaining / 1000);
+}
+
+// Clean up expired entries every 2 minutes
 setInterval(() => {
     const now = Date.now();
+    const keysToDelete: string[] = [];
     rateMap.forEach((value, key) => {
-        if (now > value.resetAt) {
-            rateMap.delete(key);
-        }
+        if (now > value.resetAt) keysToDelete.push(key);
     });
-}, 5 * 60 * 1000);
+    keysToDelete.forEach((k) => rateMap.delete(k));
+}, 2 * 60 * 1000);

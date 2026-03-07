@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInviteCode } from "@/lib/utils";
+import { generateInviteCode, isCleanText } from "@/lib/utils";
+import { rateLimit } from "@/lib/rate-limit";
 
 // GET: List classrooms for current user
 export async function GET() {
@@ -12,7 +13,7 @@ export async function GET() {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
 
         // Fetch classrooms created by the user (teacher role for these)
         const teachingClassrooms = await prisma.classroom.findMany({
@@ -25,23 +26,36 @@ export async function GET() {
             orderBy: { createdAt: "desc" },
         });
 
-        // Get status counts for teaching classrooms
-        const teachingWithStats = await Promise.all(
-            teachingClassrooms.map(async (c) => {
-                const statusCounts = await prisma.workspace.groupBy({
-                    by: ["status"],
-                    where: { classroomId: c.id },
-                    _count: true,
-                });
-                return {
-                    ...c,
-                    isTeacher: true,
-                    passCount: statusCounts.find((s) => s.status === "PASS")?._count || 0,
-                    failCount: statusCounts.find((s) => s.status === "FAIL")?._count || 0,
-                    pendingCount: statusCounts.find((s) => s.status === "PENDING")?._count || 0,
-                };
+        // Batch query: get status counts for ALL teaching classrooms at once (fixes N+1)
+        const classroomIds = teachingClassrooms.map((c) => c.id);
+        const allStatusCounts = classroomIds.length > 0
+            ? await prisma.workspace.groupBy({
+                by: ["classroomId", "status"],
+                where: { classroomId: { in: classroomIds } },
+                _count: true,
             })
-        );
+            : [];
+
+        // Build a lookup map: classroomId -> { PASS: n, FAIL: n, PENDING: n }
+        const statsMap = new Map<string, { PASS: number; FAIL: number; PENDING: number }>();
+        for (const row of allStatusCounts) {
+            if (!statsMap.has(row.classroomId)) {
+                statsMap.set(row.classroomId, { PASS: 0, FAIL: 0, PENDING: 0 });
+            }
+            const entry = statsMap.get(row.classroomId)!;
+            entry[row.status] = row._count;
+        }
+
+        const teachingWithStats = teachingClassrooms.map((c) => {
+            const stats = statsMap.get(c.id) || { PASS: 0, FAIL: 0, PENDING: 0 };
+            return {
+                ...c,
+                isTeacher: true,
+                passCount: stats.PASS,
+                failCount: stats.FAIL,
+                pendingCount: stats.PENDING,
+            };
+        });
 
         // Fetch classrooms enrolled by the user (student role for these)
         const enrollments = await prisma.enrollment.findMany({
@@ -64,11 +78,8 @@ export async function GET() {
 
         const allClasses = [...teachingWithStats, ...enrolledClassrooms];
 
-        // Sort by most recently created/joined
         allClasses.sort((a: any, b: any) => {
-            const dateA = a.isTeacher ? a.createdAt : a.createdAt; // or joinedAt if available
-            const dateB = b.isTeacher ? b.createdAt : b.createdAt;
-            return new Date(dateB).getTime() - new Date(dateA).getTime();
+            return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
         });
 
         return NextResponse.json(allClasses);
@@ -89,6 +100,13 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
+        const userId = session.user.id;
+
+        // Rate limit: 10 classrooms per hour
+        if (!rateLimit(`create-class:${userId}`, 10, 60 * 60 * 1000)) {
+            return NextResponse.json({ error: "Too many classrooms created. Please wait." }, { status: 429 });
+        }
+
         const { name, description } = await req.json();
         if (!name) {
             return NextResponse.json(
@@ -96,13 +114,16 @@ export async function POST(req: NextRequest) {
                 { status: 400 }
             );
         }
+        if (name.length > 100 || !isCleanText(name)) {
+            return NextResponse.json({ error: "Invalid classroom name" }, { status: 400 });
+        }
 
         const classroom = await prisma.classroom.create({
             data: {
                 name,
                 description: description || null,
                 inviteCode: generateInviteCode(),
-                teacherId: (session.user as any).id,
+                teacherId: userId,
             },
         });
 

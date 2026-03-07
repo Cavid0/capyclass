@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { verifyOtpToken } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -11,7 +12,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
 
         if (!rateLimit(`delete:${userId}`, 3, 15 * 60 * 1000)) {
             return NextResponse.json(
@@ -25,14 +26,10 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "OTP code is required" }, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({ where: { id: userId } });
-
-        if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
-        }
-
-        if (user.verificationToken !== otp) {
-            return NextResponse.json({ error: "Invalid OTP code" }, { status: 400 });
+        // Verify OTP with purpose and brute-force protection
+        const otpResult = await verifyOtpToken(userId, otp, "ACCOUNT_DELETE");
+        if (!otpResult.valid) {
+            return NextResponse.json({ error: otpResult.error }, { status: 400 });
         }
 
         // If teacher owns classrooms, delete them first
@@ -45,7 +42,6 @@ export async function POST(req: NextRequest) {
 
         // Delete all related data in a transaction
         await prisma.$transaction(async (tx) => {
-            // Workspaces belonging to teacher's classrooms
             if (classroomIds.length > 0) {
                 await tx.workspace.deleteMany({ where: { classroomId: { in: classroomIds } } });
                 await tx.task.deleteMany({ where: { classroomId: { in: classroomIds } } });
@@ -54,14 +50,11 @@ export async function POST(req: NextRequest) {
                 await tx.classroom.deleteMany({ where: { teacherId: userId } });
             }
 
-            // User's co-admin records in other classrooms
             await tx.classroomAdmin.deleteMany({ where: { userId } });
-
-            // User's own workspaces and enrollments
+            await tx.notification.deleteMany({ where: { userId } });
+            await tx.auditLog.deleteMany({ where: { userId } });
             await tx.workspace.deleteMany({ where: { studentId: userId } });
             await tx.enrollment.deleteMany({ where: { studentId: userId } });
-
-            // Delete the user
             await tx.user.delete({ where: { id: userId } });
         });
 

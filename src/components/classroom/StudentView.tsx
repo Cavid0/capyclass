@@ -1,0 +1,471 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import {
+    ChevronLeft, Plus, ClipboardList, FileCode, Save, Folder, Loader2, CheckCircle, ThumbsUp, ThumbsDown, Play, Terminal, X, Trash2
+} from "lucide-react";
+import { CodeEditor } from "@/components/editor/CodeEditor";
+import { cn } from "@/lib/utils";
+import { toast } from "sonner";
+
+const DEFAULT_CODE: Record<string, string> = {
+    javascript: 'console.log("Hello, World!");',
+    typescript: 'console.log("Hello, TypeScript!");',
+    python: 'print("Hello, World!")',
+    c: '#include <stdio.h>\n\nint main() {\n    printf("Hello, World!\\n");\n    return 0;\n}',
+    cpp: '#include <iostream>\n\nint main() {\n    std::cout << "Hello, World!" << std::endl;\n    return 0;\n}',
+    csharp: 'using System;\n\nclass Program {\n    static void Main() {\n        Console.WriteLine("Hello, World!");\n    }\n}',
+    java: 'public class Main {\n    public static void main(String[] args) {\n        System.out.println("Hello, World!");\n    }\n}',
+    go: 'package main\n\nimport "fmt"\n\nfunc main() {\n    fmt.Println("Hello, World!")\n}',
+    ruby: 'puts "Hello, World!"',
+    php: '<?php\n\necho "Hello, World!";\n?>',
+    rust: 'fn main() {\n    println!("Hello, World!");\n}',
+    swift: 'print("Hello, World!")',
+};
+
+interface StudentViewProps {
+    classroomId: string;
+    workspaces: any[];
+    tasks: any[];
+    currentUserId: string;
+    selectedWorkspaceId: string | null;
+    onSelectWorkspace: (id: string | null) => void;
+    onWorkspaceCreated: () => void;
+}
+
+export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: StudentViewProps) {
+    const activeWorkspace = workspaces.find((w: any) => w.id === selectedWorkspaceId);
+
+    const [code, setCode] = useState("");
+    const [language, setLanguage] = useState("javascript");
+    const [saving, setSaving] = useState(false);
+    const [saved, setSaved] = useState(false);
+
+    const [activeTab, setActiveTab] = useState<"files" | "tasks">("tasks");
+    const [creatingFile, setCreatingFile] = useState(false);
+    const [viewingTask, setViewingTask] = useState<any>(null);
+
+    // Compiler state
+    const [running, setRunning] = useState(false);
+    const [output, setOutput] = useState<string | null>(null);
+    const [outputError, setOutputError] = useState(false);
+    const [showOutput, setShowOutput] = useState(false);
+
+    const [showNewFileModal, setShowNewFileModal] = useState(false);
+    const [newFileName, setNewFileName] = useState("");
+
+    // Sync editor when active workspace changes
+    useEffect(() => {
+        if (activeWorkspace) {
+            const initialCode = activeWorkspace.code;
+            const initialLang = activeWorkspace.language || "javascript";
+            setLanguage(initialLang);
+
+            if (!initialCode || initialCode.trim() === "") {
+                setCode(DEFAULT_CODE[initialLang] || "");
+            } else {
+                setCode(initialCode);
+            }
+        } else {
+            setCode("");
+        }
+    }, [activeWorkspace?.id, activeWorkspace]);
+
+    const handleLanguageChange = (newLang: string) => {
+        setLanguage(newLang);
+        const defaultCodeVals = Object.values(DEFAULT_CODE);
+        if (!code || code.trim() === "" || defaultCodeVals.includes(code.trim())) {
+            setCode(DEFAULT_CODE[newLang] || "");
+        }
+    };
+
+    const submitCreateFile = async (e: React.FormEvent) => {
+        e.preventDefault();
+        const title = newFileName.trim();
+        if (!title) return;
+
+        setShowNewFileModal(false);
+        setNewFileName("");
+        setCreatingFile(true);
+        try {
+            const res = await fetch(`/api/classrooms/${classroomId}/workspaces`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ title }),
+            });
+            if (res.ok) {
+                const newWs = await res.json();
+                onWorkspaceCreated();
+                onSelectWorkspace(newWs.id);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setCreatingFile(false);
+        }
+    };
+
+    const handleSave = async () => {
+        if (!activeWorkspace) return;
+        setSaving(true);
+        setSaved(false);
+        try {
+            const res = await fetch(`/api/workspaces/${activeWorkspace.id}/save`, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code, language }),
+            });
+            if (res.ok) {
+                setSaved(true);
+                setTimeout(() => setSaved(false), 3000);
+            }
+        } catch (error) {
+            console.error(error);
+        } finally {
+            setSaving(false);
+            onWorkspaceCreated();
+        }
+    };
+
+    const handleDeleteWorkspace = async () => {
+        if (!activeWorkspace) return;
+        toast("Are you sure you want to delete this file?", {
+            action: {
+                label: "Yes, Delete",
+                onClick: async () => {
+                    try {
+                        const res = await fetch(`/api/workspaces/${activeWorkspace.id}`, { method: "DELETE" });
+                        if (res.ok) {
+                            onSelectWorkspace(null);
+                            onWorkspaceCreated();
+                        }
+                    } catch (error) {
+                        console.error(error);
+                    }
+                },
+            },
+        });
+    };
+
+    const handleRun = async () => {
+        if (!code.trim() || language === "html") return;
+        setRunning(true);
+        setOutput(null);
+        setOutputError(false);
+        setShowOutput(true);
+        try {
+            const res = await fetch("/api/execute", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code, language }),
+            });
+            const data = await res.json();
+            if (res.ok) {
+                setOutput(data.output || "(No output)");
+                setOutputError(data.hasError);
+            } else {
+                setOutput(data.error || "An error occurred");
+                setOutputError(true);
+            }
+        } catch {
+            setOutput("Network error. Please try again.");
+            setOutputError(true);
+        } finally {
+            setRunning(false);
+        }
+    };
+
+    return (
+        <div className="flex flex-col md:flex-row" style={{ height: "calc(100vh - 3.5rem)" }}>
+            {/* Sidebar */}
+            <div
+                className={cn(
+                    "w-full md:w-72 border-r border-[var(--border-color)] flex flex-col h-full bg-[var(--bg-secondary)] shrink-0 transition-all z-20",
+                    selectedWorkspaceId ? "hidden md:flex" : "flex"
+                )}
+            >
+                <div className="flex border-b border-[var(--border-color)] shrink-0">
+                    <button
+                        onClick={() => setActiveTab("tasks")}
+                        className={cn(
+                            "flex-1 py-3 text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5",
+                            activeTab === "tasks" ? "text-white border-b-2 border-white bg-[var(--bg-card)]" : "text-[var(--text-secondary)] hover:text-white"
+                        )}
+                    >
+                        <ClipboardList className="w-3.5 h-3.5" />
+                        Tasks
+                    </button>
+                    <button
+                        onClick={() => setActiveTab("files")}
+                        className={cn(
+                            "flex-1 py-3 text-xs font-medium tracking-wide transition-colors flex items-center justify-center gap-1.5",
+                            activeTab === "files" ? "text-white border-b-2 border-white bg-[var(--bg-card)]" : "text-[var(--text-secondary)] hover:text-white"
+                        )}
+                    >
+                        <Folder className="w-3.5 h-3.5" />
+                        My Files
+                    </button>
+                </div>
+
+                <div className="flex-1 bg-[var(--bg-primary)] overflow-y-auto custom-scrollbar">
+                    {activeTab === "tasks" ? (
+                        <div className="p-3 space-y-3">
+                            {tasks.length === 0 ? (
+                                <div className="text-center py-12 text-[var(--text-secondary)]">
+                                    <ClipboardList className="w-10 h-10 mx-auto mb-3 opacity-20" />
+                                    <p className="text-sm">No tasks yet</p>
+                                </div>
+                            ) : (
+                                tasks.map((t: any) => (
+                                    <div
+                                        key={t.id}
+                                        onClick={() => setViewingTask(t)}
+                                        className="p-3 rounded-lg bg-[var(--bg-card)] border border-[var(--border-color)] cursor-pointer hover:border-[var(--border-hover)] transition-all group"
+                                    >
+                                        <div className="flex items-start justify-between mb-1">
+                                            <h4 className="text-sm font-medium text-white">{t.title}</h4>
+                                        </div>
+                                        {t.description && <p className="text-xs text-[var(--text-secondary)] mb-2 line-clamp-2">{t.description}</p>}
+                                    </div>
+                                ))
+                            )}
+                        </div>
+                    ) : (
+                        <div className="p-2 space-y-1">
+                            <button
+                                onClick={() => setShowNewFileModal(true)}
+                                disabled={creatingFile}
+                                className="w-full text-left p-2 rounded-md hover:bg-[var(--bg-card)] text-sm text-[var(--text-secondary)] hover:text-white transition-colors flex items-center justify-center gap-2 border border-dashed border-[var(--border-color)] hover:border-[var(--border-hover)] mb-2"
+                            >
+                                {creatingFile ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Plus className="w-3.5 h-3.5" />}
+                                New File
+                            </button>
+
+                            {workspaces.map((w: any) => {
+                                const hasReview = w.reviewStatus;
+                                return (
+                                    <button
+                                        key={w.id}
+                                        onClick={() => onSelectWorkspace(w.id)}
+                                        className={cn(
+                                            "w-full text-left p-2.5 rounded-md text-sm transition-all flex items-center justify-between border",
+                                            selectedWorkspaceId === w.id
+                                                ? "bg-[var(--bg-card)] border-[var(--border-color)] text-white shadow-sm"
+                                                : "border-transparent text-[var(--text-secondary)] hover:bg-[var(--bg-elevated)] hover:text-white"
+                                        )}
+                                    >
+                                        <span className="flex items-center gap-2 truncate">
+                                            <FileCode className="w-4 h-4 shrink-0" />
+                                            <span className="truncate">{w.title}</span>
+                                        </span>
+                                        {hasReview && (
+                                            <span
+                                                className={cn(
+                                                    "text-[9px] px-1.5 py-0.5 rounded-full flex items-center gap-0.5 shrink-0",
+                                                    w.reviewStatus === "CORRECT" ? "bg-emerald-500/10 text-emerald-400" : "bg-red-500/10 text-red-400"
+                                                )}
+                                            >
+                                                {w.reviewStatus === "CORRECT" ? <ThumbsUp className="w-2.5 h-2.5" /> : <ThumbsDown className="w-2.5 h-2.5" />}
+                                            </span>
+                                        )}
+                                    </button>
+                                );
+                            })}
+                        </div>
+                    )}
+                </div>
+            </div>
+
+            {/* Editor Pane */}
+            <div className="flex-1 flex flex-col bg-[#0d1117] min-w-0 min-h-0">
+                {activeWorkspace ? (
+                    <>
+                        <div className="h-12 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0 transition-all">
+                            <div className="flex items-center gap-3">
+                                <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] mr-2">
+                                    <ChevronLeft className="w-4 h-4" />
+                                </button>
+                                <div className="text-sm font-medium text-white flex items-center gap-2 bg-[var(--bg-card)] border border-[var(--border-color)] px-2.5 py-1 rounded">
+                                    <FileCode className="w-3.5 h-3.5" />
+                                    {activeWorkspace.title}
+                                </div>
+                                <select
+                                    value={language}
+                                    onChange={(e) => handleLanguageChange(e.target.value)}
+                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white [&>option]:bg-[#1a1b26] [&>option]:text-white"
+                                >
+                                    <option value="javascript">JavaScript</option>
+                                    <option value="typescript">TypeScript</option>
+                                    <option value="python">Python</option>
+                                    <option value="c">C</option>
+                                    <option value="cpp">C++</option>
+                                    <option value="csharp">C#</option>
+                                    <option value="java">Java</option>
+                                    <option value="go">Go</option>
+                                    <option value="ruby">Ruby</option>
+                                    <option value="php">PHP</option>
+                                    <option value="rust">Rust</option>
+                                    <option value="swift">Swift</option>
+                                </select>
+                            </div>
+
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={handleSave}
+                                    disabled={saving}
+                                    className={cn(
+                                        "px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all",
+                                        saved ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "glow-btn"
+                                    )}
+                                >
+                                    {saving ? (
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                    ) : saved ? (
+                                        <>
+                                            <CheckCircle className="w-3.5 h-3.5" /> Saved
+                                        </>
+                                    ) : (
+                                        <>
+                                            <Save className="w-3.5 h-3.5" /> Save
+                                        </>
+                                    )}
+                                </button>
+
+                                {language !== "html" && (
+                                    <button
+                                        onClick={handleRun}
+                                        disabled={running}
+                                        className="px-4 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
+                                    >
+                                        {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
+                                        Run
+                                    </button>
+                                )}
+
+                                <button
+                                    onClick={handleDeleteWorkspace}
+                                    className="px-2 py-1.5 text-xs flex items-center gap-2 rounded transition-all bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20"
+                                    title="Delete File"
+                                >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                </button>
+                            </div>
+                        </div>
+                        <div className={cn("flex-1 relative min-h-0 flex flex-col", showOutput && "flex-[2]")}>
+                            <div className="flex-1 relative min-h-0">
+                                <CodeEditor value={code} onChange={(val) => setCode(val || "")} language={language} />
+                            </div>
+
+                            {/* Output Panel */}
+                            {showOutput && (
+                                <div className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col" style={{ height: "200px" }}>
+                                    <div className="flex items-center justify-between px-3 py-1.5 bg-[#0d1117] border-b border-[var(--border-color)]">
+                                        <div className="flex items-center gap-2 text-xs">
+                                            <Terminal className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
+                                            <span className="text-[var(--text-secondary)] font-medium">Output</span>
+                                            {running && <Loader2 className="w-3 h-3 animate-spin text-blue-400" />}
+                                        </div>
+                                        <button
+                                            onClick={() => {
+                                                setShowOutput(false);
+                                                setOutput(null);
+                                            }}
+                                            className="p-1 text-[var(--text-secondary)] hover:text-white transition-colors rounded hover:bg-white/5"
+                                        >
+                                            <X className="w-3.5 h-3.5" />
+                                        </button>
+                                    </div>
+                                    <div className="flex-1 overflow-auto p-3 custom-scrollbar">
+                                        {running ? (
+                                            <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs">
+                                                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                                Running code...
+                                            </div>
+                                        ) : output !== null ? (
+                                            <pre className={cn("text-xs font-mono whitespace-pre-wrap leading-relaxed", outputError ? "text-red-400" : "text-emerald-300")}>{output}</pre>
+                                        ) : (
+                                            <p className="text-xs text-[var(--text-secondary)]">Press ▶ to run</p>
+                                        )}
+                                    </div>
+                                </div>
+                            )}
+                        </div>
+
+                        {/* Review Status Banner */}
+                        {activeWorkspace.reviewStatus && (
+                            <div
+                                className={cn(
+                                    "shrink-0 border-t px-4 py-3 flex items-center gap-3",
+                                    activeWorkspace.reviewStatus === "CORRECT" ? "bg-emerald-500/10 border-emerald-500/20 text-emerald-400" : "bg-red-500/10 border-red-500/20 text-red-400"
+                                )}
+                            >
+                                {activeWorkspace.reviewStatus === "CORRECT" ? <ThumbsUp className="w-4 h-4 shrink-0" /> : <ThumbsDown className="w-4 h-4 shrink-0" />}
+                                <span className="text-sm font-medium">Admin review: {activeWorkspace.reviewStatus === "CORRECT" ? "Correct ✓" : "Incorrect ✗"}</span>
+                                {activeWorkspace.reviewNote && <span className="text-xs opacity-80 ml-2">— {activeWorkspace.reviewNote}</span>}
+                            </div>
+                        )}
+                    </>
+                ) : (
+                    <div className="h-full flex flex-col items-center justify-center text-[var(--text-secondary)]">
+                        <Folder className="w-12 h-12 mb-4 opacity-20" />
+                        <p className="text-sm">Select a file from the sidebar or create a new one</p>
+                    </div>
+                )}
+            </div>
+
+            {showNewFileModal && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowNewFileModal(false)}>
+                    <div className="glass-card w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
+                        <h3 className="text-lg font-medium text-white mb-4">Create new file</h3>
+                        <form onSubmit={submitCreateFile} className="space-y-4">
+                            <input
+                                autoFocus
+                                type="text"
+                                placeholder="File name..."
+                                value={newFileName}
+                                onChange={(e) => setNewFileName(e.target.value)}
+                                className="w-full bg-[var(--bg-primary)] border border-white/10 rounded-xl px-4 py-2 flex items-center gap-2 text-sm text-white placeholder-white/20 focus:outline-none focus:border-indigo-500 focus:ring-1 focus:ring-indigo-500"
+                            />
+                            <div className="flex gap-2 justify-end">
+                                <button type="button" onClick={() => setShowNewFileModal(false)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">
+                                    Cancel
+                                </button>
+                                <button type="submit" disabled={!newFileName.trim()} className="glow-btn px-4 py-2 text-sm">
+                                    Create
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            )}
+
+            {viewingTask && (
+                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setViewingTask(null)}>
+                    <div className="glass-card p-6 w-full max-w-lg max-h-[80vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-start justify-between mb-6 shrink-0 gap-4">
+                            <div className="flex items-center gap-3">
+                                <div className="w-10 h-10 rounded-full bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0">
+                                    <ClipboardList className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h3 className="text-lg font-semibold text-white">{viewingTask.title}</h3>
+                                </div>
+                            </div>
+                            <button onClick={() => setViewingTask(null)} className="text-[var(--text-secondary)] hover:text-white transition-colors shrink-0 p-1">
+                                <X className="w-5 h-5" />
+                            </button>
+                        </div>
+                        <div className="flex-1 overflow-y-auto mb-4 custom-scrollbar text-sm text-[var(--text-secondary)] whitespace-pre-wrap leading-relaxed pr-2">
+                            {viewingTask.description || "No description"}
+                        </div>
+                        <div className="shrink-0 pt-4 border-t border-[var(--border-color)] text-right">
+                            <button onClick={() => setViewingTask(null)} className="glow-btn px-6 py-2 text-sm">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+        </div>
+    );
+}

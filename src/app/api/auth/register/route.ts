@@ -3,6 +3,9 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidEmail, isCleanText, generateOtp } from "@/lib/utils";
+
+const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
     try {
@@ -22,6 +25,23 @@ export async function POST(req: NextRequest) {
             );
         }
 
+        // Input validation
+        if (!isValidEmail(email)) {
+            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        }
+        if (!isCleanText(name)) {
+            return NextResponse.json({ error: "Name contains invalid characters" }, { status: 400 });
+        }
+        if (name.length > 100) {
+            return NextResponse.json({ error: "Name is too long" }, { status: 400 });
+        }
+        if (password.length < 6) {
+            return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
+        }
+        if (password.length > 128) {
+            return NextResponse.json({ error: "Password is too long" }, { status: 400 });
+        }
+
         const existingUser = await prisma.user.findUnique({
             where: { email },
         });
@@ -34,7 +54,7 @@ export async function POST(req: NextRequest) {
         }
 
         const hashedPassword = await hash(password, 12);
-        const verificationCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const verificationCode = generateOtp();
 
         const user = await prisma.user.create({
             data: {
@@ -44,6 +64,8 @@ export async function POST(req: NextRequest) {
                 role: role === "TEACHER" ? "TEACHER" : "STUDENT",
                 emailVerified: false,
                 verificationToken: verificationCode,
+                tokenPurpose: "EMAIL_VERIFY",
+                verificationTokenExpiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
             },
         });
 
@@ -51,7 +73,6 @@ export async function POST(req: NextRequest) {
             await sendVerificationEmail(email, verificationCode);
         } catch (emailError: any) {
             console.error("Register email error:", emailError?.message);
-            // If email failed, delete the account so they can register again
             await prisma.user.delete({ where: { id: user.id } });
             return NextResponse.json(
                 { error: "Failed to send verification email. Please try again later." },

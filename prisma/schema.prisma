@@ -19,60 +19,78 @@ enum WorkspaceStatus {
   FAIL
 }
 
-model User {
-  id                String    @id @default(cuid())
-  name              String
-  email             String    @unique
-  hashedPassword    String
-  role              Role      @default(STUDENT)
-  emailVerified     Boolean   @default(false)
-  verificationToken String?   @unique
-  createdAt         DateTime  @default(now())
-  updatedAt         DateTime  @updatedAt
+enum TokenPurpose {
+  EMAIL_VERIFY
+  PASSWORD_RESET
+  PASSWORD_CHANGE
+  ACCOUNT_DELETE
+}
 
-  classrooms       Classroom[]      @relation("TeacherClassrooms")
-  enrollments      Enrollment[]
-  workspaces       Workspace[]
-  classroomAdmins  ClassroomAdmin[]
+model User {
+  id                         String        @id @default(cuid())
+  name                       String
+  email                      String        @unique
+  hashedPassword             String
+  role                       Role          @default(STUDENT)
+  emailVerified              Boolean       @default(false)
+  verificationToken          String?       @unique
+  tokenPurpose               TokenPurpose?
+  verificationTokenExpiresAt DateTime?
+  otpAttempts                Int           @default(0)
+  otpLockedUntil             DateTime?
+  createdAt                  DateTime      @default(now())
+  updatedAt                  DateTime      @updatedAt
+
+  classrooms      Classroom[]        @relation("TeacherClassrooms")
+  enrollments     Enrollment[]
+  workspaces      Workspace[]
+  classroomAdmins ClassroomAdmin[]
+  auditLogs       AuditLog[]
+  notifications   Notification[]
 }
 
 model Classroom {
-  id          String       @id @default(cuid())
+  id          String   @id @default(cuid())
   name        String
   description String?
-  inviteCode  String       @unique
+  inviteCode  String   @unique
   teacherId   String
-  createdAt   DateTime     @default(now())
-  updatedAt   DateTime     @updatedAt
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   teacher     User             @relation("TeacherClassrooms", fields: [teacherId], references: [id])
   enrollments Enrollment[]
   workspaces  Workspace[]
   tasks       Task[]
   admins      ClassroomAdmin[]
+
+  @@index([teacherId])
 }
 
 model ClassroomAdmin {
-  id          String    @id @default(cuid())
+  id          String   @id @default(cuid())
   classroomId String
   userId      String
-  addedAt     DateTime  @default(now())
+  addedAt     DateTime @default(now())
 
-  classroom   Classroom @relation(fields: [classroomId], references: [id])
-  user        User      @relation(fields: [userId], references: [id])
+  classroom Classroom @relation(fields: [classroomId], references: [id])
+  user      User      @relation(fields: [userId], references: [id])
 
   @@unique([classroomId, userId])
 }
 
 model Task {
-  id          String   @id @default(cuid())
+  id          String    @id @default(cuid())
   title       String
-  description String   @default("")
+  description String    @default("")
   classroomId String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
 
   classroom Classroom @relation(fields: [classroomId], references: [id])
+
+  @@index([classroomId])
 }
 
 model Enrollment {
@@ -100,6 +118,54 @@ model Workspace {
   createdAt    DateTime        @default(now())
   updatedAt    DateTime        @updatedAt
 
-  student   User      @relation(fields: [studentId], references: [id])
-  classroom Classroom @relation(fields: [classroomId], references: [id])
+  student   User               @relation(fields: [studentId], references: [id])
+  classroom Classroom          @relation(fields: [classroomId], references: [id])
+  versions  WorkspaceVersion[]
+
+  @@index([studentId])
+  @@index([classroomId])
+}
+
+model WorkspaceVersion {
+  id          String   @id @default(cuid())
+  workspaceId String
+  code        String
+  language    String
+  savedAt     DateTime @default(now())
+
+  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+
+  @@index([workspaceId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  details      String?
+  createdAt    DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+  @@index([resourceType, resourceId])
+  @@index([createdAt])
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String
+  title     String
+  message   String
+  read      Boolean  @default(false)
+  link      String?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, read])
+  @@index([createdAt])
 }

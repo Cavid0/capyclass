@@ -146,13 +146,6 @@ export default function DashboardPage() {
             <main className="max-w-6xl mx-auto px-6 py-10">
                 <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
                     <div className="space-y-2">
-                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/5 border border-white/10 text-xs font-medium text-[var(--text-secondary)] mb-2">
-                            <span className="relative flex h-2 w-2">
-                                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-                            </span>
-                            System active
-                        </div>
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-3">
                             Hello, {userName}! 👋
                         </h1>

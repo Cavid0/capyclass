@@ -1,9 +1,22 @@
 User-agent: *
 Allow: /
+Allow: /login
+Allow: /register
+Allow: /forgot-password
 Disallow: /api/
 Disallow: /dashboard
 Disallow: /profile
 Disallow: /classroom/
+Disallow: /verify-email
+Disallow: /join/
 Disallow: /_next/
 
+# Crawl delay for bots
+User-agent: AhrefsBot
+Crawl-delay: 10
+
+User-agent: SemrushBot
+Crawl-delay: 10
+
 Sitemap: https://capyclass.com/sitemap.xml
+Host: https://capyclass.com

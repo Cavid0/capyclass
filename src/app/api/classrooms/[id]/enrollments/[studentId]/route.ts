@@ -13,7 +13,7 @@ export async function DELETE(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
+        const userId = session.user.id;
         const classroomId = params.id;
         const studentToRemove = params.studentId;
 

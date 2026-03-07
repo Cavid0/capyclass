@@ -1,9 +1,19 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
+import { rateLimit } from "@/lib/rate-limit";
+import { generateOtp } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
+        const ip = req.headers.get("x-forwarded-for") || "unknown";
+        if (!rateLimit(`resend-verify:${ip}`, 5, 15 * 60 * 1000)) {
+            return NextResponse.json(
+                { error: "Rate limit exceeded. Please try again later." },
+                { status: 429 }
+            );
+        }
+
         const { email } = await req.json();
 
         if (!email) {
@@ -16,7 +26,6 @@ export async function POST(req: NextRequest) {
         const user = await prisma.user.findUnique({ where: { email } });
 
         if (!user) {
-            // Security: return the same response regardless
             return NextResponse.json({ message: "If the account exists, a code has been sent" });
         }
 
@@ -27,11 +36,17 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        const newCode = Math.floor(100000 + Math.random() * 900000).toString();
+        const newCode = generateOtp();
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { verificationToken: newCode },
+            data: {
+                verificationToken: newCode,
+                tokenPurpose: "EMAIL_VERIFY",
+                verificationTokenExpiresAt: new Date(Date.now() + 15 * 60 * 1000),
+                otpAttempts: 0,
+                otpLockedUntil: null,
+            },
         });
 
         await sendVerificationEmail(email, newCode);

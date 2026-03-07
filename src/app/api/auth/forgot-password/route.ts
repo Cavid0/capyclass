@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
+import { generateOtp } from "@/lib/utils";
+
+const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
     try {
@@ -26,11 +29,16 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ message: "If this email exists, an OTP code has been sent" });
         }
 
-        const code = Math.floor(100000 + Math.random() * 900000).toString();
+        const code = generateOtp();
 
         await prisma.user.update({
             where: { id: user.id },
-            data: { verificationToken: code },
+            data: {
+                verificationToken: code,
+                tokenPurpose: "PASSWORD_RESET",
+                verificationTokenExpiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
+                otpAttempts: 0,
+            },
         });
 
         await sendVerificationEmail(email, code);

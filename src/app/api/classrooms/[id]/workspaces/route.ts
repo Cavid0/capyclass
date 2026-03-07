@@ -14,8 +14,8 @@ export async function POST(
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
-        const userId = (session.user as any).id;
-        const role = (session.user as any).role;
+        const userId = session.user.id;
+        const role = session.user.role;
         const classroomId = params.id;
 
         if (role !== "STUDENT") {

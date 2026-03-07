@@ -2,35 +2,52 @@ import { NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { logAudit } from "@/lib/audit";
+
+async function getAdminAccess(userId: string, taskId: string) {
+    const task = await prisma.task.findUnique({
+        where: { id: taskId },
+        include: { classroom: { include: { admins: true } } },
+    });
+    if (!task) return { task: null, authorized: false };
+    const isOwner = userId === task.classroom.teacherId;
+    const isAdmin = task.classroom.admins.some((a) => a.userId === userId);
+    return { task, authorized: isOwner || isAdmin };
+}
 
 export async function PUT(req: Request, { params }: { params: { id: string } }) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+        const userId = session.user.id;
         const { id } = params;
-        const body = await req.json();
-        const { title, description } = body;
+        const { title, description, dueDate } = await req.json();
 
-        // Verify task exists and caller is teacher or co-admin
-        const task = await prisma.task.findUnique({
-            where: { id },
-            include: { classroom: { include: { admins: true } } }
-        });
-
+        const { task, authorized } = await getAdminAccess(userId, id);
         if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+        if (!authorized) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        const isOwner = user?.id === task.classroom.teacherId;
-        const isAdmin = task.classroom.admins.some((a: any) => a.userId === user?.id);
-        if (!user || (!isOwner && !isAdmin)) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        // Validate dueDate if provided
+        let parsedDueDate: Date | null | undefined = undefined;
+        if (dueDate !== undefined) {
+            parsedDueDate = dueDate ? new Date(dueDate) : null;
+            if (dueDate && isNaN(parsedDueDate!.getTime())) {
+                return NextResponse.json({ error: "Invalid due date" }, { status: 400 });
+            }
         }
+
+        const updateData: any = {};
+        if (title !== undefined) updateData.title = title;
+        if (description !== undefined) updateData.description = description;
+        if (parsedDueDate !== undefined) updateData.dueDate = parsedDueDate;
 
         const updatedTask = await prisma.task.update({
             where: { id },
-            data: { title, description }
+            data: updateData,
         });
+
+        await logAudit(userId, "TASK_UPDATED", "Task", id, title);
 
         return NextResponse.json(updatedTask);
     } catch (error) {
@@ -42,27 +59,17 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
 export async function DELETE(req: Request, { params }: { params: { id: string } }) {
     try {
         const session = await getServerSession(authOptions);
-        if (!session?.user?.email) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+        if (!session?.user) return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
 
+        const userId = session.user.id;
         const { id } = params;
 
-        const task = await prisma.task.findUnique({
-            where: { id },
-            include: { classroom: { include: { admins: true } } }
-        });
-
+        const { task, authorized } = await getAdminAccess(userId, id);
         if (!task) return NextResponse.json({ error: "Task not found" }, { status: 404 });
+        if (!authorized) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
-        const user = await prisma.user.findUnique({ where: { email: session.user.email } });
-        const isOwner = user?.id === task.classroom.teacherId;
-        const isAdmin = task.classroom.admins.some((a: any) => a.userId === user?.id);
-        if (!user || (!isOwner && !isAdmin)) {
-            return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-        }
-
-        await prisma.task.delete({
-            where: { id }
-        });
+        await prisma.task.delete({ where: { id } });
+        await logAudit(userId, "TASK_DELETED", "Task", id, task.title);
 
         return NextResponse.json({ success: true });
     } catch (error) {

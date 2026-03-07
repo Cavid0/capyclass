@@ -1,8 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
+import { rateLimit } from "@/lib/rate-limit";
 
 // Language mapping: Monaco language id -> Wandbox compiler name
+// Only languages with verified working Wandbox compilers
 const COMPILER_MAP: Record<string, string> = {
     javascript: "nodejs-20.17.0",
     typescript: "typescript-5.6.2",
@@ -16,7 +18,6 @@ const COMPILER_MAP: Record<string, string> = {
     php: "php-8.3.12",
     rust: "rust-1.82.0",
     swift: "swift-6.0.1",
-    kotlin: "openjdk-jdk-22+36", // Kotlin uses Java compiler, will wrap
 };
 
 // Java needs a Main class wrapper
@@ -33,14 +34,25 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Authentication required" }, { status: 401 });
         }
 
+        const userId = session.user.id;
+        // Rate limit: 20 executions per minute per user
+        if (!rateLimit(`execute:${userId}`, 20, 60 * 1000)) {
+            return NextResponse.json({ error: "Too many executions. Please wait a moment." }, { status: 429 });
+        }
+
         const { code, language } = await req.json();
 
         if (!code || !language) {
             return NextResponse.json({ error: "Code and language are required" }, { status: 400 });
         }
 
-        if (language === "html") {
-            return NextResponse.json({ error: "HTML/CSS cannot be executed" }, { status: 400 });
+        // Limit code size to prevent abuse (50KB max)
+        if (code.length > 50000) {
+            return NextResponse.json({ error: "Code is too large. Maximum 50KB allowed." }, { status: 400 });
+        }
+
+        if (language === "html" || language === "kotlin") {
+            return NextResponse.json({ error: "This language cannot be executed on the server" }, { status: 400 });
         }
 
         const compiler = COMPILER_MAP[language];
