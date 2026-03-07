@@ -36,10 +36,13 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
 
     const isOwner = classroom.teacherId === currentUserId;
 
+    const [taskDueDate, setTaskDueDate] = useState("");
+
     const openCreateTask = () => {
         setEditingTaskId(null);
         setTaskTitle("");
         setTaskDesc("");
+        setTaskDueDate("");
         setShowTaskModal(true);
     };
 
@@ -47,6 +50,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
         setEditingTaskId(t.id);
         setTaskTitle(t.title);
         setTaskDesc(t.description || "");
+        setTaskDueDate(t.dueDate ? new Date(t.dueDate).toISOString().slice(0, 16) : "");
         setShowTaskModal(true);
     };
 
@@ -131,7 +135,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
             const res = await fetch(url, {
                 method,
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ title: taskTitle, description: taskDesc }),
+                body: JSON.stringify({ title: taskTitle, description: taskDesc, dueDate: taskDueDate || null }),
             });
             if (res.ok) {
                 setShowTaskModal(false);
@@ -591,6 +595,16 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                     <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Description (optional)</label>
                                     <textarea value={taskDesc} onChange={(e) => setTaskDesc(e.target.value)} className="input-field min-h-[100px] resize-none" placeholder="Detailed description of the task..." />
                                 </div>
+                                <div>
+                                    <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Deadline (optional)</label>
+                                    <input
+                                        type="datetime-local"
+                                        value={taskDueDate}
+                                        onChange={(e) => setTaskDueDate(e.target.value)}
+                                        className="input-field"
+                                        style={{ colorScheme: "dark" }}
+                                    />
+                                </div>
                             </div>
 
                             <div className="flex gap-3 justify-end pt-6">
@@ -599,6 +613,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                     onClick={() => {
                                         setShowTaskModal(false);
                                         setEditingTaskId(null);
+                                        setTaskDueDate("");
                                     }}
                                     className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
                                 >

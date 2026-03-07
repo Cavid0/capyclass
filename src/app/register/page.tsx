@@ -54,6 +54,9 @@ export default function RegisterPage() {
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
         setError("");
+        if (password.length < 8) { setError("Password must be at least 8 characters."); return; }
+        if (!/[a-zA-Z]/.test(password)) { setError("Password must contain at least one letter."); return; }
+        if (!/[0-9]/.test(password)) { setError("Password must contain at least one number."); return; }
         setLoading(true);
         try {
             const res = await fetch("/api/auth/register", {
@@ -192,12 +195,50 @@ export default function RegisterPage() {
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"><Mail className="w-4 h-4 text-[#71717a]" /></div>
                                     </div>
                                 </div>
-                                <div className="space-y-1.5">
+                <div className="space-y-1.5">
                                     <label className="text-xs font-medium text-[var(--text-secondary)]">Password *</label>
                                     <div className="relative">
-                                        <input type="password" required minLength={6} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field !pl-[42px] tracking-widest" placeholder="••••••••" />
+                                        <input type="password" required minLength={8} value={password} onChange={(e) => setPassword(e.target.value)} className="input-field !pl-[42px] tracking-widest" placeholder="••••••••" />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none"><Lock className="w-4 h-4 text-[#71717a]" /></div>
                                     </div>
+                                    {(() => {
+                                        const hasLetter = /[a-zA-Z]/.test(password);
+                                        const hasNumber = /[0-9]/.test(password);
+                                        const hasSpecial = /[^a-zA-Z0-9]/.test(password);
+                                        const hasLength = password.length >= 8;
+                                        const score = password.length === 0 ? 0 : password.length < 6 ? 0 : (hasLetter && hasNumber && hasSpecial && hasLength) ? 3 : (hasLetter && hasNumber && hasLength) ? 2 : 1;
+                                        const labels = ["Too short", "Weak", "Medium", "Strong"];
+                                        const colors = ["bg-red-500", "bg-red-400", "bg-amber-400", "bg-emerald-400"];
+                                        const textColors = ["text-red-400", "text-red-400", "text-amber-400", "text-emerald-400"];
+                                        const rules = [
+                                            { label: "At least 8 characters", ok: hasLength },
+                                            { label: "Contains a letter", ok: hasLetter },
+                                            { label: "Contains a number", ok: hasNumber },
+                                            { label: "Contains a special character (!@#...)", ok: hasSpecial },
+                                        ];
+                                        return (
+                                            <div className="mt-2 space-y-2">
+                                                {password.length > 0 && (
+                                                    <>
+                                                        <div className="flex gap-1">
+                                                            {[0,1,2].map(i => (
+                                                                <div key={i} className={`h-1 flex-1 rounded-full transition-all duration-300 ${i < score ? colors[score] : "bg-white/10"}`} />
+                                                            ))}
+                                                        </div>
+                                                        <p className={`text-[10px] ${textColors[score]}`}>{labels[score]}</p>
+                                                    </>
+                                                )}
+                                                <ul className="space-y-0.5">
+                                                    {rules.map((r) => (
+                                                        <li key={r.label} className={`text-[11px] flex items-center gap-1.5 transition-colors ${password.length === 0 ? "text-white/30" : r.ok ? "text-emerald-400" : "text-red-400"}`}>
+                                                            <span>{r.ok && password.length > 0 ? "✓" : "✗"}</span>
+                                                            {r.label}
+                                                        </li>
+                                                    ))}
+                                                </ul>
+                                            </div>
+                                        );
+                                    })()}
                                 </div>
                                 <button type="submit" disabled={loading} className="glow-btn w-full py-2.5 mt-4 flex items-center justify-center gap-2 text-sm">
                                     {loading ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" /> : <>Create Account <ArrowRight className="w-3.5 h-3.5" /></>}
