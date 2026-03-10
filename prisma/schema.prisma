@@ -8,6 +8,129 @@ datasource db {
   directUrl = env("DIRECT_URL")
 }
 
+model User {
+  id                         String        @id @default(cuid())
+  name                       String
+  email                      String        @unique
+  hashedPassword             String
+  role                       Role          @default(USER)
+  emailVerified              Boolean       @default(false)
+  verificationToken          String?       @unique
+  tokenPurpose               TokenPurpose?
+  verificationTokenExpiresAt DateTime?
+  otpAttempts                Int           @default(0)
+  otpLockedUntil             DateTime?
+  createdAt                  DateTime      @default(now()) @db.Timestamptz(6)
+  updatedAt                  DateTime      @default(now()) @updatedAt @db.Timestamptz(6)
+  auditLogs                  AuditLog[]
+  classrooms                 Classroom[]   @relation("TeacherClassrooms")
+  classroomAdmins            ClassroomAdmin[]
+  enrollments                Enrollment[]
+  workspaces                 Workspace[]
+}
+
+model Classroom {
+  id          String           @id @default(cuid())
+  name        String
+  description String?
+  inviteCode  String           @unique
+  teacherId   String
+  createdAt   DateTime         @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime         @default(now()) @updatedAt @db.Timestamptz(6)
+  teacher     User             @relation("TeacherClassrooms", fields: [teacherId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  admins      ClassroomAdmin[]
+  enrollments Enrollment[]
+  tasks       Task[]
+  workspaces  Workspace[]
+
+  @@index([teacherId])
+}
+
+model ClassroomAdmin {
+  id          String    @id @default(cuid())
+  classroomId String
+  userId      String
+  addedAt     DateTime  @default(now()) @db.Timestamptz(6)
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  user        User      @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([classroomId, userId])
+  @@index([classroomId])
+  @@index([userId])
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String    @default("")
+  classroomId String
+  dueDate     DateTime?
+  createdAt   DateTime  @default(now()) @db.Timestamptz(6)
+  updatedAt   DateTime  @default(now()) @updatedAt @db.Timestamptz(6)
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([classroomId])
+}
+
+model Enrollment {
+  id          String    @id @default(cuid())
+  studentId   String
+  classroomId String
+  joinedAt    DateTime  @default(now()) @db.Timestamptz(6)
+  classroom   Classroom @relation(fields: [classroomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  student     User      @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@unique([studentId, classroomId])
+  @@index([classroomId])
+  @@index([studentId])
+}
+
+model Workspace {
+  id           String             @id @default(cuid())
+  title        String             @default("My Code")
+  code         String             @default("")
+  language     String             @default("javascript")
+  status       WorkspaceStatus    @default(PENDING)
+  reviewStatus String?
+  reviewNote   String?
+  studentId    String
+  classroomId  String
+  createdAt    DateTime           @default(now()) @db.Timestamptz(6)
+  updatedAt    DateTime           @default(now()) @updatedAt @db.Timestamptz(6)
+  classroom    Classroom          @relation(fields: [classroomId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  student      User               @relation(fields: [studentId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+  versions     WorkspaceVersion[]
+
+  @@index([studentId])
+  @@index([classroomId])
+}
+
+model WorkspaceVersion {
+  id          String    @id @default(cuid())
+  workspaceId String
+  code        String
+  language    String
+  savedAt     DateTime  @default(now()) @db.Timestamptz(6)
+  workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([workspaceId])
+}
+
+model AuditLog {
+  id           String   @id @default(cuid())
+  userId       String
+  action       String
+  resourceType String
+  resourceId   String
+  details      String?
+  createdAt    DateTime @default(now()) @db.Timestamptz(6)
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade, onUpdate: NoAction)
+
+  @@index([userId])
+  @@index([createdAt])
+  @@index([resourceType, resourceId], map: "AuditLog_resource_idx")
+}
+
 enum Role {
   ADMIN
   USER
@@ -24,131 +147,4 @@ enum TokenPurpose {
   PASSWORD_RESET
   PASSWORD_CHANGE
   ACCOUNT_DELETE
-}
-
-model User {
-  id                         String        @id @default(cuid())
-  name                       String
-  email                      String        @unique
-  hashedPassword             String
-  role                       Role          @default(USER)
-  emailVerified              Boolean       @default(false)
-  verificationToken          String?       @unique
-  tokenPurpose               TokenPurpose?
-  verificationTokenExpiresAt DateTime?
-  otpAttempts                Int           @default(0)
-  otpLockedUntil             DateTime?
-  createdAt                  DateTime      @default(now())
-  updatedAt                  DateTime      @updatedAt
-
-  classrooms      Classroom[]        @relation("TeacherClassrooms")
-  enrollments     Enrollment[]
-  workspaces      Workspace[]
-  classroomAdmins ClassroomAdmin[]
-  auditLogs       AuditLog[]
-}
-
-model Classroom {
-  id          String   @id @default(cuid())
-  name        String
-  description String?
-  inviteCode  String   @unique
-  teacherId   String
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  teacher     User             @relation("TeacherClassrooms", fields: [teacherId], references: [id])
-  enrollments Enrollment[]
-  workspaces  Workspace[]
-  tasks       Task[]
-  admins      ClassroomAdmin[]
-
-  @@index([teacherId])
-}
-
-model ClassroomAdmin {
-  id          String   @id @default(cuid())
-  classroomId String
-  userId      String
-  addedAt     DateTime @default(now())
-
-  classroom Classroom @relation(fields: [classroomId], references: [id])
-  user      User      @relation(fields: [userId], references: [id])
-
-  @@unique([classroomId, userId])
-}
-
-model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String    @default("")
-  classroomId String
-  dueDate     DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
-
-  classroom Classroom @relation(fields: [classroomId], references: [id])
-
-  @@index([classroomId])
-}
-
-model Enrollment {
-  id          String   @id @default(cuid())
-  studentId   String
-  classroomId String
-  joinedAt    DateTime @default(now())
-
-  student   User      @relation(fields: [studentId], references: [id])
-  classroom Classroom @relation(fields: [classroomId], references: [id])
-
-  @@unique([studentId, classroomId])
-}
-
-model Workspace {
-  id           String          @id @default(cuid())
-  title        String          @default("My Code")
-  code         String          @default("")
-  language     String          @default("javascript")
-  status       WorkspaceStatus @default(PENDING)
-  reviewStatus String?
-  reviewNote   String?
-  studentId    String
-  classroomId  String
-  createdAt    DateTime        @default(now())
-  updatedAt    DateTime        @updatedAt
-
-  student   User               @relation(fields: [studentId], references: [id])
-  classroom Classroom          @relation(fields: [classroomId], references: [id])
-  versions  WorkspaceVersion[]
-
-  @@index([studentId])
-  @@index([classroomId])
-}
-
-model WorkspaceVersion {
-  id          String   @id @default(cuid())
-  workspaceId String
-  code        String
-  language    String
-  savedAt     DateTime @default(now())
-
-  workspace Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-
-  @@index([workspaceId])
-}
-
-model AuditLog {
-  id           String   @id @default(cuid())
-  userId       String
-  action       String
-  resourceType String
-  resourceId   String
-  details      String?
-  createdAt    DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId])
-  @@index([resourceType, resourceId])
-  @@index([createdAt])
 }

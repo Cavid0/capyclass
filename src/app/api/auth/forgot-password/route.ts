@@ -8,7 +8,8 @@ const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
     try {
-        const ip = req.headers.get("x-forwarded-for") || "unknown";
+        const forwarded = req.headers.get("x-forwarded-for");
+        const ip = forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
         if (!rateLimit(`forgot:${ip}`, 5, 15 * 60 * 1000)) {
             return NextResponse.json(
                 { error: "Rate limit exceeded. Please try again in 15 minutes." },
