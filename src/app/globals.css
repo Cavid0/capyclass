@@ -178,13 +178,29 @@ body {
 }
 
 /* Fix Monaco editor internal textarea visibility */
-.monaco-editor .inputarea {
+.monaco-editor .inputarea,
+.monaco-editor .inputarea.ime-input,
+.monaco-editor textarea.inputarea,
+.monaco-editor .monaco-editor-background + .overflow-guard textarea {
   background: transparent !important;
   color: transparent !important;
+  caret-color: transparent !important;
+  border: none !important;
+  outline: none !important;
+  box-shadow: none !important;
+  opacity: 0 !important;
 }
 
 .monaco-editor .find-widget {
   display: none !important;
+}
+
+/* Hide cursor in read-only Monaco editors */
+.monaco-editor .cursors-layer > .cursor {
+  /* allow cursor by default */
+}
+.monaco-editor[data-mode-id] .view-overlays .current-line {
+  /* allow line highlights normally */
 }
 
 /* Input styles */

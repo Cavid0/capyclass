@@ -46,6 +46,23 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
         editorRef.current = editor;
         monaco.editor.setTheme('classflow-dark');
 
+        // Hide the textarea overlay that can appear as a white box
+        const domNode = editor.getDomNode();
+        if (domNode) {
+            const textareas = domNode.querySelectorAll('textarea');
+            textareas.forEach((ta: HTMLTextAreaElement) => {
+                ta.style.background = 'transparent';
+                ta.style.color = 'transparent';
+                ta.style.caretColor = 'transparent';
+                ta.style.opacity = '0';
+            });
+        }
+
+        if (readOnly) {
+            // Hide cursor in read-only mode
+            editor.updateOptions({ cursorStyle: 'line', cursorWidth: 0 });
+        }
+
         setTimeout(() => {
             editor.layout();
         }, 100);
@@ -87,8 +104,12 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                 domReadOnly: readOnly,
                 automaticLayout: true,
                 ...(readOnly ? {
+                    cursorWidth: 0,
+                    hideCursorInOverviewRuler: true,
                     find: { addExtraSpaceOnTop: false, seedSearchStringFromSelection: "never" as const },
                     contextmenu: false,
+                    selectionHighlight: false,
+                    occurrencesHighlight: "off" as const,
                 } : {}),
             }}
             loading={
