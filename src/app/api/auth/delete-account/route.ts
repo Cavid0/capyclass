@@ -51,7 +51,6 @@ export async function POST(req: NextRequest) {
             }
 
             await tx.classroomAdmin.deleteMany({ where: { userId } });
-            await tx.notification.deleteMany({ where: { userId } });
             await tx.auditLog.deleteMany({ where: { userId } });
             await tx.workspace.deleteMany({ where: { studentId: userId } });
             await tx.enrollment.deleteMany({ where: { studentId: userId } });

@@ -3,7 +3,7 @@
 import { useState, useEffect, useCallback, useRef } from "react";
 import { useSession } from "next-auth/react";
 import { useParams, useRouter } from "next/navigation";
-import { Users, Code2, ChevronLeft, RefreshCw } from "lucide-react";
+import { Users, Code2, ChevronLeft } from "lucide-react";
 import Link from "next/link";
 import { TeacherView } from "@/components/classroom/TeacherView";
 import { StudentView } from "@/components/classroom/StudentView";
@@ -19,11 +19,21 @@ export default function ClassroomPage() {
     const [selectedWorkspaceId, setSelectedWorkspaceId] = useState<string | null>(null);
     const intervalRef = useRef<NodeJS.Timeout | null>(null);
 
+    const sessionIdRef = useRef<string | undefined>(undefined);
+    useEffect(() => { sessionIdRef.current = session?.user?.id; }, [session?.user?.id]);
+
+    const selectedWorkspaceIdRef = useRef<string | null>(null);
+    const setSelectedWorkspaceBoth = useCallback((id: string | null) => {
+        selectedWorkspaceIdRef.current = id;
+        setSelectedWorkspaceId(id);
+    }, []);
+
     const fetchClassroom = useCallback(async (isPolling = false) => {
         try {
             const res = await fetch(`/api/classrooms/${params.id}`, { cache: "no-store" });
             if (!res.ok) {
-                if (res.status === 403 || res.status === 404) router.push("/dashboard");
+                if (res.status === 401) { router.push("/login"); return; }
+                if (res.status === 403 || res.status === 404) { router.push("/dashboard"); return; }
                 return;
             }
             const data = await res.json();
@@ -33,16 +43,19 @@ export default function ClassroomPage() {
                 enrollments: data.enrollments || [],
                 admins: data.admins || [],
             });
-            // If student and no workspace selected, select first one if exists
-            if (data.workspaces && data.workspaces.length > 0 && !selectedWorkspaceId && data.classroom?.teacherId !== session?.user?.id) {
-                setSelectedWorkspaceId(data.workspaces[0].id);
+            if (
+                data.workspaces?.length > 0 &&
+                !selectedWorkspaceIdRef.current &&
+                data.classroom?.teacherId !== sessionIdRef.current
+            ) {
+                setSelectedWorkspaceBoth(data.workspaces[0].id);
             }
         } catch (error) {
             console.error(error);
         } finally {
             if (!isPolling) setLoading(false);
         }
-    }, [params.id, router, selectedWorkspaceId, session]);
+    }, [params.id, router, setSelectedWorkspaceBoth]);
 
     const fetchTasks = useCallback(async () => {
         try {
@@ -57,22 +70,22 @@ export default function ClassroomPage() {
     }, [params.id]);
 
     useEffect(() => {
+        if (status === "unauthenticated") { router.push("/login"); return; }
         if (status === "authenticated") {
             fetchClassroom();
             fetchTasks();
         }
-    }, [status, fetchClassroom, fetchTasks]);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [status]);
 
-    // Auto-poll every 5 seconds for teacher
+    const fetchClassroomRef = useRef(fetchClassroom);
+    useEffect(() => { fetchClassroomRef.current = fetchClassroom; }, [fetchClassroom]);
     useEffect(() => {
-        if (status === "authenticated" && classroom && classroom.teacherId === session?.user?.id) {
-            intervalRef.current = setInterval(() => {
-                fetchClassroom(true);
-            }, 5000);
+        if (status === "authenticated" && classroom?.teacherId === sessionIdRef.current) {
+            intervalRef.current = setInterval(() => fetchClassroomRef.current(true), 5000);
             return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
         }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [status, session, fetchClassroom]);
+    }, [status, classroom?.teacherId]);
 
     if (loading || status === "loading") {
         return (
@@ -107,14 +120,6 @@ export default function ClassroomPage() {
 
                 {isTeacher && (
                     <div className="flex items-center gap-4">
-                        <button
-                            onClick={() => fetchClassroom(true)}
-                            title="Refresh"
-                            className="p-1.5 rounded hover:bg-[var(--bg-card)] text-[var(--text-secondary)] hover:text-white transition-colors"
-                        >
-                            <RefreshCw className="w-3.5 h-3.5" />
-                        </button>
-                        <div className="h-4 w-px bg-[var(--border-color)]" />
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
                             <span>{classroom.enrollments?.length || 0} students</span>
@@ -141,7 +146,7 @@ export default function ClassroomPage() {
                         classroom={classroom}
                         tasks={tasks}
                         selectedWorkspaceId={selectedWorkspaceId}
-                        onSelectWorkspace={setSelectedWorkspaceId}
+                        onSelectWorkspace={setSelectedWorkspaceBoth}
                         onTaskCreated={fetchTasks}
                         onRefresh={fetchClassroom}
                         currentUserId={session?.user?.id || ""}
@@ -153,7 +158,7 @@ export default function ClassroomPage() {
                         tasks={tasks}
                         currentUserId={session?.user?.id || ""}
                         selectedWorkspaceId={selectedWorkspaceId}
-                        onSelectWorkspace={setSelectedWorkspaceId}
+                        onSelectWorkspace={setSelectedWorkspaceBoth}
                         onWorkspaceCreated={fetchClassroom}
                     />
                 )}

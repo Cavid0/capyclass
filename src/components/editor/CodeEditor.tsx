@@ -1,7 +1,7 @@
 "use client";
 
 import { useRef, useEffect } from "react";
-import Editor, { OnMount } from "@monaco-editor/react";
+import Editor, { OnMount, BeforeMount } from "@monaco-editor/react";
 
 interface CodeEditorProps {
     value: string;
@@ -13,10 +13,7 @@ interface CodeEditorProps {
 export function CodeEditor({ value, onChange, language = "javascript", readOnly = false }: CodeEditorProps) {
     const editorRef = useRef<any>(null);
 
-    const handleEditorDidMount: OnMount = (editor, monaco) => {
-        editorRef.current = editor;
-
-        // Define ultra-clean dark theme
+    const handleEditorWillMount: BeforeMount = (monaco) => {
         monaco.editor.defineTheme('classflow-dark', {
             base: 'vs-dark',
             inherit: true,
@@ -43,16 +40,17 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                 'editorCursor.foreground': '#58a6ff',
             }
         });
+    };
 
+    const handleEditorDidMount: OnMount = (editor, monaco) => {
+        editorRef.current = editor;
         monaco.editor.setTheme('classflow-dark');
 
-        // Force layout after mount
         setTimeout(() => {
             editor.layout();
         }, 100);
     };
 
-    // Update value externally for readOnly mode
     useEffect(() => {
         if (readOnly && editorRef.current && value !== undefined) {
             const model = editorRef.current.getModel();
@@ -66,9 +64,11 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
         <Editor
             height="100%"
             language={language}
+            theme="classflow-dark"
             value={value}
             defaultValue={value || "// No code"}
             onChange={onChange}
+            beforeMount={handleEditorWillMount}
             onMount={handleEditorDidMount}
             options={{
                 readOnly,

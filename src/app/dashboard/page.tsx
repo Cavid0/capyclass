@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2 } from "lucide-react";
 import Image from "next/image";
@@ -28,9 +29,12 @@ export default function DashboardPage() {
     // Copy state
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
 
+    const router = useRouter();
+
     useEffect(() => {
+        if (status === "unauthenticated") { router.push("/login"); return; }
         if (status === "authenticated") fetchClassrooms();
-    }, [status]);
+    }, [status, router]);
 
     const fetchClassrooms = async () => {
         try {
@@ -137,7 +141,13 @@ export default function DashboardPage() {
         (c.name || "").toLowerCase().includes(search.toLowerCase())
     );
 
-    if (status === "unauthenticated") return null;
+    if (status === "unauthenticated" || status === "loading") {
+        return (
+            <div className="min-h-screen bg-[var(--bg-primary)] flex justify-center items-center">
+                <div className="spinner" />
+            </div>
+        );
+    }
 
     return (
         <div className="min-h-screen bg-[var(--bg-primary)]">

@@ -20,19 +20,13 @@ export async function POST(req: NextRequest) {
             where: { createdAt: { lt: logCutoff } },
         });
 
-        // Delete read notifications older than 14 days
-        const notifCutoff = new Date(now.getTime() - 14 * 24 * 60 * 60 * 1000);
-        const deletedNotifs = await prisma.notification.deleteMany({
-            where: { read: true, createdAt: { lt: notifCutoff } },
-        });
-
         return NextResponse.json({
             success: true,
             deletedLogs: deletedLogs.count,
-            deletedNotifications: deletedNotifs.count,
         });
     } catch (error) {
         console.error("Cleanup cron error:", error);
         return NextResponse.json({ error: "Cleanup failed" }, { status: 500 });
     }
 }
+
