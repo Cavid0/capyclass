@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { isCleanText } from "@/lib/utils";
-import { notifyMany } from "@/lib/notifications";
 
 // GET: List tasks for a classroom
 export async function GET(
@@ -116,20 +115,6 @@ export async function POST(
                 dueDate: parsedDueDate,
             },
         });
-
-        // Notify enrolled students about the new task
-        const enrollments = await prisma.enrollment.findMany({
-            where: { classroomId },
-            select: { studentId: true },
-        });
-        const studentIds = enrollments.map((e) => e.studentId);
-        await notifyMany(
-            studentIds,
-            "NEW_TASK",
-            "New task assigned",
-            `New task: ${title.trim()}`,
-            `/classroom/${classroomId}`
-        );
 
         return NextResponse.json(task, { status: 201 });
     } catch (error) {

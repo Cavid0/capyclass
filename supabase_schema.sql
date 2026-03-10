@@ -1,28 +1,36 @@
 -- ============================================================
--- ClassEdu – Supabase SQL Schema
+-- CapyClass – Supabase SQL Schema
 -- Kopyalayıb Supabase > SQL Editor-a yapışdırın və Run edin.
 -- ============================================================
 
 -- 1. Enum tiplər
 DO $$ BEGIN
-  CREATE TYPE "Role" AS ENUM ('TEACHER', 'STUDENT');
+  CREATE TYPE "Role" AS ENUM ('ADMIN', 'USER');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
 DO $$ BEGIN
   CREATE TYPE "WorkspaceStatus" AS ENUM ('PENDING', 'PASS', 'FAIL');
 EXCEPTION WHEN duplicate_object THEN null; END $$;
 
+DO $$ BEGIN
+  CREATE TYPE "TokenPurpose" AS ENUM ('EMAIL_VERIFY', 'PASSWORD_RESET', 'PASSWORD_CHANGE', 'ACCOUNT_DELETE');
+EXCEPTION WHEN duplicate_object THEN null; END $$;
+
 -- 2. İstifadəçilər
 CREATE TABLE IF NOT EXISTS "User" (
-  "id"                TEXT        PRIMARY KEY,
-  "name"              TEXT        NOT NULL,
-  "email"             TEXT        NOT NULL UNIQUE,
-  "hashedPassword"    TEXT        NOT NULL,
-  "role"              "Role"      NOT NULL DEFAULT 'STUDENT',
-  "emailVerified"     BOOLEAN     NOT NULL DEFAULT false,
-  "verificationToken" TEXT        UNIQUE,
-  "createdAt"         TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  "updatedAt"         TIMESTAMPTZ NOT NULL DEFAULT NOW()
+  "id"                         TEXT          PRIMARY KEY,
+  "name"                       TEXT          NOT NULL,
+  "email"                      TEXT          NOT NULL UNIQUE,
+  "hashedPassword"             TEXT          NOT NULL,
+  "role"                       "Role"        NOT NULL DEFAULT 'USER',
+  "emailVerified"              BOOLEAN       NOT NULL DEFAULT false,
+  "verificationToken"          TEXT          UNIQUE,
+  "tokenPurpose"               "TokenPurpose",
+  "verificationTokenExpiresAt" TIMESTAMPTZ,
+  "otpAttempts"                INTEGER       NOT NULL DEFAULT 0,
+  "otpLockedUntil"             TIMESTAMPTZ,
+  "createdAt"                  TIMESTAMPTZ   NOT NULL DEFAULT NOW(),
+  "updatedAt"                  TIMESTAMPTZ   NOT NULL DEFAULT NOW()
 );
 
 -- 3. Sinifxanalar
@@ -65,12 +73,13 @@ CREATE TABLE IF NOT EXISTS "Task" (
   "title"       TEXT        NOT NULL,
   "description" TEXT        NOT NULL DEFAULT '',
   "classroomId" TEXT        NOT NULL REFERENCES "Classroom"("id") ON DELETE CASCADE,
+  "dueDate"     TIMESTAMPTZ,
   "createdAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   "updatedAt"   TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 CREATE INDEX IF NOT EXISTS "Task_classroomId_idx" ON "Task"("classroomId");
 
--- 7. Workspaces (student code)
+-- 7. Workspaces
 CREATE TABLE IF NOT EXISTS "Workspace" (
   "id"           TEXT              PRIMARY KEY,
   "title"        TEXT              NOT NULL DEFAULT 'My Code',
@@ -86,3 +95,27 @@ CREATE TABLE IF NOT EXISTS "Workspace" (
 );
 CREATE INDEX IF NOT EXISTS "Workspace_studentId_idx"   ON "Workspace"("studentId");
 CREATE INDEX IF NOT EXISTS "Workspace_classroomId_idx" ON "Workspace"("classroomId");
+
+-- 8. Workspace versiyaları
+CREATE TABLE IF NOT EXISTS "WorkspaceVersion" (
+  "id"          TEXT        PRIMARY KEY,
+  "workspaceId" TEXT        NOT NULL REFERENCES "Workspace"("id") ON DELETE CASCADE,
+  "code"        TEXT        NOT NULL,
+  "language"    TEXT        NOT NULL,
+  "savedAt"     TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS "WorkspaceVersion_workspaceId_idx" ON "WorkspaceVersion"("workspaceId");
+
+-- 9. Audit log
+CREATE TABLE IF NOT EXISTS "AuditLog" (
+  "id"           TEXT        PRIMARY KEY,
+  "userId"       TEXT        NOT NULL REFERENCES "User"("id") ON DELETE CASCADE,
+  "action"       TEXT        NOT NULL,
+  "resourceType" TEXT        NOT NULL,
+  "resourceId"   TEXT        NOT NULL,
+  "details"      TEXT,
+  "createdAt"    TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS "AuditLog_userId_idx"       ON "AuditLog"("userId");
+CREATE INDEX IF NOT EXISTS "AuditLog_resource_idx"     ON "AuditLog"("resourceType", "resourceId");
+CREATE INDEX IF NOT EXISTS "AuditLog_createdAt_idx"    ON "AuditLog"("createdAt");

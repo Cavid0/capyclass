@@ -3,7 +3,6 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
-import { createNotification } from "@/lib/notifications";
 
 // POST: Teacher reviews a workspace (CORRECT / INCORRECT)
 export async function POST(
@@ -50,15 +49,6 @@ export async function POST(
                 reviewNote: reviewNote?.trim() || null,
             },
         });
-
-        // Notify the student about the review
-        await createNotification(
-            workspace.studentId,
-            "WORKSPACE_REVIEWED",
-            reviewStatus === "CORRECT" ? "Code approved!" : "Code needs revision",
-            reviewNote?.trim() || (reviewStatus === "CORRECT" ? "Your code has been approved." : "Your code needs changes."),
-            `/classroom/${workspace.classroomId}`
-        );
 
         await logAudit(userId, "WORKSPACE_REVIEWED", "Workspace", workspaceId, reviewStatus);
 

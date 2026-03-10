@@ -177,6 +177,16 @@ body {
   background: var(--bg-secondary);
 }
 
+/* Fix Monaco editor internal textarea visibility */
+.monaco-editor .inputarea {
+  background: transparent !important;
+  color: transparent !important;
+}
+
+.monaco-editor .find-widget {
+  display: none !important;
+}
+
 /* Input styles */
 .input-field {
   width: 100%;

@@ -86,6 +86,10 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                 renderLineHighlight: readOnly ? "none" : "all",
                 domReadOnly: readOnly,
                 automaticLayout: true,
+                ...(readOnly ? {
+                    find: { addExtraSpaceOnTop: false, seedSearchStringFromSelection: "never" as const },
+                    contextmenu: false,
+                } : {}),
             }}
             loading={
                 <div className="flex justify-center items-center h-full w-full bg-[#0d1117]">

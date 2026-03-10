@@ -9,8 +9,8 @@ datasource db {
 }
 
 enum Role {
-  TEACHER
-  STUDENT
+  ADMIN
+  USER
 }
 
 enum WorkspaceStatus {
@@ -31,7 +31,7 @@ model User {
   name                       String
   email                      String        @unique
   hashedPassword             String
-  role                       Role          @default(STUDENT)
+  role                       Role          @default(USER)
   emailVerified              Boolean       @default(false)
   verificationToken          String?       @unique
   tokenPurpose               TokenPurpose?
@@ -46,7 +46,6 @@ model User {
   workspaces      Workspace[]
   classroomAdmins ClassroomAdmin[]
   auditLogs       AuditLog[]
-  notifications   Notification[]
 }
 
 model Classroom {
@@ -151,21 +150,5 @@ model AuditLog {
 
   @@index([userId])
   @@index([resourceType, resourceId])
-  @@index([createdAt])
-}
-
-model Notification {
-  id        String   @id @default(cuid())
-  userId    String
-  type      String
-  title     String
-  message   String
-  read      Boolean  @default(false)
-  link      String?
-  createdAt DateTime @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, read])
   @@index([createdAt])
 }

@@ -17,9 +17,9 @@ export async function POST(
         const userId = session.user.id;
         const role = session.user.role;
 
-        if (role !== "STUDENT") {
+        if (role !== "USER") {
             return NextResponse.json(
-                { error: "Only students can join a classroom" },
+                { error: "Only users can join a classroom" },
                 { status: 403 }
             );
         }

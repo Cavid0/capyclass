@@ -61,7 +61,7 @@ export async function POST(req: NextRequest) {
                 name,
                 email,
                 hashedPassword,
-                role: role === "TEACHER" ? "TEACHER" : "STUDENT",
+                role: role === "ADMIN" ? "ADMIN" : "USER",
                 emailVerified: false,
                 verificationToken: verificationCode,
                 tokenPurpose: "EMAIL_VERIFY",

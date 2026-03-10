@@ -18,8 +18,8 @@ export async function POST(
         const role = session.user.role;
         const classroomId = params.id;
 
-        if (role !== "STUDENT") {
-            return NextResponse.json({ error: "Only students can create a workspace" }, { status: 403 });
+        if (role !== "USER") {
+            return NextResponse.json({ error: "Only users can create a workspace" }, { status: 403 });
         }
 
         const enrollment = await prisma.enrollment.findUnique({
