@@ -1,7 +1,8 @@
 "use client";
 
-import { useRef, useEffect } from "react";
-import Editor, { OnMount, BeforeMount } from "@monaco-editor/react";
+import { useRef } from "react";
+import Editor, { BeforeMount, OnMount } from "@monaco-editor/react";
+import { toast } from "sonner";
 
 interface CodeEditorProps {
     value: string;
@@ -10,113 +11,146 @@ interface CodeEditorProps {
     readOnly?: boolean;
 }
 
+const BG = "#0a0908"; // Matches --bg-primary
+
 export function CodeEditor({ value, onChange, language = "javascript", readOnly = false }: CodeEditorProps) {
     const editorRef = useRef<any>(null);
 
-    const handleEditorWillMount: BeforeMount = (monaco) => {
-        monaco.editor.defineTheme('classflow-dark', {
-            base: 'vs-dark',
+    const handleBeforeMount: BeforeMount = (monaco) => {
+        monaco.editor.defineTheme("capy-dark", {
+            base: "vs-dark",
             inherit: true,
             rules: [
-                { background: '0d1117' },
-                { token: 'comment', foreground: '6e7681', fontStyle: 'italic' },
-                { token: 'keyword', foreground: 'ff7b72' },
-                { token: 'string', foreground: 'a5d6ff' },
-                { token: 'number', foreground: '79c0ff' },
-                { token: 'type', foreground: 'ffa657' },
-                { token: 'variable', foreground: 'ffa657' },
-                { token: 'delimiter', foreground: 'c9d1d9' },
+                { token: "keyword", foreground: "569cd6", fontStyle: "bold" },
+                { token: "keyword.control", foreground: "c586c0" },
+                { token: "type", foreground: "4ec9b0" },
+                { token: "type.identifier", foreground: "4ec9b0" },
+                { token: "string", foreground: "ce9178" },
+                { token: "string.escape", foreground: "d7ba7d" },
+                { token: "number", foreground: "b5cea8" },
+                { token: "comment", foreground: "6a9955" },
+                { token: "delimiter", foreground: "d4d4d4" },
+                { token: "variable", foreground: "9cdcfe" },
+                { token: "identifier", foreground: "9cdcfe" },
+                { token: "function", foreground: "dcdcaa" },
+                { token: "regexp", foreground: "d16969" },
             ],
             colors: {
-                'editor.background': '#0d1117',
-                'editor.foreground': '#c9d1d9',
-                'editor.lineHighlightBackground': '#161b22',
-                'editorLineNumber.foreground': '#484f58',
-                'editorLineNumber.activeForeground': '#c9d1d9',
-                'editorIndentGuide.background': '#21262d',
-                'editor.selectionBackground': '#264f78',
-                'scrollbarSlider.background': '#484f5833',
-                'scrollbarSlider.hoverBackground': '#484f5866',
-                'editorCursor.foreground': '#58a6ff',
-            }
+                "editor.background": BG,
+                "editor.foreground": "#d4d4d4",
+                "editorLineNumber.foreground": "#858585",
+                "editorLineNumber.activeForeground": "#ffffff",
+                "editor.lineHighlightBackground": "#ffffff0a",
+                "editor.lineHighlightBorder": "#00000000",
+                "editorGutter.background": BG,
+                "editorIndentGuide.background": "#404040",
+                "editorIndentGuide.activeBackground": "#707070",
+                "editor.selectionBackground": "#264f78",
+                "editor.selectionHighlightBackground": "#add6ff26",
+                "editorCursor.foreground": "#d4d4d4",
+                "editor.wordHighlightBackground": "#575757b8",
+                "editor.wordHighlightStrongBackground": "#004972b8",
+                "editorBracketMatch.background": "#00000000",
+                "editorBracketMatch.border": "#888888",
+            },
         });
     };
 
-    const handleEditorDidMount: OnMount = (editor, monaco) => {
+    const handleMount: OnMount = (editor, monaco) => {
         editorRef.current = editor;
-        monaco.editor.setTheme('classflow-dark');
 
-        // Hide the textarea overlay that can appear as a white box
-        const domNode = editor.getDomNode();
-        if (domNode) {
-            const textareas = domNode.querySelectorAll('textarea');
-            textareas.forEach((ta: HTMLTextAreaElement) => {
-                ta.style.background = 'transparent';
-                ta.style.color = 'transparent';
-                ta.style.caretColor = 'transparent';
-                ta.style.opacity = '0';
-            });
-        }
+        monaco.editor.setTheme("capy-dark");
 
         if (readOnly) {
-            // Hide cursor in read-only mode
-            editor.updateOptions({ cursorStyle: 'line', cursorWidth: 0 });
-        }
+            editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
+            editor.setPosition({ lineNumber: 1, column: 1 });
 
-        setTimeout(() => {
-            editor.layout();
-        }, 100);
+            // Admin basmaq istədikdə ancaq oxumaq üçün olduğunu bildiririk
+            editor.onMouseDown((e) => {
+                // Skrollbara basanda xəbərdarlıq etməyə ehtiyac yoxdur
+                if (e.target.type !== monaco.editor.MouseTargetType.SCROLLBAR) {
+                    toast("🖥️ Yalnız oxumaq üçündür", {
+                        id: "readonly-toast",
+                        description: "Siz bu kod panelinə yalnız nəzarət edə bilərsiniz. Tələbə koduna müdaxilə etmək olmur.",
+                        duration: 2500,
+                    });
+                }
+            });
+        } else {
+            const model = editor.getModel();
+            if (model) {
+                const lastLine = model.getLineCount();
+                const lastCol = model.getLineMaxColumn(lastLine);
+                editor.setPosition({ lineNumber: lastLine, column: lastCol });
+                editor.focus();
+            }
+        }
     };
 
-    useEffect(() => {
-        if (readOnly && editorRef.current && value !== undefined) {
-            const model = editorRef.current.getModel();
-            if (model && model.getValue() !== value) {
-                model.setValue(value);
-            }
-        }
-    }, [value, readOnly]);
-
     return (
-        <Editor
-            height="100%"
-            language={language}
-            theme="classflow-dark"
-            value={value}
-            defaultValue={value || "// No code"}
-            onChange={onChange}
-            beforeMount={handleEditorWillMount}
-            onMount={handleEditorDidMount}
-            options={{
-                readOnly,
-                minimap: { enabled: false },
-                fontSize: 13,
-                fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace",
-                fontLigatures: true,
-                wordWrap: "on",
-                padding: { top: 16, bottom: 16 },
-                scrollBeyondLastLine: false,
-                smoothScrolling: true,
-                cursorBlinking: "smooth",
-                cursorSmoothCaretAnimation: "on",
-                lineHeight: 22,
-                renderLineHighlight: readOnly ? "none" : "all",
-                domReadOnly: readOnly,
-                automaticLayout: true,
-                ...(readOnly ? {
-                    cursorWidth: 0,
+        <div
+            className={readOnly ? "read-only-editor" : ""}
+            style={{ width: "100%", height: "100%", position: "relative", background: BG }}
+        >
+            <Editor
+                key={`${language}-${readOnly}`}
+                height="100%"
+                language={language}
+                theme="capy-dark"
+                value={value ?? ""}
+                onChange={onChange}
+                beforeMount={handleBeforeMount}
+                onMount={handleMount}
+                options={{
+                    readOnly,
+                    domReadOnly: readOnly,
+                    automaticLayout: true,
+                    minimap: { enabled: false },
+                    wordWrap: "on",
+                    fontSize: 15,
+                    lineHeight: 26,
+                    padding: { top: 12, bottom: 12 },
+                    fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace",
+                    fontLigatures: true,
+                    cursorBlinking: "smooth",
+                    cursorWidth: readOnly ? 0 : 2, // Kursoru oxumaq rejimində tamamilə gizlədirik
+                    smoothScrolling: true,
+                    folding: true,
+                    lineNumbers: "on",
+                    lineNumbersMinChars: 4,
+                    glyphMargin: false,
+                    foldingHighlight: false,
+                    showFoldingControls: "never",
+                    scrollBeyondLastLine: false,
+                    renderLineHighlight: readOnly ? "none" : "all", // Aktiv xətti oxumaq rejimində gizlədirik
+                    renderLineHighlightOnlyWhenFocus: false,
+                    readOnlyMessage: { value: "Yalnız oxumaq üçündür 🔒" },
+                    overviewRulerBorder: false,
                     hideCursorInOverviewRuler: true,
-                    find: { addExtraSpaceOnTop: false, seedSearchStringFromSelection: "never" as const },
-                    contextmenu: false,
-                    selectionHighlight: false,
-                    occurrencesHighlight: "off" as const,
-                } : {}),
-            }}
-            loading={
-                <div className="flex justify-center items-center h-full w-full bg-[#0d1117]">
-                    <div className="spinner !w-6 !h-6 border-white/20 border-t-white" />
-                </div>
-            }
-        />
+                    lineDecorationsWidth: 12,
+                    renderValidationDecorations: "off",
+                    renderWhitespace: "none",
+                    bracketPairColorization: { enabled: true },
+                    guides: {
+                        indentation: true,
+                        bracketPairs: true,
+                    },
+                    find: {
+                        addExtraSpaceOnTop: false,
+                    },
+                    scrollbar: {
+                        verticalScrollbarSize: 8,
+                        horizontalScrollbarSize: 8,
+                        verticalSliderSize: 4,
+                        horizontalSliderSize: 4,
+                    },
+                }}
+                loading={
+                    <div style={{ flex: 1, display: "flex", alignItems: "center", justifyContent: "center", color: "#4b4a48", fontSize: "14px" }}>
+                        Loading editor...
+                    </div>
+                }
+            />
+        </div>
     );
 }

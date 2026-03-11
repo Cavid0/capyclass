@@ -102,9 +102,9 @@ export default function ClassroomPage() {
         classroom.admins?.some((a: any) => a.userId === session?.user?.id);
 
     return (
-        <div className="min-h-screen bg-[var(--bg-primary)] flex flex-col">
+        <div className="h-screen bg-[var(--bg-primary)] flex flex-col overflow-hidden">
             {/* Topbar */}
-            <header className="h-14 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-6 z-10 shrink-0">
+            <header className="h-14 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-6 shrink-0">
                 <div className="flex items-center gap-4">
                     <Link href="/dashboard" className="text-[var(--text-secondary)] hover:text-white transition-colors">
                         <ChevronLeft className="w-4 h-4" />
@@ -122,11 +122,11 @@ export default function ClassroomPage() {
                     <div className="flex items-center gap-4">
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
-                            <span>{classroom.enrollments?.length || 0} students</span>
+                            <span>{classroom.enrollments?.length || 0}</span>
                         </div>
                         <div className="h-4 w-px bg-[var(--border-color)]" />
-                        <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded">
-                            Kod: <span className="text-white">{classroom.inviteCode}</span>
+                        <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded select-all">
+                            {classroom.inviteCode}
                         </div>
                     </div>
                 )}
@@ -134,13 +134,13 @@ export default function ClassroomPage() {
                 {!isTeacher && classroom.memberCount !== undefined && (
                     <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                         <Users className="w-3.5 h-3.5" />
-                        <span>{classroom.memberCount} students</span>
+                        <span>{classroom.memberCount}</span>
                     </div>
                 )}
             </header>
 
             {/* Main Content */}
-            <div className="flex-1 overflow-hidden">
+            <div className="flex-1 min-h-0">
                 {isTeacher ? (
                     <TeacherView
                         classroom={classroom}

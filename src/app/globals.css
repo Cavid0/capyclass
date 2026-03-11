@@ -1,4 +1,5 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -169,6 +170,10 @@ body {
   background: var(--border-hover);
 }
 
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
 /* Editor container */
 .editor-container {
   border-radius: 8px;
@@ -177,30 +182,109 @@ body {
   background: var(--bg-secondary);
 }
 
-/* Fix Monaco editor internal textarea visibility */
-.monaco-editor .inputarea,
-.monaco-editor .inputarea.ime-input,
-.monaco-editor textarea.inputarea,
-.monaco-editor .monaco-editor-background + .overflow-guard textarea {
+/* Monaco scrollbar */
+.monaco-editor .scrollbar {
   background: transparent !important;
+}
+
+.monaco-editor .slider {
+  border-radius: 0 !important;
+}
+
+/* Gutter separator line */
+.monaco-editor .margin {
+  border-right: 1px solid #2a2520 !important;
+}
+
+/* ─── Line Numbers ─── */
+.monaco-editor .line-numbers {
+  color: #858585 !important;
+  font-size: 13px !important;
+}
+
+.monaco-editor .line-numbers.active-line-number {
+  color: #ffffff !important;
+  font-weight: 600 !important;
+}
+
+/* ─── Active Line Highlight ─── */
+.monaco-editor .current-line {
+  border: none !important;
+}
+
+.monaco-editor .view-overlays .current-line {
+  background-color: rgba(255, 255, 255, 0.04) !important;
+  border: none !important;
+  border-left: 3px solid #858585 !important;
+}
+
+/* Active line in margin/gutter */
+.monaco-editor .margin-view-overlays .current-line {
+  background-color: transparent !important;
+  border: none !important;
+  border-right: 1px solid #2a2520 !important;
+}
+
+/* Monaco editor wrapper - prevent white flash */
+.monaco-editor,
+.monaco-editor .overflow-guard,
+.monaco-editor-background {
+  background: var(--bg-primary) !important;
+}
+
+/* IMPORTANT: Fix Tailwind overriding Monaco's internal textarea causing a white box/blue outline */
+.monaco-editor textarea,
+.monaco-editor .inputarea {
+  background-color: transparent !important;
   color: transparent !important;
-  caret-color: transparent !important;
   border: none !important;
   outline: none !important;
   box-shadow: none !important;
+  resize: none !important;
+  width: 1px !important;
+  min-width: 1px !important;
+  height: 1px !important;
+  min-height: 1px !important;
+  padding: 0 !important;
+  margin: 0 !important;
+  overflow: hidden !important;
+}
+
+/* Yuxarıdakı search/find qutusunda olan ağ box problemini həll etmək üçün */
+.monaco-editor .find-widget {
+  background-color: var(--bg-primary) !important;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+}
+
+/* ─── Read-Only Mode (Admin View) ─── */
+/* Kursoru tamamilə gizlədirik ki, müəllim kursor qoya bilməsin */
+.read-only-editor .monaco-mouse-cursor-text {
+  cursor: default !important;
+}
+
+.read-only-editor .cursor,
+.read-only-editor .cursors-layer {
+  display: none !important;
+  visibility: hidden !important;
   opacity: 0 !important;
 }
 
-.monaco-editor .find-widget {
-  display: none !important;
+/* Text seçmə zamanı olan kursoru (text ikonu - I) ləğv edirik */
+.read-only-editor .view-lines {
+  cursor: default !important;
 }
 
-/* Hide cursor in read-only Monaco editors */
-.monaco-editor .cursors-layer > .cursor {
-  /* allow cursor by default */
+.monaco-editor .find-widget .monaco-inputbox {
+  background-color: var(--bg-secondary) !important;
+  border-color: var(--border-color) !important;
 }
-.monaco-editor[data-mode-id] .view-overlays .current-line {
-  /* allow line highlights normally */
+
+/* Prevent focus ring on the editor container */
+.monaco-editor,
+.monaco-editor:focus-within,
+.monaco-editor .focus-visible {
+  outline: none !important;
+  box-shadow: none !important;
 }
 
 /* Input styles */
