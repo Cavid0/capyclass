@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect, useRef } from "react";
 import {
     Users, ChevronLeft, Plus, ClipboardList, FileCode, Save, Send, Folder,
     Loader2, CheckCircle, ThumbsUp, ThumbsDown, XCircle, Play, Terminal,
@@ -36,6 +36,10 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     // Sidebar
     const [activeTab, setActiveTab] = useState<"students" | "tasks">("students");
     const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
+    const [sidebarWidth, setSidebarWidth] = useState(320);
+    const [isResizingSidebar, setIsResizingSidebar] = useState(false);
+    const resizeStartXRef = useRef(0);
+    const resizeStartWidthRef = useRef(320);
 
     // Task modal
     const [showTaskModal, setShowTaskModal] = useState(false);
@@ -56,6 +60,65 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     const [output, setOutput] = useState<string | null>(null);
     const [outputError, setOutputError] = useState(false);
     const [showOutput, setShowOutput] = useState(false);
+    const [outputHeight, setOutputHeight] = useState(192);
+    const [isResizingOutput, setIsResizingOutput] = useState(false);
+    const outputResizeStartYRef = useRef(0);
+    const outputResizeStartHeightRef = useRef(192);
+
+    useEffect(() => {
+        if (!isResizingSidebar) return;
+
+        const handleMouseMove = (event: MouseEvent) => {
+            const nextWidth = resizeStartWidthRef.current + (event.clientX - resizeStartXRef.current);
+            const maxWidth = Math.min(620, Math.max(360, window.innerWidth - 360));
+            setSidebarWidth(Math.min(maxWidth, Math.max(280, nextWidth)));
+        };
+
+        const handleMouseUp = () => {
+            setIsResizingSidebar(false);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+
+        document.body.style.cursor = "col-resize";
+        document.body.style.userSelect = "none";
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, [isResizingSidebar]);
+
+    useEffect(() => {
+        if (!isResizingOutput) return;
+
+        const handleMouseMove = (event: MouseEvent) => {
+            const nextHeight = outputResizeStartHeightRef.current - (event.clientY - outputResizeStartYRef.current);
+            setOutputHeight(Math.min(480, Math.max(120, nextHeight)));
+        };
+
+        const handleMouseUp = () => {
+            setIsResizingOutput(false);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+
+        document.body.style.cursor = "row-resize";
+        document.body.style.userSelect = "none";
+        window.addEventListener("mousemove", handleMouseMove);
+        window.addEventListener("mouseup", handleMouseUp);
+
+        return () => {
+            window.removeEventListener("mousemove", handleMouseMove);
+            window.removeEventListener("mouseup", handleMouseUp);
+            document.body.style.cursor = "";
+            document.body.style.userSelect = "";
+        };
+    }, [isResizingOutput]);
 
     /* ── Helpers ── */
 
@@ -243,14 +306,29 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
             hour12: false,
         });
 
+    const handleSidebarResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+        resizeStartXRef.current = event.clientX;
+        resizeStartWidthRef.current = sidebarWidth;
+        setIsResizingSidebar(true);
+    };
+
+    const handleOutputResizeStart = (event: React.MouseEvent<HTMLDivElement>) => {
+        outputResizeStartYRef.current = event.clientY;
+        outputResizeStartHeightRef.current = outputHeight;
+        setIsResizingOutput(true);
+    };
+
     /* ── Render ── */
 
     return (
-        <div className="flex flex-col md:flex-row h-full">
+        <div
+            className="flex flex-col md:flex-row h-full"
+            style={{ ["--teacher-sidebar-width" as string]: `${sidebarWidth}px` }}
+        >
             {/* ─── Sidebar ─── */}
             <aside
                 className={cn(
-                    "w-full md:w-80 border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
+                    "w-full md:w-[var(--teacher-sidebar-width)] border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
                     selectedWorkspaceId ? "hidden md:flex" : "flex"
                 )}
             >
@@ -439,6 +517,12 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                 </div>
             </aside>
 
+            <div
+                onMouseDown={handleSidebarResizeStart}
+                className="hidden md:block w-1 shrink-0 cursor-col-resize bg-transparent hover:bg-white/10 active:bg-white/20 transition-colors"
+                aria-hidden="true"
+            />
+
             {/* ─── Main Editor Area ─── */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg-primary)]">
                 {selectedWorkspaceId && activeWorkspaceData ? (
@@ -483,7 +567,12 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                             </div>
 
                             {showOutput && (
-                                <div className="h-48 border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex flex-col shrink-0">
+                                <div className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex flex-col shrink-0" style={{ height: `${outputHeight}px` }}>
+                                    <div
+                                        onMouseDown={handleOutputResizeStart}
+                                        className="h-1 shrink-0 cursor-row-resize bg-transparent hover:bg-white/10 active:bg-white/20 transition-colors"
+                                        aria-hidden="true"
+                                    />
                                     <div className="h-8 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
                                         <div className="flex items-center gap-2 text-[var(--text-secondary)]">
                                             <Terminal className="w-3.5 h-3.5" />
