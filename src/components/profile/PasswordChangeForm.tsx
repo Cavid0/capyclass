@@ -35,7 +35,9 @@ export function PasswordChangeForm({ email, onSuccess }: PasswordChangeFormProps
         e.preventDefault();
         setError("");
         if (!newPassword) { setError("Enter new password"); return; }
-        if (newPassword.length < 6) { setError("Password must be at least 6 characters"); return; }
+        if (newPassword.length < 8) { setError("Password must be at least 8 characters"); return; }
+        if (!/[a-zA-Z]/.test(newPassword)) { setError("Password must contain at least one letter"); return; }
+        if (!/[0-9]/.test(newPassword)) { setError("Password must contain at least one number"); return; }
         if (newPassword !== confirmPassword) { setError("Passwords do not match"); return; }
 
         setOtpLoading(true);

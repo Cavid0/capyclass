@@ -3,12 +3,13 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { isValidEmail, generateOtp, normalizeEmail, validateTextInput } from "@/lib/utils";
+import { isValidEmail, generateOtp, normalizeEmail, validatePasswordStrength, validateTextInput } from "@/lib/utils";
 
 const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
 export async function POST(req: NextRequest) {
     try {
+        const genericRegistrationMessage = "If registration can be completed, a verification code has been sent to the provided email.";
         const forwarded = req.headers.get("x-forwarded-for");
         const ip = forwarded?.split(",")[0]?.trim() || req.headers.get("x-real-ip") || "unknown";
         if (!rateLimit(`register:${ip}`, 5, 15 * 60 * 1000)) {
@@ -35,11 +36,9 @@ export async function POST(req: NextRequest) {
         if (!validatedName.ok) {
             return NextResponse.json({ error: validatedName.error }, { status: 400 });
         }
-        if (typeof password !== "string" || password.length < 6) {
-            return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
-        }
-        if (password.length > 128) {
-            return NextResponse.json({ error: "Password is too long" }, { status: 400 });
+        const passwordValidation = validatePasswordStrength(password);
+        if (!passwordValidation.ok) {
+            return NextResponse.json({ error: passwordValidation.error }, { status: 400 });
         }
 
         const existingUser = await prisma.user.findUnique({
@@ -47,9 +46,29 @@ export async function POST(req: NextRequest) {
         });
 
         if (existingUser) {
+            if (!existingUser.emailVerified) {
+                const verificationCode = generateOtp();
+                await prisma.user.update({
+                    where: { id: existingUser.id },
+                    data: {
+                        verificationToken: verificationCode,
+                        tokenPurpose: "EMAIL_VERIFY",
+                        verificationTokenExpiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
+                        otpAttempts: 0,
+                        otpLockedUntil: null,
+                    },
+                });
+
+                try {
+                    await sendVerificationEmail(normalizedEmail, verificationCode);
+                } catch (emailError: any) {
+                    console.error("Register resend email error:", emailError?.message);
+                }
+            }
+
             return NextResponse.json(
-                { error: "This email is already registered" },
-                { status: 400 }
+                { message: genericRegistrationMessage },
+                { status: 202 }
             );
         }
 
@@ -82,9 +101,9 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json(
             {
-                message: "Registration successful. Enter the 6-digit code sent to your email.",
+                message: genericRegistrationMessage,
             },
-            { status: 201 }
+            { status: 202 }
         );
     } catch (error: any) {
         console.error("Register error:", error);

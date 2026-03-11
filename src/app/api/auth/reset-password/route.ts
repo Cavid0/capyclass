@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail, normalizeOtpCode, validatePasswordStrength, verifyOtpToken } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -15,61 +16,37 @@ export async function POST(req: NextRequest) {
         }
 
         const { email, code, newPassword } = await req.json();
+        const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
+        const normalizedCode = typeof code === "string" ? normalizeOtpCode(code) : "";
 
-        if (!email || !code || !newPassword) {
+        if (!normalizedEmail || !normalizedCode || typeof newPassword !== "string") {
             return NextResponse.json(
                 { error: "Email, code, and new password are required" },
                 { status: 400 }
             );
         }
 
-        if (newPassword.length < 6) {
+        if (!isValidEmail(normalizedEmail)) {
+            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        }
+
+        const passwordValidation = validatePasswordStrength(newPassword);
+        if (!passwordValidation.ok) {
             return NextResponse.json(
-                { error: "Password must be at least 6 characters" },
+                { error: passwordValidation.error },
                 { status: 400 }
             );
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
         if (!user) {
-            return NextResponse.json({ error: "User not found" }, { status: 404 });
+            return NextResponse.json({ error: "Invalid or expired reset request" }, { status: 400 });
         }
 
-        // Check lockout
-        if (user.otpLockedUntil && new Date() < user.otpLockedUntil) {
-            return NextResponse.json(
-                { error: "Too many failed attempts. Please try again later." },
-                { status: 429 }
-            );
-        }
-
-        // Check expiry
-        if (!user.verificationToken || !user.verificationTokenExpiresAt || new Date() > user.verificationTokenExpiresAt) {
-            return NextResponse.json({ error: "Code has expired. Please request a new one." }, { status: 400 });
-        }
-
-        // Check purpose
-        if (user.tokenPurpose !== "PASSWORD_RESET") {
-            return NextResponse.json({ error: "Invalid code for this action." }, { status: 400 });
-        }
-
-        if (user.verificationToken !== code) {
-            const newAttempts = (user.otpAttempts || 0) + 1;
-            const updateData: any = { otpAttempts: newAttempts };
-            if (newAttempts >= 5) {
-                updateData.otpLockedUntil = new Date(Date.now() + 15 * 60 * 1000);
-                updateData.verificationToken = null;
-                updateData.tokenPurpose = null;
-                updateData.verificationTokenExpiresAt = null;
-            }
-            await prisma.user.update({ where: { id: user.id }, data: updateData });
-
-            return NextResponse.json({
-                error: newAttempts >= 5
-                    ? "Too many failed attempts. Please request a new code."
-                    : `Invalid code. ${5 - newAttempts} attempts remaining.`
-            }, { status: 400 });
+        const otpResult = await verifyOtpToken(user.id, normalizedCode, "PASSWORD_RESET");
+        if (!otpResult.valid) {
+            return NextResponse.json({ error: otpResult.error }, { status: 400 });
         }
 
         const hashedPassword = await hash(newPassword, 12);
@@ -78,11 +55,6 @@ export async function POST(req: NextRequest) {
             where: { id: user.id },
             data: {
                 hashedPassword,
-                verificationToken: null,
-                tokenPurpose: null,
-                verificationTokenExpiresAt: null,
-                otpAttempts: 0,
-                otpLockedUntil: null,
             },
         });
 

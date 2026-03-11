@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
-import { verifyOtpToken } from "@/lib/utils";
+import { normalizeOtpCode, verifyOtpToken } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -21,13 +21,14 @@ export async function POST(req: NextRequest) {
             );
         }
         const { otp } = await req.json();
+        const normalizedOtp = typeof otp === "string" ? normalizeOtpCode(otp) : "";
 
-        if (!otp || otp.length !== 6) {
+        if (!/^\d{6}$/.test(normalizedOtp)) {
             return NextResponse.json({ error: "OTP code is required" }, { status: 400 });
         }
 
         // Verify OTP with purpose and brute-force protection
-        const otpResult = await verifyOtpToken(userId, otp, "ACCOUNT_DELETE");
+        const otpResult = await verifyOtpToken(userId, normalizedOtp, "ACCOUNT_DELETE");
         if (!otpResult.valid) {
             return NextResponse.json({ error: otpResult.error }, { status: 400 });
         }

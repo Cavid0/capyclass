@@ -1,20 +1,23 @@
 import { NextRequest, NextResponse } from "next/server";
 
-const CONTENT_SECURITY_POLICY = [
-    "default-src 'self'",
-    "base-uri 'self'",
-    "form-action 'self'",
-    "frame-ancestors 'none'",
-    "object-src 'none'",
-    "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
-    "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
-    "img-src 'self' data: blob:",
-    "font-src 'self' data: https://fonts.gstatic.com",
-    "connect-src 'self' https://wandbox.org",
-    "worker-src 'self' blob:",
-    "frame-src 'none'",
-    "manifest-src 'self'",
-].join("; ");
+function createCsp(nonce: string): string {
+    return [
+        "default-src 'self'",
+        "base-uri 'self'",
+        "form-action 'self'",
+        "frame-ancestors 'none'",
+        "object-src 'none'",
+        `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' 'strict-dynamic'`,
+        "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
+        "img-src 'self' data: blob:",
+        "font-src 'self' data: https://fonts.gstatic.com",
+        "connect-src 'self' https://wandbox.org",
+        "worker-src 'self' blob:",
+        "frame-src 'none'",
+        "manifest-src 'self'",
+        "upgrade-insecure-requests",
+    ].join("; ");
+}
 
 // Global IP-based rate limiter for DDoS protection
 const ipRequestMap = new Map<string, { count: number; resetAt: number }>();
@@ -52,6 +55,9 @@ function isRateLimited(ip: string, maxRequests: number, windowMs: number): boole
 export function middleware(req: NextRequest) {
     const ip = getClientIp(req);
     const { pathname } = req.nextUrl;
+    const nonce = crypto.randomUUID().replace(/-/g, "");
+    const requestHeaders = new Headers(req.headers);
+    requestHeaders.set("x-nonce", nonce);
 
     // Global rate limit: 200 requests per minute per IP for API routes
     if (pathname.startsWith("/api/")) {
@@ -83,6 +89,16 @@ export function middleware(req: NextRequest) {
         }
     }
 
+    if (pathname.startsWith("/api/") && ["POST", "PUT", "PATCH", "DELETE"].includes(req.method)) {
+        const origin = req.headers.get("origin");
+        if (origin && origin !== req.nextUrl.origin) {
+            return NextResponse.json(
+                { error: "Forbidden" },
+                { status: 403 }
+            );
+        }
+    }
+
     // Block suspicious patterns
     const suspiciousPatterns = [
         /\.\.\//,        // Path traversal
@@ -101,17 +117,25 @@ export function middleware(req: NextRequest) {
         }
     }
 
-    const response = NextResponse.next();
+    const response = NextResponse.next({
+        request: {
+            headers: requestHeaders,
+        },
+    });
 
     // Add security headers
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    response.headers.set("Content-Security-Policy", CONTENT_SECURITY_POLICY);
+    response.headers.set("Content-Security-Policy", createCsp(nonce));
     response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
     response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
     response.headers.set("Origin-Agent-Cluster", "?1");
     response.headers.set("Permissions-Policy", "camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()");
+    if (pathname.startsWith("/api/")) {
+        response.headers.set("Cache-Control", "no-store, max-age=0");
+        response.headers.set("Pragma", "no-cache");
+    }
 
     return response;
 }

@@ -32,10 +32,6 @@ const nextConfig = {
                         value: 'strict-origin-when-cross-origin'
                     },
                     {
-                        key: 'Content-Security-Policy',
-                        value: "default-src 'self'; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; script-src 'self' 'unsafe-inline' 'unsafe-eval'; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com; img-src 'self' data: blob:; font-src 'self' data: https://fonts.gstatic.com; connect-src 'self' https://wandbox.org; worker-src 'self' blob:; frame-src 'none'; manifest-src 'self'"
-                    },
-                    {
                         // Cross-Origin resursları izolyasiya edir
                         key: 'Permissions-Policy',
                         value: 'camera=(), microphone=(), geolocation=(), payment=(), usb=(), serial=()'

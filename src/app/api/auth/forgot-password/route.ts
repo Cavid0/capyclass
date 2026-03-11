@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { generateOtp } from "@/lib/utils";
+import { generateOtp, isValidEmail, normalizeEmail } from "@/lib/utils";
 
 const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
@@ -18,12 +18,17 @@ export async function POST(req: NextRequest) {
         }
 
         const { email } = await req.json();
+        const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
 
-        if (!email) {
+        if (!normalizedEmail) {
             return NextResponse.json({ error: "Email is required" }, { status: 400 });
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
+        if (!isValidEmail(normalizedEmail)) {
+            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        }
+
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
         // Security: return the same response whether user exists or not
         if (!user) {
@@ -42,7 +47,7 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        await sendVerificationEmail(email, code);
+        await sendVerificationEmail(normalizedEmail, code);
 
         return NextResponse.json({ message: "OTP code sent" });
     } catch (error: any) {

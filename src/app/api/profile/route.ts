@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { validateTextInput, verifyOtpToken } from "@/lib/utils";
+import { validatePasswordStrength, validateTextInput, verifyOtpToken } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
 
 // GET: Get current user profile
@@ -85,9 +85,10 @@ export async function PUT(req: NextRequest) {
                 );
             }
 
-            if (newPassword.length < 6) {
+            const passwordValidation = validatePasswordStrength(newPassword);
+            if (!passwordValidation.ok) {
                 return NextResponse.json(
-                    { error: "New password must be at least 6 characters" },
+                    { error: passwordValidation.error },
                     { status: 400 }
                 );
             }

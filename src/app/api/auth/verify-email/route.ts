@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
+import { isValidEmail, normalizeEmail, normalizeOtpCode } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -14,19 +15,25 @@ export async function POST(req: NextRequest) {
         }
 
         const { email, code } = await req.json();
+        const normalizedEmail = typeof email === "string" && email.trim() ? normalizeEmail(email) : "";
+        const normalizedCode = typeof code === "string" ? normalizeOtpCode(code) : "";
 
-        if (!code) {
+        if (!normalizedCode) {
             return NextResponse.json(
                 { error: "Verification code is required" },
                 { status: 400 }
             );
         }
 
+        if (normalizedEmail && !isValidEmail(normalizedEmail)) {
+            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        }
+
         let user;
-        if (email) {
-            user = await prisma.user.findUnique({ where: { email } });
+        if (normalizedEmail) {
+            user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
         } else {
-            user = await prisma.user.findFirst({ where: { verificationToken: code } });
+            user = await prisma.user.findFirst({ where: { verificationToken: normalizedCode } });
         }
 
         if (!user) {
@@ -64,7 +71,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (user.verificationToken !== code) {
+        if (user.verificationToken !== normalizedCode) {
             // Increment attempts
             const newAttempts = (user.otpAttempts || 0) + 1;
             const updateData: any = { otpAttempts: newAttempts };

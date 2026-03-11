@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { generateOtp } from "@/lib/utils";
+import { generateOtp, isValidEmail, normalizeEmail } from "@/lib/utils";
 
 export async function POST(req: NextRequest) {
     try {
@@ -16,25 +16,23 @@ export async function POST(req: NextRequest) {
         }
 
         const { email } = await req.json();
+        const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
 
-        if (!email) {
+        if (!normalizedEmail) {
             return NextResponse.json(
                 { error: "Email is required" },
                 { status: 400 }
             );
         }
 
-        const user = await prisma.user.findUnique({ where: { email } });
-
-        if (!user) {
-            return NextResponse.json({ message: "If the account exists, a code has been sent" });
+        if (!isValidEmail(normalizedEmail)) {
+            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
         }
 
-        if (user.emailVerified) {
-            return NextResponse.json(
-                { error: "This account is already verified" },
-                { status: 400 }
-            );
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
+
+        if (!user || user.emailVerified) {
+            return NextResponse.json({ message: "If the account can receive verification, a new code has been sent" });
         }
 
         const newCode = generateOtp();
@@ -50,9 +48,9 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        await sendVerificationEmail(email, newCode);
+        await sendVerificationEmail(normalizedEmail, newCode);
 
-        return NextResponse.json({ message: "New code sent" });
+        return NextResponse.json({ message: "If the account can receive verification, a new code has been sent" });
     } catch (error: any) {
         return NextResponse.json(
             { error: error?.message || "An error occurred" },

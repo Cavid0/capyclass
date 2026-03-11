@@ -2,6 +2,7 @@ import { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
 import { compare } from "bcryptjs";
 import { prisma } from "./prisma";
+import { isValidEmail, normalizeEmail } from "./utils";
 
 export const authOptions: NextAuthOptions = {
     providers: [
@@ -16,12 +17,17 @@ export const authOptions: NextAuthOptions = {
                     throw new Error("Email and password are required");
                 }
 
+                const normalizedEmail = normalizeEmail(credentials.email);
+                if (!isValidEmail(normalizedEmail)) {
+                    throw new Error("Invalid email or password");
+                }
+
                 const user = await prisma.user.findUnique({
-                    where: { email: credentials.email },
+                    where: { email: normalizedEmail },
                 });
 
                 if (!user) {
-                    throw new Error("User not found");
+                    throw new Error("Invalid email or password");
                 }
 
                 if (!user.emailVerified) {
@@ -34,7 +40,7 @@ export const authOptions: NextAuthOptions = {
                 );
 
                 if (!isPasswordValid) {
-                    throw new Error("Incorrect password");
+                    throw new Error("Invalid email or password");
                 }
 
                 return {
