@@ -55,6 +55,10 @@ interface StudentViewProps {
 
 export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceId, onSelectWorkspace, onWorkspaceCreated }: StudentViewProps) {
     const activeWorkspace = workspaces.find((w: any) => w.id === selectedWorkspaceId);
+    const modalOverlayClass = "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 fade-in";
+    const modalCardClass = "glass-card w-full p-6 relative";
+    const modalIconWrapClass = "w-11 h-11 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0";
+    const modalCancelButtonClass = "px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors";
 
     const [code, setCode] = useState("");
     const [language, setLanguage] = useState("javascript");
@@ -120,6 +124,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         new Date(date).toLocaleString("az-AZ", {
             day: "2-digit", month: "2-digit", year: "numeric",
             hour: "2-digit", minute: "2-digit",
+            hour12: false,
         });
 
     /* ── API Handlers ── */
@@ -455,9 +460,17 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
 
             {/* ─── New File Modal ─── */}
             {showNewFileModal && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowNewFileModal(false)}>
-                    <div className="glass-card w-full max-w-sm p-6" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-base font-semibold text-white mb-4">New File</h3>
+                <div className={modalOverlayClass} onClick={() => setShowNewFileModal(false)}>
+                    <div className={`${modalCardClass} max-w-sm`} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className={modalIconWrapClass}>
+                                <Plus className="w-5 h-5 text-white" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">New File</h3>
+                                <p className="text-sm text-[var(--text-secondary)]">Create a new workspace file.</p>
+                            </div>
+                        </div>
                         <form onSubmit={submitCreateFile} className="space-y-4">
                             <input
                                 autoFocus
@@ -468,7 +481,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 className="input-field"
                             />
                             <div className="flex gap-2 justify-end">
-                                <button type="button" onClick={() => setShowNewFileModal(false)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">
+                                <button type="button" onClick={() => setShowNewFileModal(false)} className={modalCancelButtonClass}>
                                     Cancel
                                 </button>
                                 <button type="submit" disabled={!newFileName.trim()} className="glow-btn px-4 py-2 text-sm">
@@ -482,17 +495,21 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
 
             {/* ─── Language Change Warning Modal (Yeni Popup) ─── */}
             {pendingLanguage && (
-                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setPendingLanguage(null)}>
-                    <div className="glass-card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
-                        <h3 className="text-base font-semibold text-white mb-2 flex items-center gap-2">
-                            <Terminal className="w-5 h-5 text-[var(--accent-primary)]" />
-                            Dili Dəyişmək
-                        </h3>
-                        <p className="text-sm text-[var(--text-secondary)] mb-6 leading-relaxed">
-                            Dili <strong>{pendingLanguage}</strong> olaraq dəyişdiyiniz zaman mövcud kodlarınız silinəcək və yeni dilə aid şablon kod yüklənəcək. Davam etmək istəyirsiniz?
-                        </p>
+                <div className={modalOverlayClass} onClick={() => setPendingLanguage(null)}>
+                    <div className={`${modalCardClass} max-w-md`} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className={modalIconWrapClass}>
+                                <Terminal className="w-5 h-5 text-[var(--accent-primary)]" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Dili Dəyişmək</h3>
+                                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                                    Dili <strong>{pendingLanguage}</strong> olaraq dəyişdiyiniz zaman mövcud kodlarınız silinəcək və yeni dilə aid şablon kod yüklənəcək.
+                                </p>
+                            </div>
+                        </div>
                         <div className="flex gap-2 justify-end">
-                            <button onClick={() => setPendingLanguage(null)} className="px-4 py-2 rounded-lg text-sm text-[var(--text-secondary)] hover:text-white hover:bg-[var(--bg-elevated)] transition-all">
+                            <button onClick={() => setPendingLanguage(null)} className={modalCancelButtonClass}>
                                 Ləğv et
                             </button>
                             <button onClick={confirmLanguageChange} className="px-5 py-2 rounded-lg text-sm bg-[var(--accent-primary)] text-[var(--btn-text)] font-medium hover:brightness-110 transition-all shadow-[0_0_15px_var(--accent-glow)]">

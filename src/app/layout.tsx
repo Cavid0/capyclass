@@ -82,7 +82,19 @@ export default function RootLayout({
       </head>
       <body className="gradient-bg grid-pattern">
         <Providers>{children}</Providers>
-        <Toaster theme="dark" position="top-center" />
+        <Toaster
+          theme="dark"
+          position="top-center"
+          toastOptions={{
+            classNames: {
+              toast: "glass-card border border-white/10 text-white shadow-2xl",
+              title: "text-sm font-medium text-white",
+              description: "text-xs text-[var(--text-secondary)]",
+              actionButton: "!bg-white !text-black hover:!bg-white/90",
+              cancelButton: "!bg-white/10 !text-white hover:!bg-white/20",
+            },
+          }}
+        />
       </body>
     </html>
   );

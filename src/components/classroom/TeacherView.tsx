@@ -28,6 +28,10 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspaceId);
     const activeWorkspaceCode = activeWorkspaceData?.code?.replace(/^(?:[ \t]*\r?\n)+/, "") ?? "";
     const isOwner = classroom.teacherId === currentUserId;
+    const modalOverlayClass = "fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4 fade-in";
+    const modalCardClass = "glass-card w-full p-6 relative";
+    const modalIconWrapClass = "w-11 h-11 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center";
+    const modalCancelButtonClass = "px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors";
 
     // Sidebar
     const [activeTab, setActiveTab] = useState<"students" | "tasks">("students");
@@ -236,6 +240,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
         new Date(date).toLocaleString("az-AZ", {
             day: "2-digit", month: "2-digit", year: "numeric",
             hour: "2-digit", minute: "2-digit",
+            hour12: false,
         });
 
     /* ── Render ── */
@@ -581,15 +586,15 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
 
             {/* ─── Task Create/Edit Modal ─── */}
             {showTaskModal && (
-                <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setShowTaskModal(false)}>
-                    <div className="glass-card p-6 w-full max-w-md" onClick={(e) => e.stopPropagation()}>
+                <div className={modalOverlayClass} onClick={() => setShowTaskModal(false)}>
+                    <div className={`${modalCardClass} max-w-md`} onClick={(e) => e.stopPropagation()}>
                         <div className="flex items-center gap-3 mb-5">
-                            <div className="w-9 h-9 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center">
+                            <div className={modalIconWrapClass}>
                                 <ClipboardList className="w-4 h-4 text-white" />
                             </div>
                             <div>
                                 <h3 className="text-base font-semibold text-white">{editingTaskId ? "Edit Task" : "New Task"}</h3>
-                                <p className="text-xs text-[var(--text-secondary)]">Visible to all members</p>
+                                <p className="text-sm text-[var(--text-secondary)]">Visible to all members</p>
                             </div>
                         </div>
 
@@ -617,7 +622,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                 <button
                                     type="button"
                                     onClick={() => { setShowTaskModal(false); resetTaskForm(); }}
-                                    className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                                    className={modalCancelButtonClass}
                                 >
                                     Cancel
                                 </button>

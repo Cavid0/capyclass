@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2 } from "lucide-react";
+import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2, LogOut } from "lucide-react";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
@@ -28,6 +28,12 @@ export default function DashboardPage() {
 
     // Copy state
     const [copiedCode, setCopiedCode] = useState<string | null>(null);
+    const [leaveTarget, setLeaveTarget] = useState<{ id: string; name: string } | null>(null);
+    const [leaving, setLeaving] = useState(false);
+    const modalOverlayClass = "fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm fade-in";
+    const modalCardClass = "glass-card w-full max-w-md p-6 relative";
+    const modalIconWrapClass = "w-11 h-11 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center shrink-0";
+    const modalCancelButtonClass = "px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors";
 
     const router = useRouter();
 
@@ -135,6 +141,30 @@ export default function DashboardPage() {
                 onClick: () => { }
             }
         });
+    };
+
+    const handleLeaveClassroom = async () => {
+        if (!leaveTarget) return;
+
+        setLeaving(true);
+        try {
+            const res = await fetch(`/api/classrooms/${leaveTarget.id}/leave`, {
+                method: "POST",
+            });
+            const data = await res.json();
+
+            if (res.ok) {
+                setLeaveTarget(null);
+                fetchClassrooms();
+                toast.success("Classroom left");
+            } else {
+                toast.error(data.error || "Could not leave classroom");
+            }
+        } catch {
+            toast.error("Connection error");
+        } finally {
+            setLeaving(false);
+        }
     };
 
     const filteredClasses = (classrooms || []).filter(c =>
@@ -251,14 +281,14 @@ export default function DashboardPage() {
                                             </div>
 
                                             <div className="flex items-center gap-2">
-                                                {!item.isTeacher && (
+                                                {!item.isTeacher && item.status && item.status.toUpperCase() !== "ACTIVE" && (
                                                     <span className={cn(
                                                         "px-2.5 py-1 text-[10px] font-semibold uppercase tracking-wider rounded-full border shadow-sm",
                                                         item.status === "PASS" ? "text-emerald-400 border-emerald-500/30 bg-emerald-500/10" :
                                                             item.status === "FAIL" ? "text-rose-400 border-rose-500/30 bg-rose-500/10" :
                                                                 "text-indigo-400 border-indigo-500/30 bg-indigo-500/10"
                                                     )}>
-                                                        {item.status || "ACTIVE"}
+                                                        {item.status}
                                                     </span>
                                                 )}
                                                 {item.isTeacher && (
@@ -285,7 +315,7 @@ export default function DashboardPage() {
                                                 </div>
                                                 <div className="flex items-center gap-2.5 px-3 py-1">
                                                     <Clock className="w-4 h-4 opacity-70" />
-                                                    <span className="text-xs">Created: {new Date(item.createdAt).toLocaleString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })}</span>
+                                                    <span className="text-xs">Created: {new Date(item.createdAt).toLocaleString("az-AZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false })}</span>
                                                 </div>
                                             </div>
                                         ) : (
@@ -314,7 +344,18 @@ export default function DashboardPage() {
                                                     <><Copy className="w-4 h-4 group-hover/copy:scale-110 transition-transform" /> <span className="font-mono tracking-wider text-gray-300">{item.inviteCode}</span></>
                                                 )}
                                             </button>
-                                        ) : <div />}
+                                        ) : (
+                                            <button
+                                                onClick={(e) => {
+                                                    e.preventDefault();
+                                                    setLeaveTarget({ id: item.id, name: item.name });
+                                                }}
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
+                                            >
+                                                <LogOut className="w-3.5 h-3.5" />
+                                                Leave
+                                            </button>
+                                        )}
 
                                         <Link href={`/classroom/${item.id}`}>
                                             <button className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-medium border border-white/10 hover:border-white/30">
@@ -333,12 +374,17 @@ export default function DashboardPage() {
             {/* Create Modal */}
             {
                 showCreateModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
-                        <div className="glass-card w-full max-w-md p-6 relative">
-                            <h2 className="text-lg font-medium text-white mb-2 tracking-tight">New Class</h2>
-                            <p className="text-[var(--text-secondary)] text-sm mb-6">
-                                Create a class and generate an invite code for your students.
-                            </p>
+                    <div className={modalOverlayClass}>
+                        <div className={modalCardClass}>
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className={modalIconWrapClass}>
+                                    <Plus className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-medium text-white tracking-tight">New Class</h2>
+                                    <p className="text-[var(--text-secondary)] text-sm">Create a class and generate an invite code for your students.</p>
+                                </div>
+                            </div>
 
                             <form onSubmit={handleCreate} className="space-y-4 text-left">
                                 <div>
@@ -360,7 +406,7 @@ export default function DashboardPage() {
                                     <button
                                         type="button"
                                         onClick={() => setShowCreateModal(false)}
-                                        className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                                        className={modalCancelButtonClass}
                                     >
                                         Cancel
                                     </button>
@@ -381,15 +427,17 @@ export default function DashboardPage() {
             {/* Join Modal (Student) */}
             {
                 showJoinModal && (
-                    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm fade-in">
-                        <div className="glass-card w-full max-w-md p-6 relative">
-                            <div className="w-12 h-12 rounded-xl bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center mx-auto mb-5">
-                                <UserPlus className="w-6 h-6 text-white" />
+                    <div className={modalOverlayClass}>
+                        <div className={modalCardClass}>
+                            <div className="flex items-center gap-3 mb-5">
+                                <div className={modalIconWrapClass}>
+                                    <UserPlus className="w-5 h-5 text-white" />
+                                </div>
+                                <div>
+                                    <h2 className="text-lg font-medium text-white tracking-tight">Join Class</h2>
+                                    <p className="text-[var(--text-secondary)] text-sm">Enter the invite code from your teacher</p>
+                                </div>
                             </div>
-                            <h2 className="text-lg font-medium text-white mb-2 tracking-tight text-center">Join Class</h2>
-                            <p className="text-[var(--text-secondary)] text-sm mb-6 text-center">
-                                Enter the invite code from your teacher
-                            </p>
 
                             {joinError && (
                                 <div className="mb-4 p-3 rounded-md bg-red-500/10 border border-red-500/20 flex items-center gap-2 text-red-400 text-sm">
@@ -422,7 +470,7 @@ export default function DashboardPage() {
                                     <button
                                         type="button"
                                         onClick={() => { setShowJoinModal(false); setJoinError(""); setJoinCode(""); }}
-                                        className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors"
+                                        className={modalCancelButtonClass}
                                     >
                                         Cancel
                                     </button>
@@ -439,6 +487,43 @@ export default function DashboardPage() {
                     </div>
                 )
             }
+
+            {leaveTarget && (
+                <div className={modalOverlayClass} onClick={() => !leaving && setLeaveTarget(null)}>
+                    <div className={modalCardClass} onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className={modalIconWrapClass}>
+                                <LogOut className="w-5 h-5 text-red-400" />
+                            </div>
+                            <div>
+                                <h2 className="text-lg font-medium text-white tracking-tight">Leave Class</h2>
+                                <p className="text-[var(--text-secondary)] text-sm leading-relaxed">
+                                    Are you sure you want to leave <span className="text-white font-medium">{leaveTarget.name}</span>?
+                                </p>
+                            </div>
+                        </div>
+
+                        <div className="flex gap-3 justify-end">
+                            <button
+                                type="button"
+                                onClick={() => setLeaveTarget(null)}
+                                disabled={leaving}
+                                className={modalCancelButtonClass}
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="button"
+                                onClick={handleLeaveClassroom}
+                                disabled={leaving}
+                                className="px-5 py-2 rounded-lg text-sm bg-red-500 text-white font-medium hover:bg-red-600 transition-all flex items-center gap-2 min-w-[120px] justify-center disabled:opacity-60"
+                            >
+                                {leaving ? <Loader2 className="w-4 h-4 animate-spin" /> : <><LogOut className="w-4 h-4" /> Leave</>}
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
         </div >
     );
 }

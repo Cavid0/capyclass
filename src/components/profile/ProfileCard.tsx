@@ -38,7 +38,7 @@ export function ProfileCard({ profile }: ProfileCardProps) {
                         <Calendar className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
                     </div>
                     <div className="text-sm font-bold text-white">
-                        {profile?.createdAt ? new Date(profile.createdAt).toLocaleString('en-US', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' }) : "—"}
+                        {profile?.createdAt ? new Date(profile.createdAt).toLocaleString("az-AZ", { day: "2-digit", month: "2-digit", year: "numeric", hour: "2-digit", minute: "2-digit", hour12: false }) : "—"}
                     </div>
                     <div className="text-[10px] text-[var(--text-secondary)] uppercase tracking-wider">Joined</div>
                 </div>
