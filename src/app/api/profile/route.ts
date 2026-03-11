@@ -3,7 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { verifyOtpToken } from "@/lib/utils";
+import { validateTextInput, verifyOtpToken } from "@/lib/utils";
 import { logAudit } from "@/lib/audit";
 
 // GET: Get current user profile
@@ -59,8 +59,12 @@ export async function PUT(req: NextRequest) {
         // Build update data
         const updateData: any = {};
 
-        if (name && name.trim()) {
-            updateData.name = name.trim();
+        if (name !== undefined && name !== null && name !== "") {
+            const validatedName = validateTextInput(name, { fieldName: "Name", maxLength: 100 });
+            if (!validatedName.ok) {
+                return NextResponse.json({ error: validatedName.error }, { status: 400 });
+            }
+            updateData.name = validatedName.value;
         }
 
         // Handle password change (OTP verified)

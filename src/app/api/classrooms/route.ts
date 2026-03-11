@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInviteCode, isCleanText } from "@/lib/utils";
+import { generateInviteCode, validateTextInput } from "@/lib/utils";
 import { rateLimit } from "@/lib/rate-limit";
 
 // GET: List classrooms for current user
@@ -108,20 +108,28 @@ export async function POST(req: NextRequest) {
         }
 
         const { name, description } = await req.json();
-        if (!name) {
-            return NextResponse.json(
-                { error: "Classroom name is required" },
-                { status: 400 }
-            );
+        const validatedName = validateTextInput(name, { fieldName: "Classroom name", maxLength: 100 });
+        if (!validatedName.ok) {
+            return NextResponse.json({ error: validatedName.error }, { status: 400 });
         }
-        if (name.length > 100 || !isCleanText(name)) {
-            return NextResponse.json({ error: "Invalid classroom name" }, { status: 400 });
+
+        let validatedDescription: string | null = null;
+        if (description !== undefined && description !== null && description !== "") {
+            const descriptionResult = validateTextInput(description, {
+                fieldName: "Classroom description",
+                maxLength: 1000,
+                multiline: true,
+            });
+            if (!descriptionResult.ok) {
+                return NextResponse.json({ error: descriptionResult.error }, { status: 400 });
+            }
+            validatedDescription = descriptionResult.value;
         }
 
         const classroom = await prisma.classroom.create({
             data: {
-                name,
-                description: description || null,
+                name: validatedName.value,
+                description: validatedDescription,
                 inviteCode: generateInviteCode(),
                 teacherId: userId,
             },

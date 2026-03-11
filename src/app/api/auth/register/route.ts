@@ -3,7 +3,7 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { isValidEmail, isCleanText, generateOtp } from "@/lib/utils";
+import { isValidEmail, generateOtp, normalizeEmail, validateTextInput } from "@/lib/utils";
 
 const OTP_EXPIRY_MS = 15 * 60 * 1000;
 
@@ -18,8 +18,9 @@ export async function POST(req: NextRequest) {
             );
         }
         const { name, email, password, role } = await req.json();
+        const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
 
-        if (!name || !email || !password) {
+        if (!name || !normalizedEmail || !password) {
             return NextResponse.json(
                 { error: "Name, email, and password are required" },
                 { status: 400 }
@@ -27,16 +28,14 @@ export async function POST(req: NextRequest) {
         }
 
         // Input validation
-        if (!isValidEmail(email)) {
+        if (!isValidEmail(normalizedEmail)) {
             return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
         }
-        if (!isCleanText(name)) {
-            return NextResponse.json({ error: "Name contains invalid characters" }, { status: 400 });
+        const validatedName = validateTextInput(name, { fieldName: "Name", maxLength: 100 });
+        if (!validatedName.ok) {
+            return NextResponse.json({ error: validatedName.error }, { status: 400 });
         }
-        if (name.length > 100) {
-            return NextResponse.json({ error: "Name is too long" }, { status: 400 });
-        }
-        if (password.length < 6) {
+        if (typeof password !== "string" || password.length < 6) {
             return NextResponse.json({ error: "Password must be at least 6 characters" }, { status: 400 });
         }
         if (password.length > 128) {
@@ -44,7 +43,7 @@ export async function POST(req: NextRequest) {
         }
 
         const existingUser = await prisma.user.findUnique({
-            where: { email },
+            where: { email: normalizedEmail },
         });
 
         if (existingUser) {
@@ -59,8 +58,8 @@ export async function POST(req: NextRequest) {
 
         const user = await prisma.user.create({
             data: {
-                name,
-                email,
+                name: validatedName.value,
+                email: normalizedEmail,
                 hashedPassword,
                 role: role === "ADMIN" ? "ADMIN" : "USER",
                 emailVerified: false,
@@ -71,7 +70,7 @@ export async function POST(req: NextRequest) {
         });
 
         try {
-            await sendVerificationEmail(email, verificationCode);
+            await sendVerificationEmail(normalizedEmail, verificationCode);
         } catch (emailError: any) {
             console.error("Register email error:", emailError?.message);
             await prisma.user.delete({ where: { id: user.id } });

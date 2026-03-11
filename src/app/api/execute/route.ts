@@ -42,7 +42,7 @@ export async function POST(req: NextRequest) {
 
         const { code, language } = await req.json();
 
-        if (!code || !language) {
+        if (typeof code !== "string" || typeof language !== "string") {
             return NextResponse.json({ error: "Code and language are required" }, { status: 400 });
         }
 

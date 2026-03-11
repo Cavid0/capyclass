@@ -9,6 +9,8 @@ export function cn(...classes: (string | undefined | false)[]): string {
     return classes.filter(Boolean).join(" ");
 }
 
+const CONTROL_CHAR_REGEX = /[\u0000-\u0008\u000B\u000C\u000E-\u001F\u007F]/;
+
 /** Sanitize user input to prevent XSS */
 export function sanitizeInput(input: string): string {
     return input
@@ -28,6 +30,55 @@ export function isValidEmail(email: string): boolean {
 /** Validate safe text (no HTML/scripts) */
 export function isCleanText(text: string): boolean {
     return !/<script|<\/script|javascript:|on\w+=/i.test(text);
+}
+
+export function normalizeEmail(email: string): string {
+    return email.trim().toLowerCase();
+}
+
+export function validateTextInput(
+    input: unknown,
+    options: {
+        fieldName: string;
+        maxLength: number;
+        multiline?: boolean;
+        allowEmpty?: boolean;
+    }
+): { ok: true; value: string } | { ok: false; error: string } {
+    if (typeof input !== "string") {
+        return { ok: false, error: `${options.fieldName} is invalid` };
+    }
+
+    const value = input.normalize("NFKC").trim();
+
+    if (!options.allowEmpty && !value) {
+        return { ok: false, error: `${options.fieldName} is required` };
+    }
+
+    if (value.length > options.maxLength) {
+        return { ok: false, error: `${options.fieldName} is too long` };
+    }
+
+    if (CONTROL_CHAR_REGEX.test(value)) {
+        return { ok: false, error: `${options.fieldName} contains invalid characters` };
+    }
+
+    if (!options.multiline && /[\r\n]/.test(value)) {
+        return { ok: false, error: `${options.fieldName} must be a single line` };
+    }
+
+    if (value && !isCleanText(value)) {
+        return { ok: false, error: `${options.fieldName} contains unsafe content` };
+    }
+
+    return { ok: true, value };
+}
+
+export function serializeJsonForHtmlScript(value: unknown): string {
+    return JSON.stringify(value)
+        .replace(/</g, "\\u003c")
+        .replace(/>/g, "\\u003e")
+        .replace(/&/g, "\\u0026");
 }
 
 /** Generate a 6-digit OTP code */

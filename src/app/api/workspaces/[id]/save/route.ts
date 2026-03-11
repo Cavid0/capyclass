@@ -39,6 +39,10 @@ export async function POST(
             return NextResponse.json({ error: "Code content is required" }, { status: 400 });
         }
 
+        if (language !== undefined && typeof language !== "string") {
+            return NextResponse.json({ error: "Language is invalid" }, { status: 400 });
+        }
+
         if (code.length > MAX_CODE_SIZE) {
             return NextResponse.json({ error: "Code exceeds 500KB limit" }, { status: 400 });
         }

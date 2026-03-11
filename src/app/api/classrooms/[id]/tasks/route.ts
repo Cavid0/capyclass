@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { isCleanText } from "@/lib/utils";
+import { validateTextInput } from "@/lib/utils";
 
 // GET: List tasks for a classroom
 export async function GET(
@@ -88,14 +88,22 @@ export async function POST(
 
         const { title, description, dueDate } = await req.json();
 
-        if (!title?.trim()) {
-            return NextResponse.json({ error: "Task title is required" }, { status: 400 });
+        const validatedTitle = validateTextInput(title, { fieldName: "Task title", maxLength: 200 });
+        if (!validatedTitle.ok) {
+            return NextResponse.json({ error: validatedTitle.error }, { status: 400 });
         }
-        if (title.length > 200 || !isCleanText(title)) {
-            return NextResponse.json({ error: "Invalid task title" }, { status: 400 });
-        }
-        if (description && (description.length > 5000 || !isCleanText(description))) {
-            return NextResponse.json({ error: "Invalid task description" }, { status: 400 });
+
+        let validatedDescription = "";
+        if (description !== undefined && description !== null && description !== "") {
+            const descriptionResult = validateTextInput(description, {
+                fieldName: "Task description",
+                maxLength: 5000,
+                multiline: true,
+            });
+            if (!descriptionResult.ok) {
+                return NextResponse.json({ error: descriptionResult.error }, { status: 400 });
+            }
+            validatedDescription = descriptionResult.value;
         }
 
         // Validate dueDate if provided
@@ -109,8 +117,8 @@ export async function POST(
 
         const task = await prisma.task.create({
             data: {
-                title: title.trim(),
-                description: description?.trim() || "",
+                title: validatedTitle.value,
+                description: validatedDescription,
                 classroomId,
                 dueDate: parsedDueDate,
             },

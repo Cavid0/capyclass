@@ -5,6 +5,7 @@ import { Brain, ArrowRight, Terminal, Rocket, Layers } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
+import { serializeJsonForHtmlScript } from "@/lib/utils";
 
 export default function HomePage() {
   const jsonLd = {
@@ -50,11 +51,11 @@ export default function HomePage() {
     <div className="min-h-screen bg-[#0a0908] text-[#f0ece4] selection:bg-amber-500/30 overflow-x-hidden">
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonForHtmlScript(jsonLd) }}
       />
       <script
         type="application/ld+json"
-        dangerouslySetInnerHTML={{ __html: JSON.stringify(orgJsonLd) }}
+        dangerouslySetInnerHTML={{ __html: serializeJsonForHtmlScript(orgJsonLd) }}
       />
       <Navbar />
 

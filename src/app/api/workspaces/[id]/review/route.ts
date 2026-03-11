@@ -3,6 +3,7 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { logAudit } from "@/lib/audit";
+import { validateTextInput } from "@/lib/utils";
 
 // POST: Teacher reviews a workspace (CORRECT / INCORRECT)
 export async function POST(
@@ -42,11 +43,24 @@ export async function POST(
             return NextResponse.json({ error: "Review status must be CORRECT or INCORRECT" }, { status: 400 });
         }
 
+        let sanitizedReviewNote: string | null = null;
+        if (reviewNote !== undefined && reviewNote !== null && reviewNote !== "") {
+            const validatedReviewNote = validateTextInput(reviewNote, {
+                fieldName: "Review note",
+                maxLength: 1000,
+                multiline: true,
+            });
+            if (!validatedReviewNote.ok) {
+                return NextResponse.json({ error: validatedReviewNote.error }, { status: 400 });
+            }
+            sanitizedReviewNote = validatedReviewNote.value;
+        }
+
         const updated = await prisma.workspace.update({
             where: { id: workspaceId },
             data: {
                 reviewStatus,
-                reviewNote: reviewNote?.trim() || null,
+                reviewNote: sanitizedReviewNote,
             },
         });
 

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { validateTextInput } from "@/lib/utils";
 
 // POST: Create a new workspace (repo/snippet) for the student in the classroom
 export async function POST(
@@ -36,12 +37,20 @@ export async function POST(
         }
 
         const { title } = await req.json();
+        let workspaceTitle = "My Code";
+        if (title !== undefined && title !== null && title !== "") {
+            const validatedTitle = validateTextInput(title, { fieldName: "Workspace title", maxLength: 120 });
+            if (!validatedTitle.ok) {
+                return NextResponse.json({ error: validatedTitle.error }, { status: 400 });
+            }
+            workspaceTitle = validatedTitle.value;
+        }
 
         const workspace = await prisma.workspace.create({
             data: {
                 studentId: userId,
                 classroomId,
-                title: title || "My Code",
+                title: workspaceTitle,
                 code: "// New code\n",
                 language: "javascript",
             },

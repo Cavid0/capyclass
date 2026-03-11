@@ -3,6 +3,7 @@ import { prisma } from "@/lib/prisma";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { logAudit } from "@/lib/audit";
+import { validateTextInput } from "@/lib/utils";
 
 async function getAdminAccess(userId: string, taskId: string) {
     const task = await prisma.task.findUnique({
@@ -38,8 +39,24 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
         }
 
         const updateData: any = {};
-        if (title !== undefined) updateData.title = title;
-        if (description !== undefined) updateData.description = description;
+        if (title !== undefined) {
+            const validatedTitle = validateTextInput(title, { fieldName: "Task title", maxLength: 200 });
+            if (!validatedTitle.ok) return NextResponse.json({ error: validatedTitle.error }, { status: 400 });
+            updateData.title = validatedTitle.value;
+        }
+        if (description !== undefined) {
+            if (description === null || description === "") {
+                updateData.description = "";
+            } else {
+                const validatedDescription = validateTextInput(description, {
+                    fieldName: "Task description",
+                    maxLength: 5000,
+                    multiline: true,
+                });
+                if (!validatedDescription.ok) return NextResponse.json({ error: validatedDescription.error }, { status: 400 });
+                updateData.description = validatedDescription.value;
+            }
+        }
         if (parsedDueDate !== undefined) updateData.dueDate = parsedDueDate;
 
         const updatedTask = await prisma.task.update({
