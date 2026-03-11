@@ -250,14 +250,14 @@ body {
   overflow: hidden !important;
 }
 
-/* Yuxarıdakı search/find qutusunda olan ağ box problemini həll etmək üçün */
+/* Fix the white background issue in the search/find widget above. */
 .monaco-editor .find-widget {
   background-color: var(--bg-primary) !important;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
 }
 
 /* ─── Read-Only Mode (Admin View) ─── */
-/* Kursoru tamamilə gizlədirik ki, müəllim kursor qoya bilməsin */
+/* Fully hide the cursor so teachers cannot place it in the editor. */
 .read-only-editor .monaco-mouse-cursor-text {
   cursor: default !important;
 }
@@ -269,7 +269,7 @@ body {
   opacity: 0 !important;
 }
 
-/* Text seçmə zamanı olan kursoru (text ikonu - I) ləğv edirik */
+/* Disable the text-selection cursor (I-beam) in read-only mode. */
 .read-only-editor .view-lines {
   cursor: default !important;
 }

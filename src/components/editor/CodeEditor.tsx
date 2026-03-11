@@ -65,13 +65,13 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
             editor.setScrollPosition({ scrollTop: 0, scrollLeft: 0 });
             editor.setPosition({ lineNumber: 1, column: 1 });
 
-            // Admin basmaq istədikdə ancaq oxumaq üçün olduğunu bildiririk
+            // Inform admins that this editor is view-only when they click into it.
             editor.onMouseDown((e) => {
-                // Skrollbara basanda xəbərdarlıq etməyə ehtiyac yoxdur
+                // Do not show the warning when clicking the scrollbar.
                 if (e.target.type !== monaco.editor.MouseTargetType.SCROLLBAR) {
-                    toast("🖥️ Yalnız oxumaq üçündür", {
+                    toast("🖥️ View only", {
                         id: "readonly-toast",
-                        description: "Siz bu kod panelinə yalnız nəzarət edə bilərsiniz. Tələbə koduna müdaxilə etmək olmur.",
+                        description: "You can monitor this code panel, but you cannot edit the student's code.",
                         duration: 2500,
                     });
                 }
@@ -113,7 +113,7 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                     fontFamily: "'JetBrains Mono', 'Fira Code', 'Menlo', 'Monaco', 'Courier New', monospace",
                     fontLigatures: true,
                     cursorBlinking: "smooth",
-                    cursorWidth: readOnly ? 0 : 2, // Kursoru oxumaq rejimində tamamilə gizlədirik
+                    cursorWidth: readOnly ? 0 : 2, // Fully hide the cursor in read-only mode.
                     smoothScrolling: true,
                     folding: true,
                     lineNumbers: "on",
@@ -122,9 +122,9 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                     foldingHighlight: false,
                     showFoldingControls: "never",
                     scrollBeyondLastLine: false,
-                    renderLineHighlight: readOnly ? "none" : "all", // Aktiv xətti oxumaq rejimində gizlədirik
+                    renderLineHighlight: readOnly ? "none" : "all", // Hide the active line highlight in read-only mode.
                     renderLineHighlightOnlyWhenFocus: false,
-                    readOnlyMessage: { value: "Yalnız oxumaq üçündür 🔒" },
+                    readOnlyMessage: { value: "View only 🔒" },
                     overviewRulerBorder: false,
                     hideCursorInOverviewRuler: true,
                     lineDecorationsWidth: 12,

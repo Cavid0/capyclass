@@ -107,7 +107,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
             setLanguage(newLang);
             setCode(DEFAULT_CODE[newLang] || "");
         } else {
-            // Əgər dəyişilmiş kod varsa, popup göstəririk
+            // Show a confirmation popup if the code has been modified.
             setPendingLanguage(newLang);
         }
     };
@@ -343,8 +343,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 <select
                                     value={language}
                                     onChange={(e) => {
-                                        // Dropdown-ın öz head hissəsindəki dəyərin dərhal dəyişməsinin 
-                                        // qarşısını almaq üçün bu sadəcə state ilə react edəcək.
+                                        // Keep the current selection stable until the confirmation flow finishes.
                                         handleLanguageChange(e.target.value);
                                     }}
                                     className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white [&>option]:bg-[var(--bg-card)] [&>option]:text-white"
@@ -493,7 +492,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                 </div>
             )}
 
-            {/* ─── Language Change Warning Modal (Yeni Popup) ─── */}
+            {/* ─── Language Change Warning Modal ─── */}
             {pendingLanguage && (
                 <div className={modalOverlayClass} onClick={() => setPendingLanguage(null)}>
                     <div className={`${modalCardClass} max-w-md`} onClick={(e) => e.stopPropagation()}>
@@ -502,18 +501,18 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 <Terminal className="w-5 h-5 text-[var(--accent-primary)]" />
                             </div>
                             <div>
-                                <h3 className="text-base font-semibold text-white">Dili Dəyişmək</h3>
+                                <h3 className="text-base font-semibold text-white">Change Language</h3>
                                 <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
-                                    Dili <strong>{pendingLanguage}</strong> olaraq dəyişdiyiniz zaman mövcud kodlarınız silinəcək və yeni dilə aid şablon kod yüklənəcək.
+                                    If you switch to <strong>{pendingLanguage}</strong>, your current code will be cleared and the default template for the new language will be loaded.
                                 </p>
                             </div>
                         </div>
                         <div className="flex gap-2 justify-end">
                             <button onClick={() => setPendingLanguage(null)} className={modalCancelButtonClass}>
-                                Ləğv et
+                                Cancel
                             </button>
                             <button onClick={confirmLanguageChange} className="px-5 py-2 rounded-lg text-sm bg-[var(--accent-primary)] text-[var(--btn-text)] font-medium hover:brightness-110 transition-all shadow-[0_0_15px_var(--accent-glow)]">
-                                Bəli, Sil və Dəyiş
+                                Yes, Clear and Switch
                             </button>
                         </div>
                     </div>
