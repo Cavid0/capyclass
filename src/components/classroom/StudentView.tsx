@@ -75,6 +75,9 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
     const [showNewFileModal, setShowNewFileModal] = useState(false);
     const [newFileName, setNewFileName] = useState("");
 
+    // Language change warning
+    const [pendingLanguage, setPendingLanguage] = useState<string | null>(null);
+
     // Sync editor when workspace changes
     useEffect(() => {
         if (activeWorkspace) {
@@ -89,10 +92,22 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
     /* ── Helpers ── */
 
     const handleLanguageChange = (newLang: string) => {
-        setLanguage(newLang);
-        const defaultCodeVals = Object.values(DEFAULT_CODE);
-        if (!code || !code.trim() || defaultCodeVals.includes(code.trim())) {
+        const defaultCodeVals = Object.values(DEFAULT_CODE).map(c => c.trim());
+        const isDefault = !code || !code.trim() || defaultCodeVals.includes(code.trim());
+
+        if (isDefault) {
+            setLanguage(newLang);
             setCode(DEFAULT_CODE[newLang] || "");
+        } else {
+            setPendingLanguage(newLang);
+        }
+    };
+
+    const confirmLanguageChange = () => {
+        if (pendingLanguage) {
+            setLanguage(pendingLanguage);
+            setCode(DEFAULT_CODE[pendingLanguage] || "");
+            setPendingLanguage(null);
         }
     };
 
@@ -452,6 +467,33 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 </button>
                             </div>
                         </form>
+                    </div>
+                </div>
+            )}
+
+            {/* ─── Language Change Warning Modal ─── */}
+            {pendingLanguage && (
+                <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50 p-4" onClick={() => setPendingLanguage(null)}>
+                    <div className="glass-card w-full max-w-md p-6" onClick={(e) => e.stopPropagation()}>
+                        <div className="flex items-center gap-3 mb-5">
+                            <div className="w-9 h-9 rounded-lg bg-[var(--bg-secondary)] border border-[var(--border-color)] flex items-center justify-center">
+                                <Terminal className="w-4 h-4 text-[var(--accent-primary)]" />
+                            </div>
+                            <div>
+                                <h3 className="text-base font-semibold text-white">Change Language</h3>
+                                <p className="text-sm text-[var(--text-secondary)] leading-relaxed">
+                                    Switching to <strong>{pendingLanguage}</strong> will replace your current code with the default template.
+                                </p>
+                            </div>
+                        </div>
+                        <div className="flex gap-2 justify-end">
+                            <button onClick={() => setPendingLanguage(null)} className="px-4 py-2 text-sm text-[var(--text-secondary)] hover:text-white transition-colors">
+                                Cancel
+                            </button>
+                            <button onClick={confirmLanguageChange} className="glow-btn px-4 py-2 text-sm">
+                                Yes, Switch
+                            </button>
+                        </div>
                     </div>
                 </div>
             )}
