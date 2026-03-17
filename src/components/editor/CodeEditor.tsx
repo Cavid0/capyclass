@@ -4,6 +4,21 @@ import { useRef } from "react";
 import Editor, { loader, type BeforeMount, type OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor/esm/vs/editor/editor.api";
 
+// Dil tokenizatorları — syntax highlighting üçün lazımdır
+import "monaco-editor/esm/vs/basic-languages/javascript/javascript.contribution";
+import "monaco-editor/esm/vs/basic-languages/typescript/typescript.contribution";
+import "monaco-editor/esm/vs/basic-languages/python/python.contribution";
+import "monaco-editor/esm/vs/basic-languages/cpp/cpp.contribution";
+import "monaco-editor/esm/vs/basic-languages/csharp/csharp.contribution";
+import "monaco-editor/esm/vs/basic-languages/java/java.contribution";
+import "monaco-editor/esm/vs/basic-languages/go/go.contribution";
+import "monaco-editor/esm/vs/basic-languages/ruby/ruby.contribution";
+import "monaco-editor/esm/vs/basic-languages/php/php.contribution";
+import "monaco-editor/esm/vs/basic-languages/rust/rust.contribution";
+import "monaco-editor/esm/vs/basic-languages/swift/swift.contribution";
+import "monaco-editor/esm/vs/basic-languages/css/css.contribution";
+import "monaco-editor/esm/vs/basic-languages/html/html.contribution";
+
 interface CodeEditorProps {
     value: string;
     onChange?: (value: string | undefined) => void;
@@ -111,8 +126,8 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                 "editor.selectionHighlightBackground": "#ADD6FF26",
                 "editor.wordHighlightBackground": "#575757B8",
                 "editor.wordHighlightStrongBackground": "#004972B8",
-                "editorBracketMatch.background": "#0064001A",
-                "editorBracketMatch.border": "#888888",
+                "editorBracketMatch.background": "#00000000",
+                "editorBracketMatch.border": "#00000000",
                 "editorOverviewRuler.border": "#00000000",
             },
         });
@@ -204,11 +219,11 @@ export function CodeEditor({ value, onChange, language = "javascript", readOnly 
                         fixedOverflowWidgets: true,
                         renderValidationDecorations: "off",
                         bracketPairColorization: {
-                            enabled: true,
+                            enabled: false,
                         },
                         guides: {
                             indentation: true,
-                            bracketPairs: true,
+                            bracketPairs: false,
                         },
                         find: {
                             addExtraSpaceOnTop: false,
