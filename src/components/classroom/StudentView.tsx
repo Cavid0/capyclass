@@ -321,8 +321,8 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                 {activeWorkspace ? (
                     <>
                         {/* Toolbar */}
-                        <div className="h-11 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
-                            <div className="flex items-center gap-3 min-w-0">
+                        <div className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 shrink-0">
+                            <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                                 <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] hover:text-white">
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
@@ -333,7 +333,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 <select
                                     value={language}
                                     onChange={(e) => handleLanguageChange(e.target.value)}
-                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white [&>option]:bg-[var(--bg-card)] [&>option]:text-white"
+                                    className="bg-transparent border-none text-[var(--text-secondary)] text-xs outline-none cursor-pointer hover:text-white [&>option]:bg-[var(--bg-card)] [&>option]:text-white max-w-[120px] sm:max-w-none"
                                 >
                                     {LANGUAGES.map((l) => (
                                         <option key={l.value} value={l.value}>{l.label}</option>
@@ -341,12 +341,12 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                 </select>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center justify-end gap-2 shrink-0 w-full sm:w-auto flex-wrap">
                                 <button
                                     onClick={handleSave}
                                     disabled={saving}
                                     className={cn(
-                                        "px-3 py-1.5 text-xs flex items-center gap-1.5 rounded transition-all",
+                                        "px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 rounded transition-all flex-1 sm:flex-none",
                                         saved ? "bg-emerald-500/20 text-emerald-400 border border-emerald-500/30" : "glow-btn"
                                     )}
                                 >
@@ -357,7 +357,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                     <button
                                         onClick={handleRun}
                                         disabled={running}
-                                        className="px-3 py-1.5 text-xs flex items-center gap-1.5 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20"
+                                        className="px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 flex-1 sm:flex-none"
                                     >
                                         {running ? <Loader2 className="w-3.5 h-3.5 animate-spin" /> : <Play className="w-3.5 h-3.5" />}
                                         Run
@@ -386,7 +386,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                             </div>
 
                             {showOutput && (
-                                <div className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col" style={{ height: "200px" }}>
+                                <div className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col h-[32vh] max-h-[240px] sm:h-[200px]">
                                     <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] shrink-0">
                                         <div className="flex items-center gap-2 text-xs">
                                             <Terminal className="w-3.5 h-3.5 text-[var(--text-secondary)]" />

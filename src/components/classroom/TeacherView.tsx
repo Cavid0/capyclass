@@ -4,7 +4,7 @@ import { useState, useMemo } from "react";
 import {
     Users, ChevronLeft, Plus, ClipboardList, FileCode, Save, Send, Folder,
     Loader2, CheckCircle, ThumbsUp, ThumbsDown, XCircle, Play, Terminal,
-    X, Edit2, Trash2, Crown, Calendar
+    X, Edit2, Trash2, Crown, Calendar, BarChart3, Activity, Languages
 } from "lucide-react";
 import { CodeEditor } from "@/components/editor/CodeEditor";
 import { cn } from "@/lib/utils";
@@ -23,14 +23,14 @@ interface TeacherViewProps {
 export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWorkspace, onTaskCreated, onRefresh, currentUserId }: TeacherViewProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
     const workspaces = useMemo(() => classroom.workspaces || [], [classroom.workspaces]);
-    const enrollments = classroom.enrollments || [];
-    const admins: any[] = classroom.admins || [];
+    const enrollments = useMemo(() => classroom.enrollments || [], [classroom.enrollments]);
+    const admins: any[] = useMemo(() => classroom.admins || [], [classroom.admins]);
     const activeWorkspaceData = workspaces.find((w: any) => w.id === selectedWorkspaceId);
     const activeWorkspaceCode = activeWorkspaceData?.code?.replace(/^(?:[ \t]*\r?\n)+/, "") ?? "";
     const isOwner = classroom.teacherId === currentUserId;
 
     // Sidebar
-    const [activeTab, setActiveTab] = useState<"students" | "tasks">("students");
+    const [activeTab, setActiveTab] = useState<"students" | "tasks" | "analytics">("students");
     const [expandedStudent, setExpandedStudent] = useState<string | null>(null);
 
     // Task modal
@@ -52,6 +52,56 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     const [output, setOutput] = useState<string | null>(null);
     const [outputError, setOutputError] = useState(false);
     const [showOutput, setShowOutput] = useState(false);
+
+    const analytics = useMemo(() => {
+        const totalStudents = enrollments.length;
+        const totalWorkspaces = workspaces.length;
+        const reviewedCount = workspaces.filter((workspace: any) => Boolean(workspace.reviewStatus)).length;
+        const correctCount = workspaces.filter((workspace: any) => workspace.reviewStatus === "CORRECT").length;
+        const incorrectCount = workspaces.filter((workspace: any) => workspace.reviewStatus === "INCORRECT").length;
+        const activeStudents = new Set(workspaces.map((workspace: any) => workspace.studentId)).size;
+        const pendingReviewCount = Math.max(totalWorkspaces - reviewedCount, 0);
+        const submissionRate = totalStudents > 0 ? Math.round((activeStudents / totalStudents) * 100) : 0;
+        const reviewRate = totalWorkspaces > 0 ? Math.round((reviewedCount / totalWorkspaces) * 100) : 0;
+        const languageCounts = workspaces.reduce((acc: Record<string, number>, workspace: any) => {
+            acc[workspace.language] = (acc[workspace.language] || 0) + 1;
+            return acc;
+        }, {});
+        const topLanguages = (Object.entries(languageCounts) as Array<[string, number]>)
+            .sort((left: [string, number], right: [string, number]) => right[1] - left[1])
+            .slice(0, 5);
+        const studentBreakdown = enrollments
+            .map((enrollment: any) => {
+                const studentWorkspaces = workspaces.filter((workspace: any) => workspace.studentId === enrollment.studentId);
+                const reviewed = studentWorkspaces.filter((workspace: any) => Boolean(workspace.reviewStatus)).length;
+                return {
+                    id: enrollment.studentId,
+                    name: enrollment.student.name,
+                    workspaceCount: studentWorkspaces.length,
+                    reviewed,
+                    lastUpdatedAt: studentWorkspaces[0]?.updatedAt || null,
+                };
+            })
+            .sort((left: { workspaceCount: number; name: string }, right: { workspaceCount: number; name: string }) => right.workspaceCount - left.workspaceCount || left.name.localeCompare(right.name));
+        const recentActivity = [...workspaces]
+            .sort((left: any, right: any) => new Date(right.updatedAt).getTime() - new Date(left.updatedAt).getTime())
+            .slice(0, 5);
+
+        return {
+            totalStudents,
+            totalWorkspaces,
+            reviewedCount,
+            correctCount,
+            incorrectCount,
+            activeStudents,
+            pendingReviewCount,
+            submissionRate,
+            reviewRate,
+            topLanguages,
+            studentBreakdown,
+            recentActivity,
+        };
+    }, [enrollments, workspaces]);
 
     /* ── Helpers ── */
 
@@ -251,7 +301,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
             >
                 {/* Tab Header */}
                 <div className="flex border-b border-[var(--border-color)] shrink-0">
-                    {(["students", "tasks"] as const).map((tab) => (
+                    {(["students", "tasks", "analytics"] as const).map((tab) => (
                         <button
                             key={tab}
                             onClick={() => setActiveTab(tab)}
@@ -262,8 +312,8 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                     : "text-[var(--text-secondary)] hover:text-white"
                             )}
                         >
-                            {tab === "students" ? <Users className="w-3.5 h-3.5" /> : <ClipboardList className="w-3.5 h-3.5" />}
-                            {tab === "students" ? `Users (${enrollments.length})` : `Tasks (${tasks.length})`}
+                            {tab === "students" ? <Users className="w-3.5 h-3.5" /> : tab === "tasks" ? <ClipboardList className="w-3.5 h-3.5" /> : <BarChart3 className="w-3.5 h-3.5" />}
+                            {tab === "students" ? `Users (${enrollments.length})` : tab === "tasks" ? `Tasks (${tasks.length})` : "Analytics"}
                         </button>
                     ))}
                 </div>
@@ -387,7 +437,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                 })
                             )}
                         </div>
-                    ) : (
+                    ) : activeTab === "tasks" ? (
                         <div className="p-2 space-y-1.5">
                             <button
                                 onClick={openCreateTask}
@@ -430,6 +480,102 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                 ))
                             )}
                         </div>
+                    ) : (
+                        <div className="p-3 space-y-3">
+                            <div className="grid grid-cols-2 gap-2">
+                                <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                                        <span>Students</span>
+                                        <Users className="w-3.5 h-3.5 text-blue-300" />
+                                    </div>
+                                    <div className="text-xl font-semibold text-white">{analytics.totalStudents}</div>
+                                    <div className="text-xs text-[var(--text-secondary)] mt-1">{analytics.activeStudents} active</div>
+                                </div>
+                                <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                                        <span>Files</span>
+                                        <Activity className="w-3.5 h-3.5 text-emerald-300" />
+                                    </div>
+                                    <div className="text-xl font-semibold text-white">{analytics.totalWorkspaces}</div>
+                                    <div className="text-xs text-[var(--text-secondary)] mt-1">{analytics.pendingReviewCount} pending review</div>
+                                </div>
+                                <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                                        <span>Submissions</span>
+                                        <BarChart3 className="w-3.5 h-3.5 text-amber-300" />
+                                    </div>
+                                    <div className="text-xl font-semibold text-white">{analytics.submissionRate}%</div>
+                                    <div className="text-xs text-[var(--text-secondary)] mt-1">students submitted</div>
+                                </div>
+                                <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                    <div className="flex items-center justify-between text-[10px] uppercase tracking-wider text-[var(--text-secondary)] mb-2">
+                                        <span>Reviewed</span>
+                                        <CheckCircle className="w-3.5 h-3.5 text-indigo-300" />
+                                    </div>
+                                    <div className="text-xl font-semibold text-white">{analytics.reviewRate}%</div>
+                                    <div className="text-xs text-[var(--text-secondary)] mt-1">review completion</div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                <div className="flex items-center justify-between mb-3">
+                                    <h4 className="text-sm font-medium text-white">Review breakdown</h4>
+                                    <span className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">{tasks.length} tasks</span>
+                                </div>
+                                <div className="grid grid-cols-3 gap-2 text-center">
+                                    <div className="rounded-md bg-emerald-500/10 border border-emerald-500/20 p-2">
+                                        <div className="text-lg font-semibold text-emerald-300">{analytics.correctCount}</div>
+                                        <div className="text-[10px] uppercase tracking-wider text-emerald-200/80">Correct</div>
+                                    </div>
+                                    <div className="rounded-md bg-red-500/10 border border-red-500/20 p-2">
+                                        <div className="text-lg font-semibold text-red-300">{analytics.incorrectCount}</div>
+                                        <div className="text-[10px] uppercase tracking-wider text-red-200/80">Incorrect</div>
+                                    </div>
+                                    <div className="rounded-md bg-white/5 border border-white/10 p-2">
+                                        <div className="text-lg font-semibold text-white">{analytics.pendingReviewCount}</div>
+                                        <div className="text-[10px] uppercase tracking-wider text-[var(--text-secondary)]">Pending</div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                <div className="flex items-center gap-2 mb-3">
+                                    <Languages className="w-4 h-4 text-[var(--text-secondary)]" />
+                                    <h4 className="text-sm font-medium text-white">Top languages</h4>
+                                </div>
+                                {analytics.topLanguages.length === 0 ? (
+                                    <p className="text-xs text-[var(--text-secondary)]">No language activity yet.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {analytics.topLanguages.map(([language, count]) => (
+                                            <div key={language} className="flex items-center justify-between text-xs text-[var(--text-secondary)]">
+                                                <span className="capitalize text-white">{language}</span>
+                                                <span>{count}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+
+                            <div className="rounded-lg border border-[var(--border-color)] bg-[var(--bg-card)] p-3">
+                                <h4 className="text-sm font-medium text-white mb-3">Student progress</h4>
+                                {analytics.studentBreakdown.length === 0 ? (
+                                    <p className="text-xs text-[var(--text-secondary)]">No student activity yet.</p>
+                                ) : (
+                                    <div className="space-y-2">
+                                        {analytics.studentBreakdown.slice(0, 6).map((student: { id: string; name: string; workspaceCount: number; reviewed: number; lastUpdatedAt: string | null }) => (
+                                            <div key={student.id} className="flex items-center justify-between gap-3 text-xs">
+                                                <div className="min-w-0">
+                                                    <p className="text-white truncate">{student.name}</p>
+                                                    <p className="text-[var(--text-secondary)]">{student.workspaceCount} files • {student.reviewed} reviewed</p>
+                                                </div>
+                                                <span className="text-[var(--text-secondary)] whitespace-nowrap">{student.lastUpdatedAt ? formatDate(student.lastUpdatedAt) : "No activity"}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+                            </div>
+                        </div>
                     )}
                 </div>
             </aside>
@@ -439,8 +585,8 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                 {selectedWorkspaceId && activeWorkspaceData ? (
                     <>
                         {/* Toolbar */}
-                        <div className="h-11 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
-                            <div className="flex items-center gap-3 min-w-0">
+                        <div className="border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 px-3 sm:px-4 py-2 shrink-0">
+                            <div className="flex items-center gap-3 min-w-0 w-full sm:w-auto">
                                 <button onClick={() => onSelectWorkspace(null)} className="md:hidden text-[var(--text-secondary)] hover:text-white">
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
@@ -452,7 +598,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                                 </span>
                             </div>
 
-                            <div className="flex items-center gap-2 shrink-0">
+                            <div className="flex items-center justify-end gap-2 shrink-0 w-full sm:w-auto">
                                 {activeWorkspaceData.language !== "html" && (
                                     <button
                                         onClick={handleRun}

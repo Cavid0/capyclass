@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2, LogOut } from "lucide-react";
+import { Plus, Search, Users, Copy, Check, Clock, Code2, AlertCircle, UserPlus, ArrowRight, Loader2, Trash2, LogOut, BarChart3, BookOpen, AlertTriangle, ArrowUpDown } from "lucide-react";
 import Image from "next/image";
 import { Navbar } from "@/components/layout/Navbar";
 import { cn } from "@/lib/utils";
@@ -16,6 +16,9 @@ export default function DashboardPage() {
     const [classrooms, setClassrooms] = useState<any[]>([]);
     const [loading, setLoading] = useState(true);
     const [search, setSearch] = useState("");
+    const [sortBy, setSortBy] = useState<"newest" | "oldest" | "name" | "students">("newest");
+    const [roleFilter, setRoleFilter] = useState<"all" | "teaching" | "learning">("all");
+    const [statusFilter, setStatusFilter] = useState<"all" | "needs-attention" | "pass" | "fail" | "pending">("all");
 
     // Modals
     const [showCreateModal, setShowCreateModal] = useState(false);
@@ -167,9 +170,128 @@ export default function DashboardPage() {
         }
     };
 
-    const filteredClasses = (classrooms || []).filter(c =>
-        (c.name || "").toLowerCase().includes(search.toLowerCase())
-    );
+    const filteredClasses = useMemo(() => {
+        const normalizedSearch = search.trim().toLowerCase();
+        const list = (classrooms || []).filter((classroom) => {
+            const matchesSearch = !normalizedSearch ||
+                (classroom.name || "").toLowerCase().includes(normalizedSearch) ||
+                (classroom.teacherName || "").toLowerCase().includes(normalizedSearch);
+
+            const matchesRole =
+                roleFilter === "all" ||
+                (roleFilter === "teaching" && classroom.isTeacher) ||
+                (roleFilter === "learning" && !classroom.isTeacher);
+
+            const matchesStatus = (() => {
+                if (statusFilter === "all") return true;
+
+                if (classroom.isTeacher) {
+                    const pendingCount = classroom.pendingCount || 0;
+                    const passCount = classroom.passCount || 0;
+                    const failCount = classroom.failCount || 0;
+
+                    if (statusFilter === "needs-attention") return pendingCount > 0 || failCount > 0;
+                    if (statusFilter === "pass") return passCount > 0;
+                    if (statusFilter === "fail") return failCount > 0;
+                    if (statusFilter === "pending") return pendingCount > 0;
+                    return true;
+                }
+
+                const normalizedStatus = String(classroom.status || "").toLowerCase();
+                if (statusFilter === "needs-attention") return normalizedStatus === "fail" || normalizedStatus === "pending";
+                return normalizedStatus === statusFilter;
+            })();
+
+            return matchesSearch && matchesRole && matchesStatus;
+        });
+
+        list.sort((left, right) => {
+            if (sortBy === "name") {
+                return String(left.name || "").localeCompare(String(right.name || ""));
+            }
+
+            if (sortBy === "students") {
+                return (right._count?.enrollments || 0) - (left._count?.enrollments || 0);
+            }
+
+            const leftTime = new Date(left.createdAt).getTime();
+            const rightTime = new Date(right.createdAt).getTime();
+            return sortBy === "oldest" ? leftTime - rightTime : rightTime - leftTime;
+        });
+
+        return list;
+    }, [classrooms, roleFilter, search, sortBy, statusFilter]);
+
+    const dashboardStats = useMemo(() => {
+        const teaching = classrooms.filter((item) => item.isTeacher);
+        const learning = classrooms.filter((item) => !item.isTeacher);
+        const totalStudents = teaching.reduce((sum, item) => sum + (item._count?.enrollments || 0), 0);
+        const needsAttention = classrooms.filter((item) => item.isTeacher
+            ? (item.pendingCount || 0) > 0 || (item.failCount || 0) > 0
+            : ["FAIL", "PENDING"].includes(String(item.status || "").toUpperCase())
+        ).length;
+
+        return {
+            total: classrooms.length,
+            teaching: teaching.length,
+            learning: learning.length,
+            totalStudents,
+            needsAttention,
+        };
+    }, [classrooms]);
+
+    const statsCards = [
+        {
+            key: "total",
+            label: "Classrooms",
+            value: dashboardStats.total,
+            description: "All active classrooms",
+            chip: `${dashboardStats.teaching} teaching`,
+            icon: BarChart3,
+            iconClassName: "text-indigo-300",
+            accentClassName: "from-indigo-500/18 via-indigo-500/6 to-transparent",
+        },
+        {
+            key: "teaching",
+            label: "Teaching",
+            value: dashboardStats.teaching,
+            description: "Classrooms you manage",
+            chip: `${dashboardStats.totalStudents} students`,
+            icon: Users,
+            iconClassName: "text-emerald-300",
+            accentClassName: "from-emerald-500/18 via-emerald-500/6 to-transparent",
+        },
+        {
+            key: "learning",
+            label: "Joined",
+            value: dashboardStats.learning,
+            description: "Classes you attend",
+            chip: dashboardStats.learning > 0 ? "Student access" : "No joined classes",
+            icon: BookOpen,
+            iconClassName: "text-blue-300",
+            accentClassName: "from-blue-500/18 via-blue-500/6 to-transparent",
+        },
+        {
+            key: "students",
+            label: "Students",
+            value: dashboardStats.totalStudents,
+            description: "Across your classrooms",
+            chip: dashboardStats.teaching > 0 ? `${Math.round(dashboardStats.totalStudents / dashboardStats.teaching)} avg / class` : "No classes yet",
+            icon: Users,
+            iconClassName: "text-amber-300",
+            accentClassName: "from-amber-500/18 via-amber-500/6 to-transparent",
+        },
+        {
+            key: "attention",
+            label: "Attention",
+            value: dashboardStats.needsAttention,
+            description: "Pending or failed classes",
+            chip: dashboardStats.needsAttention > 0 ? "Review needed" : "Everything looks clean",
+            icon: AlertTriangle,
+            iconClassName: "text-rose-300",
+            accentClassName: "from-rose-500/18 via-rose-500/6 to-transparent",
+        },
+    ] as const;
 
     if (status === "unauthenticated" || status === "loading") {
         return (
@@ -183,8 +305,8 @@ export default function DashboardPage() {
         <div className="min-h-screen bg-[var(--bg-primary)]">
             <Navbar />
 
-            <main className="max-w-6xl mx-auto px-6 py-10">
-                <div className="flex flex-col sm:flex-row items-start sm:items-end justify-between gap-6 mb-12">
+            <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
+                <div className="flex flex-col lg:flex-row items-start lg:items-end justify-between gap-6 mb-8 sm:mb-10">
                     <div className="space-y-2">
                         <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white flex items-center gap-3">
                             Hello, {userName}! 👋
@@ -194,8 +316,8 @@ export default function DashboardPage() {
                         </p>
                     </div>
 
-                    <div className="flex items-center gap-3 w-full sm:w-auto">
-                        <div className="relative flex-1 sm:w-72 group">
+                    <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 w-full lg:w-auto">
+                        <div className="relative flex-1 lg:w-72 group">
                             <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)] group-focus-within:text-indigo-400 transition-colors" />
                             <input
                                 type="text"
@@ -208,7 +330,7 @@ export default function DashboardPage() {
 
                         <button
                             onClick={() => setShowJoinModal(true)}
-                            className="glow-btn !bg-white/5 !border-white/10 !text-white hover:!bg-white/10 px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
+                            className="glow-btn !bg-white/5 !border-white/10 !text-white hover:!bg-white/10 px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform w-full sm:w-auto"
                         >
                             <UserPlus className="w-4 h-4" />
                             <span className="hidden sm:inline">Join Class</span>
@@ -216,13 +338,95 @@ export default function DashboardPage() {
 
                         <button
                             onClick={() => setShowCreateModal(true)}
-                            className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform"
+                            className="glow-btn px-5 py-[11px] h-[40px] flex items-center justify-center gap-2 whitespace-nowrap text-sm font-medium hover:scale-105 transition-transform w-full sm:w-auto"
                         >
                             <Plus className="w-4 h-4" />
                             <span className="hidden sm:inline">New Class</span>
                         </button>
                     </div>
                 </div>
+
+                <section className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-5 gap-3 mb-6">
+                    {statsCards.map((card) => {
+                        const Icon = card.icon;
+
+                        return (
+                            <div
+                                key={card.key}
+                                className="glass-card relative overflow-hidden border-white/10 min-h-[124px] p-3.5 sm:p-4"
+                            >
+                                <div className={`absolute inset-x-0 top-0 h-14 bg-gradient-to-b ${card.accentClassName} pointer-events-none opacity-70`} />
+                                <div className="relative z-10 h-full flex flex-col">
+                                    <div className="flex items-start justify-between gap-3 mb-4">
+                                        <div className="min-w-0">
+                                            <p className="text-[10px] font-medium uppercase tracking-[0.16em] text-[var(--text-secondary)] mb-1.5">
+                                                {card.label}
+                                            </p>
+                                            <div className="flex items-end gap-1.5">
+                                                <span className="text-2xl sm:text-[1.7rem] leading-none font-semibold text-white/95 tabular-nums">
+                                                    {card.value}
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="w-8 h-8 rounded-lg border border-white/10 bg-white/5 flex items-center justify-center shrink-0 shadow-inner">
+                                            <Icon className={`w-4 h-4 ${card.iconClassName}`} />
+                                        </div>
+                                    </div>
+                                    <div className="mt-auto space-y-1.5">
+                                        <p className="text-xs text-white/75 leading-snug">{card.description}</p>
+                                        <div className="inline-flex items-center rounded-full border border-white/10 bg-white/5 px-2 py-0.5 text-[9px] uppercase tracking-[0.14em] text-[var(--text-secondary)]">
+                                            {card.chip}
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        );
+                    })}
+                </section>
+
+                <section className="glass-card p-4 sm:p-5 mb-6 border-white/10">
+                    <div className="flex flex-col lg:flex-row gap-4 lg:items-center lg:justify-between">
+                        <div>
+                            <h2 className="text-sm font-semibold text-white tracking-wide">Sort and Filter</h2>
+                            <p className="text-xs text-[var(--text-secondary)] mt-1">Refine your classroom list by ownership, status and size.</p>
+                        </div>
+                        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 w-full lg:w-auto lg:min-w-[540px]">
+                            <select
+                                value={roleFilter}
+                                onChange={(e) => setRoleFilter(e.target.value as typeof roleFilter)}
+                                className="input-field !h-11 !bg-[var(--bg-card)]/60 text-sm"
+                            >
+                                <option value="all">All roles</option>
+                                <option value="teaching">Teaching</option>
+                                <option value="learning">Joined</option>
+                            </select>
+                            <select
+                                value={statusFilter}
+                                onChange={(e) => setStatusFilter(e.target.value as typeof statusFilter)}
+                                className="input-field !h-11 !bg-[var(--bg-card)]/60 text-sm"
+                            >
+                                <option value="all">All status</option>
+                                <option value="needs-attention">Needs attention</option>
+                                <option value="pending">Pending</option>
+                                <option value="pass">Pass</option>
+                                <option value="fail">Fail</option>
+                            </select>
+                            <label className="relative block">
+                                <ArrowUpDown className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--text-secondary)]" />
+                                <select
+                                    value={sortBy}
+                                    onChange={(e) => setSortBy(e.target.value as typeof sortBy)}
+                                    className="input-field !h-11 !bg-[var(--bg-card)]/60 text-sm !pl-10"
+                                >
+                                    <option value="newest">Newest first</option>
+                                    <option value="oldest">Oldest first</option>
+                                    <option value="name">Name A-Z</option>
+                                    <option value="students">Most students</option>
+                                </select>
+                            </label>
+                        </div>
+                    </div>
+                </section>
 
                 {loading ? (
                     <div className="flex justify-center items-center h-48">
@@ -328,14 +532,14 @@ export default function DashboardPage() {
                                         )}
                                     </div>
 
-                                    <div className="p-4 bg-[var(--bg-card)]/50 backdrop-blur-sm flex items-center justify-between gap-3 text-sm rounded-b-xl border-t border-white/5 relative z-10">
+                                    <div className="p-4 bg-[var(--bg-card)]/50 backdrop-blur-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 text-sm rounded-b-xl border-t border-white/5 relative z-10">
                                         {item.isTeacher && item.inviteCode ? (
                                             <button
                                                 onClick={(e) => {
                                                     e.preventDefault();
                                                     copyToClipboard(item.inviteCode!);
                                                 }}
-                                                className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--text-secondary)] hover:text-white hover:bg-white/10 transition-all text-xs font-medium group/copy"
+                                                className="flex items-center gap-2 px-3 py-2 rounded-md bg-white/5 border border-white/10 text-[var(--text-secondary)] hover:text-white hover:bg-white/10 transition-all text-xs font-medium group/copy w-full sm:w-auto justify-center sm:justify-start"
                                                 title="Copy invite code for students"
                                             >
                                                 {copiedCode === item.inviteCode ? (
@@ -350,7 +554,7 @@ export default function DashboardPage() {
                                                     e.preventDefault();
                                                     setLeaveTarget({ id: item.id, name: item.name });
                                                 }}
-                                                className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium"
+                                                className="flex items-center gap-1.5 px-3 py-2 rounded-md bg-red-500/10 border border-red-500/20 text-red-400 hover:bg-red-500/20 transition-all text-xs font-medium w-full sm:w-auto justify-center"
                                             >
                                                 <LogOut className="w-3.5 h-3.5" />
                                                 Leave
@@ -358,7 +562,7 @@ export default function DashboardPage() {
                                         )}
 
                                         <Link href={`/classroom/${item.id}`}>
-                                            <button className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-medium border border-white/10 hover:border-white/30">
+                                            <button className="flex items-center gap-1.5 px-4 py-2 rounded-md bg-white/10 hover:bg-white/20 text-white transition-colors text-xs font-medium border border-white/10 hover:border-white/30 w-full sm:w-auto justify-center">
                                                 Enter <ArrowRight className="w-3.5 h-3.5" />
                                             </button>
                                         </Link>

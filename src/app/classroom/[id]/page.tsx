@@ -104,28 +104,28 @@ export default function ClassroomPage() {
     return (
         <div className="h-screen bg-[var(--bg-primary)] flex flex-col overflow-hidden">
             {/* Topbar */}
-            <header className="h-14 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-6 shrink-0">
-                <div className="flex items-center gap-4">
+            <header className="min-h-14 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 px-4 sm:px-6 py-3 shrink-0">
+                <div className="flex items-center gap-4 min-w-0 w-full sm:w-auto">
                     <Link href="/dashboard" className="text-[var(--text-secondary)] hover:text-white transition-colors">
                         <ChevronLeft className="w-4 h-4" />
                     </Link>
                     <div className="h-4 w-px bg-[var(--border-color)]" />
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
                         <div className="w-6 h-6 rounded bg-[var(--bg-card)] border border-[var(--border-color)] flex items-center justify-center">
                             <Code2 className="w-3.5 h-3.5 text-white" />
                         </div>
-                        <h1 className="text-sm font-semibold tracking-tight text-white">{classroom.name}</h1>
+                        <h1 className="text-sm font-semibold tracking-tight text-white truncate">{classroom.name}</h1>
                     </div>
                 </div>
 
                 {isTeacher && (
-                    <div className="flex items-center gap-4">
+                    <div className="flex items-center justify-between sm:justify-normal gap-4 w-full sm:w-auto">
                         <div className="flex items-center gap-2 text-xs text-[var(--text-secondary)]">
                             <Users className="w-3.5 h-3.5" />
                             <span>{classroom.enrollments?.length || 0}</span>
                         </div>
                         <div className="h-4 w-px bg-[var(--border-color)]" />
-                        <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded select-all">
+                        <div className="text-xs font-mono bg-[var(--bg-card)] border border-[var(--border-color)] px-2 py-1 rounded select-all max-w-[60vw] sm:max-w-none truncate">
                             {classroom.inviteCode}
                         </div>
                     </div>
