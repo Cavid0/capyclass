@@ -1,5 +1,4 @@
 @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
-@import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&display=swap');
 
 @tailwind base;
 @tailwind components;
@@ -191,40 +190,6 @@ body {
   border-radius: 0 !important;
 }
 
-/* Gutter separator line */
-.monaco-editor .margin {
-  border-right: 1px solid #2a2520 !important;
-}
-
-/* ─── Line Numbers ─── */
-.monaco-editor .line-numbers {
-  color: #858585 !important;
-  font-size: 13px !important;
-}
-
-.monaco-editor .line-numbers.active-line-number {
-  color: #ffffff !important;
-  font-weight: 600 !important;
-}
-
-/* ─── Active Line Highlight ─── */
-.monaco-editor .current-line {
-  border: none !important;
-}
-
-.monaco-editor .view-overlays .current-line {
-  background-color: rgba(255, 255, 255, 0.04) !important;
-  border: none !important;
-  border-left: 3px solid #858585 !important;
-}
-
-/* Active line in margin/gutter */
-.monaco-editor .margin-view-overlays .current-line {
-  background-color: transparent !important;
-  border: none !important;
-  border-right: 1px solid #2a2520 !important;
-}
-
 /* Monaco editor wrapper - prevent white flash */
 .monaco-editor,
 .monaco-editor .overflow-guard,
@@ -241,39 +206,14 @@ body {
   outline: none !important;
   box-shadow: none !important;
   resize: none !important;
-  width: 1px !important;
-  min-width: 1px !important;
-  height: 1px !important;
-  min-height: 1px !important;
-  padding: 0 !important;
-  margin: 0 !important;
-  overflow: hidden !important;
+  /* DİQQƏT: opacity: 0 kursora problem yaradır deyə çıxarıldı */
 }
 
-/* Fix the white background issue in the search/find widget above. */
+/* Yuxarıdakı search/find qutusunda olan ağ box problemini həll etmək üçün */
 .monaco-editor .find-widget {
   background-color: var(--bg-primary) !important;
-  box-shadow: 0 0 10px rgba(0, 0, 0, 0.5) !important;
+  box-shadow: 0 0 10px rgba(0,0,0,0.5) !important;
 }
-
-/* ─── Read-Only Mode (Admin View) ─── */
-/* Fully hide the cursor so teachers cannot place it in the editor. */
-.read-only-editor .monaco-mouse-cursor-text {
-  cursor: default !important;
-}
-
-.read-only-editor .cursor,
-.read-only-editor .cursors-layer {
-  display: none !important;
-  visibility: hidden !important;
-  opacity: 0 !important;
-}
-
-/* Disable the text-selection cursor (I-beam) in read-only mode. */
-.read-only-editor .view-lines {
-  cursor: default !important;
-}
-
 .monaco-editor .find-widget .monaco-inputbox {
   background-color: var(--bg-secondary) !important;
   border-color: var(--border-color) !important;
@@ -285,6 +225,11 @@ body {
 .monaco-editor .focus-visible {
   outline: none !important;
   box-shadow: none !important;
+}
+
+/* Prevent white flash during loading */
+section[style*="display: flex"] {
+  background-color: var(--bg-primary) !important;
 }
 
 /* Input styles */

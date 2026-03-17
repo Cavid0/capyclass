@@ -15,6 +15,7 @@
     "bcryptjs": "^3.0.3",
     "framer-motion": "^12.34.3",
     "lucide-react": "^0.575.0",
+    "monaco-editor": "^0.52.2",
     "next": "14.2.35",
     "next-auth": "^4.24.13",
     "node-mailjet": "^6.0.11",
