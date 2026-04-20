@@ -37,7 +37,7 @@ export async function DELETE(
             prisma.enrollment.deleteMany({ where: { classroomId, studentId: studentToRemove } }),
         ]);
 
-        await logAudit(userId, "STUDENT_REMOVED", "Classroom", classroomId, studentToRemove);
+        logAudit(userId, "STUDENT_REMOVED", "Classroom", classroomId, studentToRemove);
 
         return NextResponse.json({ success: true });
     } catch (error) {

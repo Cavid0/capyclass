@@ -47,7 +47,9 @@ export default function DashboardPage() {
 
     const fetchClassrooms = async () => {
         try {
-            const res = await fetch("/api/classrooms");
+            const res = await fetch("/api/classrooms", {
+                headers: { "Cache-Control": "no-cache" },
+            });
             const data = await res.json();
             if (Array.isArray(data)) {
                 setClassrooms(data);
@@ -293,10 +295,10 @@ export default function DashboardPage() {
         },
     ] as const;
 
-    if (status === "unauthenticated" || status === "loading") {
+    if (status === "unauthenticated") {
         return (
-            <div className="min-h-screen bg-[var(--bg-primary)] flex justify-center items-center">
-                <div className="spinner" />
+            <div className="min-h-screen bg-[var(--bg-primary)]">
+                <Navbar />
             </div>
         );
     }
@@ -429,8 +431,18 @@ export default function DashboardPage() {
                 </section>
 
                 {loading ? (
-                    <div className="flex justify-center items-center h-48">
-                        <div className="spinner" />
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                        {[0, 1, 2].map((i) => (
+                            <div
+                                key={i}
+                                className="glass-card p-6 animate-pulse h-[200px] border-white/5"
+                                aria-hidden="true"
+                            >
+                                <div className="w-12 h-12 rounded-xl bg-white/5 mb-5" />
+                                <div className="h-4 w-1/2 bg-white/5 rounded mb-3" />
+                                <div className="h-3 w-1/3 bg-white/5 rounded" />
+                            </div>
+                        ))}
                     </div>
                 ) : filteredClasses.length === 0 ? (
                     <div className="glass-card p-14 flex flex-col items-center justify-center text-center border-dashed border-[var(--border-color)] bg-gradient-to-b from-[var(--bg-secondary)] to-transparent rounded-2xl relative overflow-hidden group">

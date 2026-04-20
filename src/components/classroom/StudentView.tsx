@@ -6,7 +6,7 @@ import {
     Loader2, CheckCircle, ThumbsUp, ThumbsDown, Play, Terminal,
     X, Trash2, Calendar
 } from "lucide-react";
-import { CodeEditor } from "@/components/editor/CodeEditor";
+import { CodeEditor } from "@/components/editor/CodeEditorLazy";
 import { cn } from "@/lib/utils";
 import { toast } from "sonner";
 

@@ -19,10 +19,11 @@ export async function POST(
         const userId = session.user.id;
         const workspaceId = params.id;
 
-        // Verify ownership
-        const workspace = await prisma.workspace.findUnique({
-            where: { id: workspaceId },
-        });
+        // Parse body and fetch workspace in parallel
+        const [body, workspace] = await Promise.all([
+            req.json().catch(() => ({})),
+            prisma.workspace.findUnique({ where: { id: workspaceId } }),
+        ]);
 
         if (!workspace) {
             return NextResponse.json({ error: "File not found" }, { status: 404 });
@@ -32,9 +33,8 @@ export async function POST(
             return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
-        const { code, language } = await req.json();
+        const { code, language } = body;
 
-        // Input validation
         if (code === undefined || typeof code !== "string") {
             return NextResponse.json({ error: "Code content is required" }, { status: 400 });
         }
@@ -47,35 +47,43 @@ export async function POST(
             return NextResponse.json({ error: "Code exceeds 500KB limit" }, { status: 400 });
         }
 
-        // Save a version snapshot before updating (only if code actually changed)
-        if (workspace.code !== code) {
-            await prisma.workspaceVersion.create({
-                data: {
-                    workspaceId,
-                    code: workspace.code,
-                    language: workspace.language,
-                },
+        const codeChanged = workspace.code !== code;
+
+        // Update workspace + create version in one transaction (one round-trip)
+        const updated = codeChanged
+            ? await prisma.$transaction([
+                prisma.workspaceVersion.create({
+                    data: {
+                        workspaceId,
+                        code: workspace.code,
+                        language: workspace.language,
+                    },
+                }),
+                prisma.workspace.update({
+                    where: { id: workspaceId },
+                    data: { code, language: language || workspace.language },
+                }),
+            ]).then(([, ws]) => ws)
+            : await prisma.workspace.update({
+                where: { id: workspaceId },
+                data: { code, language: language || workspace.language },
             });
 
-            // Keep only last 5 versions per workspace (500MB DB limit)
-            const versions = await prisma.workspaceVersion.findMany({
+        // Prune old versions in background (don't block response)
+        if (codeChanged) {
+            void prisma.workspaceVersion.findMany({
                 where: { workspaceId },
                 orderBy: { savedAt: "desc" },
                 skip: 5,
                 select: { id: true },
-            });
-            if (versions.length > 0) {
-                await prisma.workspaceVersion.deleteMany({
-                    where: { id: { in: versions.map((v) => v.id) } },
-                });
-            }
+            }).then((versions) => {
+                if (versions.length > 0) {
+                    return prisma.workspaceVersion.deleteMany({
+                        where: { id: { in: versions.map((v) => v.id) } },
+                    });
+                }
+            }).catch((err) => console.error("Version prune failed:", err));
         }
-
-        // Update workspace code
-        const updated = await prisma.workspace.update({
-            where: { id: workspaceId },
-            data: { code, language: language || workspace.language },
-        });
 
         return NextResponse.json({ success: true, workspace: updated });
     } catch (error) {

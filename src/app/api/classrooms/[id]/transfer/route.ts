@@ -59,7 +59,7 @@ export async function POST(
             update: {},
         });
 
-        await logAudit(currentUserId, "ADMIN_GRANTED", "Classroom", classroomId, newTeacherId);
+        logAudit(currentUserId, "ADMIN_GRANTED", "Classroom", classroomId, newTeacherId);
 
         return NextResponse.json({ message: "Admin rights granted successfully" });
     } catch (error) {
@@ -107,7 +107,7 @@ export async function DELETE(
             where: { classroomId, userId: adminId },
         });
 
-        await logAudit(currentUserId, "ADMIN_REVOKED", "Classroom", classroomId, adminId);
+        logAudit(currentUserId, "ADMIN_REVOKED", "Classroom", classroomId, adminId);
 
         return NextResponse.json({ message: "Admin rights revoked" });
     } catch (error) {

@@ -42,28 +42,27 @@ export async function GET(
             const cursor = searchParams.get("cursor");
             const limit = Math.min(parseInt(searchParams.get("limit") || "50") || 50, 100);
 
-            // Get all workspaces with student info (paginated)
-            const workspaces = await prisma.workspace.findMany({
-                where: { classroomId },
-                include: {
-                    student: { select: { id: true, name: true, email: true } },
-                },
-                orderBy: { updatedAt: "desc" },
-                take: limit + 1,
-                ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
-            });
+            const [workspaces, enrollments] = await Promise.all([
+                prisma.workspace.findMany({
+                    where: { classroomId },
+                    include: {
+                        student: { select: { id: true, name: true, email: true } },
+                    },
+                    orderBy: { updatedAt: "desc" },
+                    take: limit + 1,
+                    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+                }),
+                prisma.enrollment.findMany({
+                    where: { classroomId },
+                    include: {
+                        student: { select: { id: true, name: true, email: true } },
+                    },
+                }),
+            ]);
 
             const hasMore = workspaces.length > limit;
             if (hasMore) workspaces.pop();
             const nextCursor = hasMore ? workspaces[workspaces.length - 1]?.id : null;
-
-            // Also get all enrolled students (some might not have workspaces yet)
-            const enrollments = await prisma.enrollment.findMany({
-                where: { classroomId },
-                include: {
-                    student: { select: { id: true, name: true, email: true } },
-                },
-            });
 
             return NextResponse.json({
                 classroom: {
@@ -76,33 +75,23 @@ export async function GET(
                 nextCursor,
             });
         } else {
-            // Student: must be enrolled
-            const enrollment = await prisma.enrollment.findUnique({
-                where: {
-                    studentId_classroomId: {
-                        studentId: userId,
-                        classroomId,
+            // Student: must be enrolled — run all 3 queries in parallel
+            const [enrollment, workspaces, enrollmentCount] = await Promise.all([
+                prisma.enrollment.findUnique({
+                    where: {
+                        studentId_classroomId: { studentId: userId, classroomId },
                     },
-                },
-            });
+                }),
+                prisma.workspace.findMany({
+                    where: { studentId: userId, classroomId },
+                    orderBy: { updatedAt: "desc" },
+                }),
+                prisma.enrollment.count({ where: { classroomId } }),
+            ]);
 
             if (!enrollment) {
                 return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
             }
-
-            // Return all student's workspaces in this classroom
-            const workspaces = await prisma.workspace.findMany({
-                where: {
-                    studentId: userId,
-                    classroomId,
-                },
-                orderBy: { updatedAt: "desc" },
-            });
-
-            // Get enrollment count for student
-            const enrollmentCount = await prisma.enrollment.count({
-                where: { classroomId },
-            });
 
             return NextResponse.json({
                 classroom: {
@@ -156,7 +145,7 @@ export async function DELETE(
             prisma.classroom.delete({ where: { id: classroomId } }),
         ]);
 
-        await logAudit(userId, "CLASSROOM_DELETED", "Classroom", classroomId, classroom.name);
+        logAudit(userId, "CLASSROOM_DELETED", "Classroom", classroomId, classroom.name);
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -64,7 +64,7 @@ export async function POST(
             },
         });
 
-        await logAudit(userId, "WORKSPACE_REVIEWED", "Workspace", workspaceId, reviewStatus);
+        logAudit(userId, "WORKSPACE_REVIEWED", "Workspace", workspaceId, reviewStatus);
 
         return NextResponse.json({ success: true, workspace: updated });
     } catch (error) {

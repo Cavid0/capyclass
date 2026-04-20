@@ -15,16 +15,29 @@ export async function GET() {
 
         const userId = session.user.id;
 
-        // Fetch classrooms created by the user (teacher role for these)
-        const teachingClassrooms = await prisma.classroom.findMany({
-            where: { teacherId: userId },
-            include: {
-                _count: {
-                    select: { enrollments: true, workspaces: true },
+        // Fetch teaching classrooms and enrollments in parallel
+        const [teachingClassrooms, enrollments] = await Promise.all([
+            prisma.classroom.findMany({
+                where: { teacherId: userId },
+                include: {
+                    _count: {
+                        select: { enrollments: true, workspaces: true },
+                    },
                 },
-            },
-            orderBy: { createdAt: "desc" },
-        });
+                orderBy: { createdAt: "desc" },
+            }),
+            prisma.enrollment.findMany({
+                where: { studentId: userId },
+                include: {
+                    classroom: {
+                        include: {
+                            teacher: { select: { name: true } },
+                        },
+                    },
+                },
+                orderBy: { joinedAt: "desc" },
+            }),
+        ]);
 
         // Batch query: get status counts for ALL teaching classrooms at once (fixes N+1)
         const classroomIds = teachingClassrooms.map((c) => c.id);
@@ -55,19 +68,6 @@ export async function GET() {
                 failCount: stats.FAIL,
                 pendingCount: stats.PENDING,
             };
-        });
-
-        // Fetch classrooms enrolled by the user (student role for these)
-        const enrollments = await prisma.enrollment.findMany({
-            where: { studentId: userId },
-            include: {
-                classroom: {
-                    include: {
-                        teacher: { select: { name: true } },
-                    },
-                },
-            },
-            orderBy: { joinedAt: "desc" },
         });
 
         const enrolledClassrooms = enrollments.map((e) => ({

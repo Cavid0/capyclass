@@ -72,8 +72,7 @@ export default function ClassroomPage() {
     useEffect(() => {
         if (status === "unauthenticated") { router.push("/login"); return; }
         if (status === "authenticated") {
-            fetchClassroom();
-            fetchTasks();
+            Promise.all([fetchClassroom(), fetchTasks()]);
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [status]);
@@ -81,10 +80,19 @@ export default function ClassroomPage() {
     const fetchClassroomRef = useRef(fetchClassroom);
     useEffect(() => { fetchClassroomRef.current = fetchClassroom; }, [fetchClassroom]);
     useEffect(() => {
-        if (status === "authenticated" && classroom?.teacherId === sessionIdRef.current) {
-            intervalRef.current = setInterval(() => fetchClassroomRef.current(true), 5000);
-            return () => { if (intervalRef.current) clearInterval(intervalRef.current); };
-        }
+        if (status !== "authenticated" || classroom?.teacherId !== sessionIdRef.current) return;
+
+        const tick = () => {
+            if (typeof document !== "undefined" && document.hidden) return;
+            fetchClassroomRef.current(true);
+        };
+        intervalRef.current = setInterval(tick, 10000);
+        const onVisibility = () => { if (!document.hidden) fetchClassroomRef.current(true); };
+        document.addEventListener("visibilitychange", onVisibility);
+        return () => {
+            if (intervalRef.current) clearInterval(intervalRef.current);
+            document.removeEventListener("visibilitychange", onVisibility);
+        };
     }, [status, classroom?.teacherId]);
 
     if (loading || status === "loading") {

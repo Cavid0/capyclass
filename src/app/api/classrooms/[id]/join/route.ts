@@ -24,23 +24,20 @@ export async function POST(
             );
         }
 
-        const classroom = await prisma.classroom.findUnique({
-            where: { inviteCode: params.id },
-        });
+        const [classroom, existingEnrollment] = await Promise.all([
+            prisma.classroom.findUnique({
+                where: { inviteCode: params.id },
+                select: { id: true },
+            }),
+            prisma.enrollment.findFirst({
+                where: { studentId: userId, classroom: { inviteCode: params.id } },
+                select: { id: true },
+            }),
+        ]);
 
         if (!classroom) {
             return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
-
-        // Check if already enrolled
-        const existingEnrollment = await prisma.enrollment.findUnique({
-            where: {
-                studentId_classroomId: {
-                    studentId: userId,
-                    classroomId: classroom.id,
-                },
-            },
-        });
 
         if (existingEnrollment) {
             return NextResponse.json({

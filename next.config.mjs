@@ -1,9 +1,15 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-    // Təhlükəsizlik üçün X-Powered-By başlığını bağlayırıq (Next.js/Express işlətdiyimizin görünməməsi üçün)
     poweredByHeader: false,
-    // Source map fayllarının production mühitində yaranmasının qarşısını alırıq (Hackers source code-u oxumasın deyə)
     productionBrowserSourceMaps: false,
+    reactStrictMode: true,
+    compress: true,
+    experimental: {
+        optimizePackageImports: ["lucide-react", "framer-motion", "sonner"],
+    },
+    compiler: {
+        removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
+    },
     // Xüsusi HTTP təhlükəsizlik başlıqlarını əlavə edirik
     async headers() {
         return [

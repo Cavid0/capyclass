@@ -64,7 +64,7 @@ export async function PUT(req: Request, { params }: { params: { id: string } }) 
             data: updateData,
         });
 
-        await logAudit(userId, "TASK_UPDATED", "Task", id, title);
+        logAudit(userId, "TASK_UPDATED", "Task", id, title);
 
         return NextResponse.json(updatedTask);
     } catch (error) {
@@ -86,7 +86,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         if (!authorized) return NextResponse.json({ error: "Unauthorized" }, { status: 403 });
 
         await prisma.task.delete({ where: { id } });
-        await logAudit(userId, "TASK_DELETED", "Task", id, task.title);
+        logAudit(userId, "TASK_DELETED", "Task", id, task.title);
 
         return NextResponse.json({ success: true });
     } catch (error) {

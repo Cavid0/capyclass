@@ -1,9 +1,8 @@
-import { randomInt, timingSafeEqual } from "crypto";
-import { v4 as uuidv4 } from "uuid";
+import { randomInt, randomUUID, timingSafeEqual } from "crypto";
 import { prisma } from "./prisma";
 
 export function generateInviteCode(): string {
-    return uuidv4().slice(0, 8).toUpperCase();
+    return randomUUID().replace(/-/g, "").slice(0, 8).toUpperCase();
 }
 
 export function cn(...classes: (string | undefined | false)[]): string {

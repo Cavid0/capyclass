@@ -66,15 +66,28 @@ export async function POST(req: NextRequest) {
             finalCode = wrapJavaCode(code);
         }
 
-        // Call Wandbox API
-        const response = await fetch("https://wandbox.org/api/compile.json", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-                code: finalCode,
-                compiler: compiler,
-            }),
-        });
+        // Call Wandbox API with 20s timeout so hung compiles don't block the user
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 20_000);
+        let response: Response;
+        try {
+            response = await fetch("https://wandbox.org/api/compile.json", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ code: finalCode, compiler }),
+                signal: controller.signal,
+            });
+        } catch (err: any) {
+            if (err?.name === "AbortError") {
+                return NextResponse.json(
+                    { error: "Execution timed out. Try simpler code.", output: "", hasError: true },
+                    { status: 504 }
+                );
+            }
+            throw err;
+        } finally {
+            clearTimeout(timeoutId);
+        }
 
         if (!response.ok) {
             const errorText = await response.text();

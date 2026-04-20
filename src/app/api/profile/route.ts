@@ -94,7 +94,7 @@ export async function PUT(req: NextRequest) {
             }
 
             updateData.hashedPassword = await hash(newPassword, 12);
-            await logAudit(userId, "PASSWORD_CHANGED", "User", userId);
+            logAudit(userId, "PASSWORD_CHANGED", "User", userId);
         }
 
         if (Object.keys(updateData).length === 0) {

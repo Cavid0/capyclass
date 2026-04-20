@@ -26,7 +26,7 @@ export async function DELETE(req: Request, { params }: { params: { id: string } 
         }
 
         await prisma.workspace.delete({ where: { id } });
-        await logAudit(userId, "WORKSPACE_DELETED", "Workspace", id, workspace.title);
+        logAudit(userId, "WORKSPACE_DELETED", "Workspace", id, workspace.title);
 
         return NextResponse.json({ success: true });
     } catch (error) {

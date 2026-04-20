@@ -18,34 +18,32 @@ export async function GET(
         const userId = session.user.id;
         const classroomId = params.id;
 
-        // Verify access
-        const classroom = await prisma.classroom.findUnique({
-            where: { id: classroomId },
-        });
+        // Run permission checks and task fetch in parallel
+        const [classroom, adminRecord, enrollment, tasks] = await Promise.all([
+            prisma.classroom.findUnique({
+                where: { id: classroomId },
+                select: { teacherId: true },
+            }),
+            prisma.classroomAdmin.findUnique({
+                where: { classroomId_userId: { classroomId, userId } },
+            }),
+            prisma.enrollment.findUnique({
+                where: { studentId_classroomId: { studentId: userId, classroomId } },
+            }),
+            prisma.task.findMany({
+                where: { classroomId },
+                orderBy: { createdAt: "desc" },
+            }),
+        ]);
 
         if (!classroom) {
             return NextResponse.json({ error: "Classroom not found" }, { status: 404 });
         }
 
-        // Check access: owner, co-admin, or enrolled student
-        const isOwner = classroom.teacherId === userId;
-        const isAdmin = !isOwner && await prisma.classroomAdmin.findUnique({
-            where: { classroomId_userId: { classroomId, userId } },
-        });
-
-        if (!isOwner && !isAdmin) {
-            const enrollment = await prisma.enrollment.findUnique({
-                where: { studentId_classroomId: { studentId: userId, classroomId } },
-            });
-            if (!enrollment) {
-                return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
-            }
+        const hasAccess = classroom.teacherId === userId || adminRecord || enrollment;
+        if (!hasAccess) {
+            return NextResponse.json({ error: "You are not enrolled in this classroom" }, { status: 403 });
         }
-
-        const tasks = await prisma.task.findMany({
-            where: { classroomId },
-            orderBy: { createdAt: "desc" },
-        });
 
         return NextResponse.json(tasks);
     } catch (error) {
