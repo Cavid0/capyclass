@@ -26,21 +26,17 @@ export const authOptions: NextAuthOptions = {
                     where: { email: normalizedEmail },
                 });
 
-                if (!user) {
+                // Always compare against a fixed hash if user missing to keep timing constant
+                const hashToCompare = user?.hashedPassword
+                    || "$2a$12$invalidinvalidinvalidinvalidinvalidinvalidinvalidinvaliduu";
+                const isPasswordValid = await compare(credentials.password, hashToCompare);
+
+                if (!user || !isPasswordValid) {
                     throw new Error("Invalid email or password");
                 }
 
                 if (!user.emailVerified) {
                     throw new Error("Your email has not been verified yet. Please check your inbox.");
-                }
-
-                const isPasswordValid = await compare(
-                    credentials.password,
-                    user.hashedPassword
-                );
-
-                if (!isPasswordValid) {
-                    throw new Error("Invalid email or password");
                 }
 
                 return {

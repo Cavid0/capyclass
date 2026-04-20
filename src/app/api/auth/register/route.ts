@@ -18,7 +18,7 @@ export async function POST(req: NextRequest) {
                 { status: 429 }
             );
         }
-        const { name, email, password, role } = await req.json();
+        const { name, email, password } = await req.json();
         const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
 
         if (!name || !normalizedEmail || !password) {
@@ -80,7 +80,7 @@ export async function POST(req: NextRequest) {
                 name: validatedName.value,
                 email: normalizedEmail,
                 hashedPassword,
-                role: role === "ADMIN" ? "ADMIN" : "USER",
+                role: "USER",
                 emailVerified: false,
                 verificationToken: verificationCode,
                 tokenPurpose: "EMAIL_VERIFY",

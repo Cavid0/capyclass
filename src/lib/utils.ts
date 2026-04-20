@@ -1,3 +1,4 @@
+import { randomInt, timingSafeEqual } from "crypto";
 import { v4 as uuidv4 } from "uuid";
 import { prisma } from "./prisma";
 
@@ -109,9 +110,17 @@ export function serializeJsonForHtmlScript(value: unknown): string {
         .replace(/&/g, "\\u0026");
 }
 
-/** Generate a 6-digit OTP code */
+/** Generate a cryptographically secure 6-digit OTP code */
 export function generateOtp(): string {
-    return Math.floor(100000 + Math.random() * 900000).toString();
+    return randomInt(100000, 1000000).toString();
+}
+
+/** Constant-time string comparison to prevent timing attacks */
+function constantTimeEqual(a: string, b: string): boolean {
+    const aBuf = Buffer.from(a, "utf8");
+    const bBuf = Buffer.from(b, "utf8");
+    if (aBuf.length !== bBuf.length) return false;
+    return timingSafeEqual(aBuf, bBuf);
 }
 
 /** OTP expiration time: 15 minutes */
@@ -180,8 +189,8 @@ export async function verifyOtpToken(
         return { valid: false, error: "Invalid code for this action." };
     }
 
-    // Check code
-    if (user.verificationToken !== code) {
+    // Check code (constant-time comparison)
+    if (!constantTimeEqual(user.verificationToken, code)) {
         const newAttempts = (user.otpAttempts || 0) + 1;
         const updateData: any = { otpAttempts: newAttempts };
 

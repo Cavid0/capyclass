@@ -1,7 +1,15 @@
 import { NextRequest, NextResponse } from "next/server";
+import { timingSafeEqual } from "crypto";
 import { prisma } from "@/lib/prisma";
 import { rateLimit } from "@/lib/rate-limit";
 import { isValidEmail, normalizeEmail, normalizeOtpCode } from "@/lib/utils";
+
+function constantTimeEqual(a: string, b: string): boolean {
+    const aBuf = Buffer.from(a, "utf8");
+    const bBuf = Buffer.from(b, "utf8");
+    if (aBuf.length !== bBuf.length) return false;
+    return timingSafeEqual(aBuf, bBuf);
+}
 
 export async function POST(req: NextRequest) {
     try {
@@ -15,31 +23,26 @@ export async function POST(req: NextRequest) {
         }
 
         const { email, code } = await req.json();
-        const normalizedEmail = typeof email === "string" && email.trim() ? normalizeEmail(email) : "";
+        const normalizedEmail = typeof email === "string" ? normalizeEmail(email) : "";
         const normalizedCode = typeof code === "string" ? normalizeOtpCode(code) : "";
 
-        if (!normalizedCode) {
+        if (!normalizedEmail || !normalizedCode) {
             return NextResponse.json(
-                { error: "Verification code is required" },
+                { error: "Email and verification code are required" },
                 { status: 400 }
             );
         }
 
-        if (normalizedEmail && !isValidEmail(normalizedEmail)) {
-            return NextResponse.json({ error: "Invalid email format" }, { status: 400 });
+        if (!isValidEmail(normalizedEmail) || !/^\d{6}$/.test(normalizedCode)) {
+            return NextResponse.json({ error: "Invalid email or code format" }, { status: 400 });
         }
 
-        let user;
-        if (normalizedEmail) {
-            user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
-        } else {
-            user = await prisma.user.findFirst({ where: { verificationToken: normalizedCode } });
-        }
+        const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
         if (!user) {
             return NextResponse.json(
-                { error: "Invalid or expired verification link" },
-                { status: 404 }
+                { error: "Invalid or expired verification code" },
+                { status: 400 }
             );
         }
 
@@ -71,7 +74,7 @@ export async function POST(req: NextRequest) {
             );
         }
 
-        if (user.verificationToken !== normalizedCode) {
+        if (!constantTimeEqual(user.verificationToken, normalizedCode)) {
             // Increment attempts
             const newAttempts = (user.otpAttempts || 0) + 1;
             const updateData: any = { otpAttempts: newAttempts };
@@ -103,9 +106,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "Email verified successfully! You can now log in." });
     } catch (error: any) {
-        return NextResponse.json(
-            { error: error?.message || "An error occurred" },
-            { status: 500 }
-        );
+        console.error("Verify email error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

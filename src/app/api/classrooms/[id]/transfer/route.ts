@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 // POST: Add a co-admin to the classroom (owner keeps their status)
 export async function POST(
@@ -18,7 +19,7 @@ export async function POST(
         const currentUserId = session.user.id;
         const { newTeacherId } = await req.json();
 
-        if (!newTeacherId) {
+        if (typeof newTeacherId !== "string" || !newTeacherId) {
             return NextResponse.json({ error: "User ID is required" }, { status: 400 });
         }
 
@@ -58,6 +59,8 @@ export async function POST(
             update: {},
         });
 
+        await logAudit(currentUserId, "ADMIN_GRANTED", "Classroom", classroomId, newTeacherId);
+
         return NextResponse.json({ message: "Admin rights granted successfully" });
     } catch (error) {
         console.error("Add admin error:", error);
@@ -83,6 +86,10 @@ export async function DELETE(
         const currentUserId = session.user.id;
         const { adminId } = await req.json();
 
+        if (typeof adminId !== "string" || !adminId) {
+            return NextResponse.json({ error: "Admin ID is required" }, { status: 400 });
+        }
+
         const classroom = await prisma.classroom.findUnique({
             where: { id: classroomId },
         });
@@ -99,6 +106,8 @@ export async function DELETE(
         await prisma.classroomAdmin.deleteMany({
             where: { classroomId, userId: adminId },
         });
+
+        await logAudit(currentUserId, "ADMIN_REVOKED", "Classroom", classroomId, adminId);
 
         return NextResponse.json({ message: "Admin rights revoked" });
     } catch (error) {

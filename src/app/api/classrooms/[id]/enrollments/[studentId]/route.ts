@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
+import { logAudit } from "@/lib/audit";
 
 export async function DELETE(
     req: NextRequest,
@@ -30,15 +31,13 @@ export async function DELETE(
             return NextResponse.json({ error: "Permission denied" }, { status: 403 });
         }
 
-        // Delete the student's workspaces in this classroom
-        await prisma.workspace.deleteMany({
-            where: { classroomId, studentId: studentToRemove }
-        });
+        // Delete the student's workspaces and enrollment atomically
+        await prisma.$transaction([
+            prisma.workspace.deleteMany({ where: { classroomId, studentId: studentToRemove } }),
+            prisma.enrollment.deleteMany({ where: { classroomId, studentId: studentToRemove } }),
+        ]);
 
-        // Delete the enrollment
-        await prisma.enrollment.deleteMany({
-            where: { classroomId, studentId: studentToRemove }
-        });
+        await logAudit(userId, "STUDENT_REMOVED", "Classroom", classroomId, studentToRemove);
 
         return NextResponse.json({ success: true });
     } catch (error) {

@@ -52,7 +52,6 @@ export async function POST(req: NextRequest) {
             }
 
             await tx.classroomAdmin.deleteMany({ where: { userId } });
-            await tx.auditLog.deleteMany({ where: { userId } });
             await tx.workspace.deleteMany({ where: { studentId: userId } });
             await tx.enrollment.deleteMany({ where: { studentId: userId } });
             await tx.user.delete({ where: { id: userId } });
@@ -60,7 +59,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "Account deleted successfully" });
     } catch (error: any) {
-        console.error("Delete account error:", error);
-        return NextResponse.json({ error: error?.message || "An error occurred" }, { status: 500 });
+        console.error("Delete account error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

@@ -60,6 +60,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "Password changed successfully! You can now log in." });
     } catch (error: any) {
-        return NextResponse.json({ error: error?.message || "An error occurred" }, { status: 500 });
+        console.error("Reset password error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }
