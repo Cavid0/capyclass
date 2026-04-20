@@ -43,27 +43,37 @@ export async function POST(req: NextRequest) {
 
         const existingUser = await prisma.user.findUnique({
             where: { email: normalizedEmail },
+            select: { id: true, emailVerified: true },
         });
 
-        if (existingUser) {
-            if (!existingUser.emailVerified) {
-                const verificationCode = generateOtp();
-                await prisma.user.update({
-                    where: { id: existingUser.id },
-                    data: {
-                        verificationToken: verificationCode,
-                        tokenPurpose: "EMAIL_VERIFY",
-                        verificationTokenExpiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
-                        otpAttempts: 0,
-                        otpLockedUntil: null,
-                    },
-                });
+        if (existingUser?.emailVerified) {
+            return NextResponse.json(
+                { error: "This email is already registered. Please log in instead." },
+                { status: 409 }
+            );
+        }
 
-                try {
-                    await sendVerificationEmail(normalizedEmail, verificationCode);
-                } catch (emailError: any) {
-                    console.error("Register resend email error:", emailError?.message);
-                }
+        if (existingUser) {
+            const verificationCode = generateOtp();
+            await prisma.user.update({
+                where: { id: existingUser.id },
+                data: {
+                    verificationToken: verificationCode,
+                    tokenPurpose: "EMAIL_VERIFY",
+                    verificationTokenExpiresAt: new Date(Date.now() + OTP_EXPIRY_MS),
+                    otpAttempts: 0,
+                    otpLockedUntil: null,
+                },
+            });
+
+            try {
+                await sendVerificationEmail(normalizedEmail, verificationCode);
+            } catch (emailError: any) {
+                console.error("Register resend email error:", emailError?.message);
+                return NextResponse.json(
+                    { error: "Failed to send verification email. Please try again later." },
+                    { status: 500 }
+                );
             }
 
             return NextResponse.json(
