@@ -37,6 +37,7 @@ export async function POST(req: NextRequest) {
 
         return NextResponse.json({ message: "OTP code sent" });
     } catch (error: any) {
-        return NextResponse.json({ error: error?.message || "An error occurred" }, { status: 500 });
+        console.error("Send password OTP error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

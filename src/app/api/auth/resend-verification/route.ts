@@ -48,13 +48,15 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        await sendVerificationEmail(normalizedEmail, newCode);
+        try {
+            await sendVerificationEmail(normalizedEmail, newCode);
+        } catch (emailError: any) {
+            console.error("Resend verification email error:", emailError?.message);
+        }
 
         return NextResponse.json({ message: "If the account can receive verification, a new code has been sent" });
     } catch (error: any) {
-        return NextResponse.json(
-            { error: error?.message || "An error occurred" },
-            { status: 500 }
-        );
+        console.error("Resend verification error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

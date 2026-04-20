@@ -30,7 +30,6 @@ export async function POST(req: NextRequest) {
 
         const user = await prisma.user.findUnique({ where: { email: normalizedEmail } });
 
-        // Security: return the same response whether user exists or not
         if (!user) {
             return NextResponse.json({ message: "If this email exists, an OTP code has been sent" });
         }
@@ -47,10 +46,15 @@ export async function POST(req: NextRequest) {
             },
         });
 
-        await sendVerificationEmail(normalizedEmail, code);
+        try {
+            await sendVerificationEmail(normalizedEmail, code);
+        } catch (emailError: any) {
+            console.error("Forgot password email error:", emailError?.message);
+        }
 
-        return NextResponse.json({ message: "OTP code sent" });
+        return NextResponse.json({ message: "If this email exists, an OTP code has been sent" });
     } catch (error: any) {
-        return NextResponse.json({ error: error?.message || "An error occurred" }, { status: 500 });
+        console.error("Forgot password error:", error?.message);
+        return NextResponse.json({ error: "An error occurred" }, { status: 500 });
     }
 }

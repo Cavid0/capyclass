@@ -1,25 +1,22 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 
-function createTransporter() {
-    const user = process.env.SMTP_USER;
-    const pass = process.env.SMTP_PASS;
+let cachedClient: Resend | null = null;
 
-    if (!user || !pass) {
-        console.error("[EMAIL] SMTP_USER or SMTP_PASS is missing!", { user: !!user, pass: !!pass });
-        throw new Error("SMTP configuration not found. SMTP_USER and SMTP_PASS must be set in the .env file.");
+function getResendClient(): Resend {
+    if (cachedClient) return cachedClient;
+
+    const apiKey = process.env.RESEND_API_KEY;
+    if (!apiKey) {
+        throw new Error("RESEND_API_KEY is not set");
     }
 
-    return nodemailer.createTransport({
-        host: "smtp.gmail.com",
-        port: 587,
-        secure: false,
-        auth: { user, pass },
-        tls: { rejectUnauthorized: false },
-        // Improve deliverability
-        pool: true,
-        maxConnections: 5,
-        maxMessages: 100,
-    });
+    cachedClient = new Resend(apiKey);
+    return cachedClient;
+}
+
+function getFromAddress(): string {
+    const fromEmail = process.env.RESEND_FROM_EMAIL || "onboarding@resend.dev";
+    return `CapyClass <${fromEmail}>`;
 }
 
 function buildEmailHtml(title: string, bodyContent: string): string {
@@ -80,42 +77,31 @@ function buildPlainTextOtp(heading: string, code: string): string {
     return `${heading}\n\nYour verification code: ${code}\n\nThis code is valid for 15 minutes.\nIf you did not request this, please ignore this email.\n\n---\nCapyClass (capyclass.com)`;
 }
 
-export async function sendVerificationEmail(email: string, code: string) {
+export async function sendVerificationEmail(email: string, code: string): Promise<void> {
+    if (!/^\d{6}$/.test(code)) {
+        throw new Error("Invalid verification code format");
+    }
+
+    const resend = getResendClient();
     const digits = code.split("");
-    const transporter = createTransporter();
-    const smtpUser = process.env.SMTP_USER;
 
-    console.log("[EMAIL] Sending verification email to:", email);
+    const { error } = await resend.emails.send({
+        from: getFromAddress(),
+        to: email,
+        subject: "Your CapyClass verification code",
+        text: buildPlainTextOtp("Email Verification", code),
+        html: buildEmailHtml(
+            "CapyClass - Email Verification",
+            buildOtpBody(
+                "Email Verification Code",
+                "Enter the 6-digit code below on the verification page.",
+                digits
+            )
+        ),
+    });
 
-    try {
-        await transporter.sendMail({
-            from: {
-                name: "CapyClass",
-                address: smtpUser!,
-            },
-            replyTo: smtpUser,
-            to: email,
-            subject: `${code} — Your CapyClass verification code`,
-            // Plain text version for better deliverability
-            text: buildPlainTextOtp("Email Verification", code),
-            html: buildEmailHtml(
-                "CapyClass - Email Verification",
-                buildOtpBody(
-                    "Email Verification Code",
-                    "Enter the 6-digit code below on the verification page.",
-                    digits
-                )
-            ),
-            headers: {
-                "X-Mailer": "CapyClass",
-                "X-Priority": "1",
-                "Precedence": "bulk",
-                "X-Auto-Response-Suppress": "All",
-            },
-        });
-        console.log("[EMAIL] Verification email sent successfully to:", email);
-    } catch (error: any) {
-        console.error("[EMAIL] Failed to send email:", error?.message || error);
-        throw new Error(`Failed to send email: ${error?.message || "Unknown error"}`);
+    if (error) {
+        console.error("[EMAIL] Resend send failed:", error);
+        throw new Error("Failed to send verification email");
     }
 }
