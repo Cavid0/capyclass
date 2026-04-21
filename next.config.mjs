@@ -4,9 +4,6 @@ const nextConfig = {
     productionBrowserSourceMaps: false,
     reactStrictMode: true,
     compress: true,
-    experimental: {
-        optimizePackageImports: ["lucide-react", "framer-motion", "sonner"],
-    },
     compiler: {
         removeConsole: process.env.NODE_ENV === "production" ? { exclude: ["error", "warn"] } : false,
     },

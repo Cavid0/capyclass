@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from "next/server";
 
-function createCsp(nonce: string): string {
+function createCsp(): string {
     return [
         "default-src 'self'",
         "base-uri 'self'",
         "form-action 'self'",
         "frame-ancestors 'none'",
         "object-src 'none'",
-        `script-src 'self' 'nonce-${nonce}' 'unsafe-eval' 'strict-dynamic'`,
+        "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
         "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com",
         "img-src 'self' data: blob:",
         "font-src 'self' data: https://fonts.gstatic.com",
-        "connect-src 'self' https://wandbox.org",
+        "connect-src 'self'",
         "worker-src 'self' blob:",
         "frame-src 'none'",
         "manifest-src 'self'",
@@ -55,9 +55,7 @@ function isRateLimited(ip: string, maxRequests: number, windowMs: number): boole
 export function middleware(req: NextRequest) {
     const ip = getClientIp(req);
     const { pathname } = req.nextUrl;
-    const nonce = crypto.randomUUID().replace(/-/g, "");
     const requestHeaders = new Headers(req.headers);
-    requestHeaders.set("x-nonce", nonce);
 
     // Global rate limit: 200 requests per minute per IP for API routes
     if (pathname.startsWith("/api/")) {
@@ -127,7 +125,7 @@ export function middleware(req: NextRequest) {
     response.headers.set("X-Content-Type-Options", "nosniff");
     response.headers.set("X-Frame-Options", "DENY");
     response.headers.set("Referrer-Policy", "strict-origin-when-cross-origin");
-    response.headers.set("Content-Security-Policy", createCsp(nonce));
+    response.headers.set("Content-Security-Policy", createCsp());
     response.headers.set("Cross-Origin-Opener-Policy", "same-origin");
     response.headers.set("Cross-Origin-Resource-Policy", "same-origin");
     response.headers.set("Origin-Agent-Cluster", "?1");

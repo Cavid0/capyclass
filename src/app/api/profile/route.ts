@@ -3,7 +3,8 @@ import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
-import { validatePasswordStrength, validateTextInput, verifyOtpToken } from "@/lib/utils";
+import { validatePasswordStrength, validateTextInput } from "@/lib/utils";
+import { verifyOtpToken } from "@/lib/server-utils";
 import { logAudit } from "@/lib/audit";
 
 // GET: Get current user profile

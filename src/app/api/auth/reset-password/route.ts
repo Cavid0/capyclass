@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { hash } from "bcryptjs";
 import { rateLimit } from "@/lib/rate-limit";
-import { isValidEmail, normalizeEmail, normalizeOtpCode, validatePasswordStrength, verifyOtpToken } from "@/lib/utils";
+import { isValidEmail, normalizeEmail, normalizeOtpCode, validatePasswordStrength } from "@/lib/utils";
+import { verifyOtpToken } from "@/lib/server-utils";
 
 export async function POST(req: NextRequest) {
     try {

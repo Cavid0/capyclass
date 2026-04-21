@@ -116,7 +116,10 @@ export default function ForgotPasswordPage() {
     const handleResetPassword = async (e: React.FormEvent) => {
         e.preventDefault();
         setPwdError("");
-        if (!newPassword || newPassword.length < 6) { setPwdError("Password must be at least 6 characters"); return; }
+        if (!newPassword || newPassword.length < 8) { setPwdError("Password must be at least 8 characters"); return; }
+        if (!/[a-zA-Z]/.test(newPassword)) { setPwdError("Password must contain at least one letter"); return; }
+        if (!/[0-9]/.test(newPassword)) { setPwdError("Password must contain at least one number"); return; }
+        if (!confirmPassword) { setPwdError("Please confirm your password"); return; }
         if (newPassword !== confirmPassword) { setPwdError("Passwords do not match"); return; }
         setPwdLoading(true);
         try {
@@ -136,6 +139,8 @@ export default function ForgotPasswordPage() {
     };
 
     const isOtpFull = otp.every((d) => d !== "");
+    const passwordsMismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
+    const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
 
     return (
         <div className="min-h-screen flex items-center justify-center bg-[var(--bg-primary)] px-4 py-12 relative overflow-hidden">
@@ -298,7 +303,7 @@ export default function ForgotPasswordPage() {
                                         <input
                                             type="password"
                                             required
-                                            minLength={6}
+                                            minLength={8}
                                             value={newPassword}
                                             onChange={(e) => setNewPassword(e.target.value)}
                                             className="input-field !pl-[42px] tracking-widest"
@@ -315,18 +320,24 @@ export default function ForgotPasswordPage() {
                                         <input
                                             type="password"
                                             required
-                                            minLength={6}
+                                            minLength={8}
                                             value={confirmPassword}
                                             onChange={(e) => setConfirmPassword(e.target.value)}
-                                            className="input-field !pl-[42px] tracking-widest"
+                                            className={`input-field !pl-[42px] tracking-widest ${passwordsMismatch ? "!border-red-500/60" : passwordsMatch ? "!border-emerald-500/60" : ""}`}
                                             placeholder="••••••••"
                                         />
                                         <div className="absolute left-3.5 top-1/2 -translate-y-1/2 pointer-events-none">
                                             <Lock className="w-4 h-4 text-[#71717a]" />
                                         </div>
                                     </div>
+                                    {passwordsMismatch && (
+                                        <p className="text-[11px] text-red-400 flex items-center gap-1"><span>✗</span> Passwords do not match</p>
+                                    )}
+                                    {passwordsMatch && (
+                                        <p className="text-[11px] text-emerald-400 flex items-center gap-1"><span>✓</span> Passwords match</p>
+                                    )}
                                 </div>
-                                <button type="submit" disabled={pwdLoading} className="glow-btn w-full py-2.5 mt-2 flex items-center justify-center gap-2 text-sm">
+                                <button type="submit" disabled={pwdLoading || passwordsMismatch || !confirmPassword} className="glow-btn w-full py-2.5 mt-2 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed">
                                     {pwdLoading
                                         ? <div className="w-4 h-4 border-2 border-black/20 border-t-black rounded-full animate-spin" />
                                         : <><CheckCircle2 className="w-3.5 h-3.5" /> Change Password</>

@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { CodeEditor } from "@/components/editor/CodeEditorLazy";
 import { cn } from "@/lib/utils";
+import { useResizable, useIsDesktop } from "@/lib/useResizable";
 import { toast } from "sonner";
 
 const DEFAULT_CODE: Record<string, string> = {
@@ -77,6 +78,11 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
 
     // Language change warning
     const [pendingLanguage, setPendingLanguage] = useState<string | null>(null);
+
+    // Resizable panels
+    const isDesktop = useIsDesktop();
+    const sidebar = useResizable({ storageKey: "student-sidebar-width", defaultSize: 288, min: 200, max: 500, direction: "horizontal" });
+    const outputPane = useResizable({ storageKey: "student-output-height", defaultSize: 200, min: 80, max: 600, direction: "vertical" });
 
     // Sync editor when workspace changes
     useEffect(() => {
@@ -221,9 +227,10 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
             {/* ─── Sidebar ─── */}
             <aside
                 className={cn(
-                    "w-full md:w-72 border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
+                    "w-full border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
                     selectedWorkspaceId ? "hidden md:flex" : "flex"
                 )}
+                style={isDesktop ? { width: sidebar.size } : undefined}
             >
                 {/* Tab Header */}
                 <div className="flex border-b border-[var(--border-color)] shrink-0">
@@ -316,6 +323,20 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                 </div>
             </aside>
 
+            {/* ─── Sidebar resize handle (desktop only) ─── */}
+            {isDesktop && (
+                <div
+                    onMouseDown={sidebar.startDrag}
+                    onTouchStart={sidebar.startDrag}
+                    className={cn(
+                        "hidden md:block w-1 shrink-0 cursor-col-resize bg-[var(--border-color)] hover:bg-[var(--accent-primary)] transition-colors",
+                        sidebar.dragging && "bg-[var(--accent-primary)]"
+                    )}
+                    role="separator"
+                    aria-orientation="vertical"
+                />
+            )}
+
             {/* ─── Editor Area ─── */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg-primary)]">
                 {activeWorkspace ? (
@@ -386,7 +407,21 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                             </div>
 
                             {showOutput && (
-                                <div className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col h-[32vh] max-h-[240px] sm:h-[200px]">
+                                <>
+                                    <div
+                                        onMouseDown={outputPane.startDrag}
+                                        onTouchStart={outputPane.startDrag}
+                                        className={cn(
+                                            "shrink-0 h-1 cursor-row-resize bg-[var(--border-color)] hover:bg-[var(--accent-primary)] transition-colors",
+                                            outputPane.dragging && "bg-[var(--accent-primary)]"
+                                        )}
+                                        role="separator"
+                                        aria-orientation="horizontal"
+                                    />
+                                <div
+                                    className="shrink-0 border-t border-[var(--border-color)] bg-[#010409] flex flex-col"
+                                    style={{ height: isDesktop ? outputPane.size : undefined }}
+                                >
                                     <div className="flex items-center justify-between px-3 py-1.5 bg-[var(--bg-secondary)] border-b border-[var(--border-color)] shrink-0">
                                         <div className="flex items-center gap-2 text-xs">
                                             <Terminal className="w-3.5 h-3.5 text-[var(--text-secondary)]" />
@@ -413,6 +448,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                         )}
                                     </div>
                                 </div>
+                                </>
                             )}
                         </div>
 

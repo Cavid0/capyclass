@@ -2,29 +2,103 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { rateLimit } from "@/lib/rate-limit";
+import { createHash } from "crypto";
 
-// Language mapping: Monaco language id -> Wandbox compiler name
-// Only languages with verified working Wandbox compilers
-const COMPILER_MAP: Record<string, string> = {
-    javascript: "nodejs-20.17.0",
-    typescript: "typescript-5.6.2",
-    python: "cpython-3.12.7",
-    c: "gcc-head-c",
-    cpp: "gcc-head",
-    csharp: "mono-6.12.0.199",
-    java: "openjdk-jdk-22+36",
-    go: "go-1.23.2",
-    ruby: "ruby-3.4.1",
-    php: "php-8.3.12",
-    rust: "rust-1.82.0",
-    swift: "swift-6.0.1",
+// Monaco language id → Piston language name
+const PISTON_LANGUAGE_MAP: Record<string, string> = {
+    javascript: "javascript",
+    typescript: "typescript",
+    python: "python",
+    c: "c",
+    cpp: "c++",
+    csharp: "csharp.net",
+    java: "java",
+    go: "go",
+    ruby: "ruby",
+    php: "php",
+    rust: "rust",
+    swift: "swift",
 };
 
-// Java needs a Main class wrapper
+// Java needs a Main class wrapper if the user just wrote loose statements
 function wrapJavaCode(code: string): string {
-    // If user already has a class with main, don't wrap
     if (code.includes("public static void main")) return code;
     return `public class Main {\n    public static void main(String[] args) {\n        ${code}\n    }\n}`;
+}
+
+// In-memory response cache — same (language, code) runs return instantly for ~60s.
+// Bounded size prevents unbounded growth in long-lived server processes.
+const CACHE_TTL_MS = 60_000;
+const CACHE_MAX_ENTRIES = 500;
+const responseCache = new Map<string, { result: ExecuteResult; expiresAt: number }>();
+
+interface ExecuteResult {
+    output: string;
+    exitCode: number;
+    hasError: boolean;
+}
+
+function cacheKey(language: string, code: string): string {
+    return createHash("sha256").update(`${language}\u0000${code}`).digest("hex");
+}
+
+function readCache(key: string): ExecuteResult | null {
+    const entry = responseCache.get(key);
+    if (!entry) return null;
+    if (Date.now() > entry.expiresAt) {
+        responseCache.delete(key);
+        return null;
+    }
+    // Refresh LRU order
+    responseCache.delete(key);
+    responseCache.set(key, entry);
+    return entry.result;
+}
+
+function writeCache(key: string, result: ExecuteResult): void {
+    if (responseCache.size >= CACHE_MAX_ENTRIES) {
+        const oldest = responseCache.keys().next().value;
+        if (oldest) responseCache.delete(oldest);
+    }
+    responseCache.set(key, { result, expiresAt: Date.now() + CACHE_TTL_MS });
+}
+
+interface PistonResponse {
+    run?: { stdout?: string; stderr?: string; code?: number; signal?: string | null; output?: string };
+    compile?: { stdout?: string; stderr?: string; code?: number; signal?: string | null };
+    message?: string;
+}
+
+function formatPistonResult(data: PistonResponse): ExecuteResult {
+    const compileStderr = data.compile?.stderr?.trim() || "";
+    const compileCode = data.compile?.code ?? 0;
+    const runStdout = data.run?.stdout || "";
+    const runStderr = data.run?.stderr || "";
+    const runCode = data.run?.code ?? 0;
+    const runSignal = data.run?.signal || "";
+
+    const hasError = compileCode !== 0 || runCode !== 0 || !!runSignal;
+
+    let output = "";
+    if (compileStderr && compileCode !== 0) {
+        output = `[Compile Error]\n${compileStderr}`;
+    } else if (runStderr && !runStdout) {
+        output = `[Error]\n${runStderr}`;
+    } else if (runStderr && runStdout) {
+        output = `${runStdout}\n[Stderr]\n${runStderr}`;
+    } else if (runStdout) {
+        output = runStdout;
+    } else {
+        output = "(No output)";
+    }
+
+    if (runSignal) output += `\n[Signal: ${runSignal}]`;
+
+    return {
+        output: output.slice(0, 10_000),
+        exitCode: runCode,
+        hasError,
+    };
 }
 
 export async function POST(req: NextRequest) {
@@ -35,7 +109,6 @@ export async function POST(req: NextRequest) {
         }
 
         const userId = session.user.id;
-        // Rate limit: 20 executions per minute per user
         if (!rateLimit(`execute:${userId}`, 20, 60 * 1000)) {
             return NextResponse.json({ error: "Too many executions. Please wait a moment." }, { status: 429 });
         }
@@ -46,8 +119,7 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "Code and language are required" }, { status: 400 });
         }
 
-        // Limit code size to prevent abuse (50KB max)
-        if (code.length > 50000) {
+        if (code.length > 50_000) {
             return NextResponse.json({ error: "Code is too large. Maximum 50KB allowed." }, { status: 400 });
         }
 
@@ -55,26 +127,32 @@ export async function POST(req: NextRequest) {
             return NextResponse.json({ error: "This language cannot be executed on the server" }, { status: 400 });
         }
 
-        const compiler = COMPILER_MAP[language];
-        if (!compiler) {
+        const pistonLanguage = PISTON_LANGUAGE_MAP[language];
+        if (!pistonLanguage) {
             return NextResponse.json({ error: `Language "${language}" is not supported` }, { status: 400 });
         }
 
-        let finalCode = code;
-        // Java needs wrapping if no main method
-        if (language === "java") {
-            finalCode = wrapJavaCode(code);
+        const finalCode = language === "java" ? wrapJavaCode(code) : code;
+
+        // Cache lookup — repeated "Run" of identical code returns instantly
+        const key = cacheKey(language, finalCode);
+        const cached = readCache(key);
+        if (cached) {
+            return NextResponse.json({ ...cached, cached: true });
         }
 
-        // Call Wandbox API with 20s timeout so hung compiles don't block the user
         const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 20_000);
+        const timeoutId = setTimeout(() => controller.abort(), 15_000);
         let response: Response;
         try {
-            response = await fetch("https://wandbox.org/api/compile.json", {
+            response = await fetch("https://emkc.org/api/v2/piston/execute", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code: finalCode, compiler }),
+                body: JSON.stringify({
+                    language: pistonLanguage,
+                    version: "*",
+                    files: [{ content: finalCode }],
+                }),
                 signal: controller.signal,
             });
         } catch (err: any) {
@@ -91,49 +169,26 @@ export async function POST(req: NextRequest) {
 
         if (!response.ok) {
             const errorText = await response.text();
-            console.error("Wandbox API error:", response.status, errorText);
-            return NextResponse.json({
-                error: "An error occurred while executing the code",
-                output: errorText
-            }, { status: 500 });
+            console.error("Piston API error:", response.status, errorText);
+            return NextResponse.json(
+                { error: "An error occurred while executing the code", output: errorText, hasError: true },
+                { status: 500 }
+            );
         }
 
-        const result = await response.json();
+        const data: PistonResponse = await response.json();
 
-        const programOutput = result.program_output || "";
-        const programError = result.program_error || "";
-        const compilerError = result.compiler_error || "";
-        const compilerOutput = result.compiler_output || "";
-        const statusCode = result.status || "0";
-        const signal = result.signal || "";
-
-        const hasError = statusCode !== "0" || !!signal || !!compilerError || !!programError;
-
-        let output = "";
-        if (compilerError) {
-            output = `[Compile Error]\n${compilerError}`;
-        } else if (programError && !programOutput) {
-            output = `[Error]\n${programError}`;
-        } else if (programError && programOutput) {
-            output = `${programOutput}\n[Stderr]\n${programError}`;
-        } else if (programOutput) {
-            output = programOutput;
-        } else if (compilerOutput) {
-            output = compilerOutput;
-        } else {
-            output = "(No output)";
+        if (data.message) {
+            return NextResponse.json(
+                { output: `[Error]\n${data.message}`, exitCode: 1, hasError: true },
+                { status: 200 }
+            );
         }
 
-        // If there was a signal (like SIGSEGV)
-        if (signal) {
-            output += `\n[Signal: ${signal}]`;
-        }
+        const result = formatPistonResult(data);
+        writeCache(key, result);
 
-        return NextResponse.json({
-            output: output.substring(0, 10000), // Limit output size
-            exitCode: parseInt(statusCode) || 0,
-            hasError,
-        });
+        return NextResponse.json(result);
     } catch (error) {
         console.error("Execute code error:", error);
         return NextResponse.json({ error: "An error occurred" }, { status: 500 });

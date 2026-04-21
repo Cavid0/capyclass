@@ -3,7 +3,8 @@ import { hash } from "bcryptjs";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { isValidEmail, generateOtp, normalizeEmail, validatePasswordStrength, validateTextInput } from "@/lib/utils";
+import { isValidEmail, normalizeEmail, validatePasswordStrength, validateTextInput } from "@/lib/utils";
+import { generateOtp } from "@/lib/server-utils";
 
 const OTP_EXPIRY_MS = 15 * 60 * 1000;
 

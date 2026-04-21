@@ -4,7 +4,7 @@ import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { setOtpToken } from "@/lib/utils";
+import { setOtpToken } from "@/lib/server-utils";
 
 export async function POST(req: NextRequest) {
     try {

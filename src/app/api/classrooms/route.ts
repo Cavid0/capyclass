@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth";
 import { prisma } from "@/lib/prisma";
-import { generateInviteCode, validateTextInput } from "@/lib/utils";
+import { validateTextInput } from "@/lib/utils";
+import { generateInviteCode } from "@/lib/server-utils";
 import { rateLimit } from "@/lib/rate-limit";
 
 // GET: List classrooms for current user

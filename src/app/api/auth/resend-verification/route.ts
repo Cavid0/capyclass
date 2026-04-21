@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/prisma";
 import { sendVerificationEmail } from "@/lib/email";
 import { rateLimit } from "@/lib/rate-limit";
-import { generateOtp, isValidEmail, normalizeEmail } from "@/lib/utils";
+import { isValidEmail, normalizeEmail } from "@/lib/utils";
+import { generateOtp } from "@/lib/server-utils";
 
 export async function POST(req: NextRequest) {
     try {

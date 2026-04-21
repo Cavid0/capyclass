@@ -8,6 +8,7 @@ import {
 } from "lucide-react";
 import { CodeEditor } from "@/components/editor/CodeEditorLazy";
 import { cn } from "@/lib/utils";
+import { useResizable, useIsDesktop } from "@/lib/useResizable";
 import { toast } from "sonner";
 
 interface TeacherViewProps {
@@ -52,6 +53,11 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     const [output, setOutput] = useState<string | null>(null);
     const [outputError, setOutputError] = useState(false);
     const [showOutput, setShowOutput] = useState(false);
+
+    // Resizable panels
+    const isDesktop = useIsDesktop();
+    const sidebar = useResizable({ storageKey: "teacher-sidebar-width", defaultSize: 320, min: 220, max: 520, direction: "horizontal" });
+    const outputPane = useResizable({ storageKey: "teacher-output-height", defaultSize: 192, min: 80, max: 600, direction: "vertical" });
 
     const analytics = useMemo(() => {
         const totalStudents = enrollments.length;
@@ -295,9 +301,10 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
             {/* ─── Sidebar ─── */}
             <aside
                 className={cn(
-                    "w-full md:w-80 border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
+                    "w-full border-r border-[var(--border-color)] flex flex-col bg-[var(--bg-secondary)] shrink-0",
                     selectedWorkspaceId ? "hidden md:flex" : "flex"
                 )}
+                style={isDesktop ? { width: sidebar.size } : undefined}
             >
                 {/* Tab Header */}
                 <div className="flex border-b border-[var(--border-color)] shrink-0">
@@ -580,6 +587,20 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                 </div>
             </aside>
 
+            {/* ─── Sidebar resize handle (desktop only) ─── */}
+            {isDesktop && (
+                <div
+                    onMouseDown={sidebar.startDrag}
+                    onTouchStart={sidebar.startDrag}
+                    className={cn(
+                        "hidden md:block w-1 shrink-0 cursor-col-resize bg-[var(--border-color)] hover:bg-[var(--accent-primary)] transition-colors",
+                        sidebar.dragging && "bg-[var(--accent-primary)]"
+                    )}
+                    role="separator"
+                    aria-orientation="vertical"
+                />
+            )}
+
             {/* ─── Main Editor Area ─── */}
             <main className="flex-1 flex flex-col min-w-0 overflow-hidden bg-[var(--bg-primary)]">
                 {selectedWorkspaceId && activeWorkspaceData ? (
@@ -624,27 +645,42 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                             </div>
 
                             {showOutput && (
-                                <div className="h-48 border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex flex-col shrink-0">
-                                    <div className="h-8 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
-                                        <div className="flex items-center gap-2 text-[var(--text-secondary)]">
-                                            <Terminal className="w-3.5 h-3.5" />
-                                            <span className="text-xs font-medium uppercase tracking-wider">Output</span>
-                                        </div>
-                                        <button onClick={() => setShowOutput(false)} className="text-[var(--text-secondary)] hover:text-white transition-colors">
-                                            <X className="w-3.5 h-3.5" />
-                                        </button>
-                                    </div>
-                                    <div className="flex-1 overflow-auto p-4 custom-scrollbar">
-                                        {running ? (
-                                            <div className="flex items-center gap-3 text-[var(--text-secondary)] text-sm">
-                                                <Loader2 className="w-4 h-4 animate-spin" />
-                                                Running...
-                                            </div>
-                                        ) : (
-                                            <pre className={cn("text-sm font-mono whitespace-pre-wrap", outputError ? "text-red-400" : "text-emerald-300")}>{output}</pre>
+                                <>
+                                    <div
+                                        onMouseDown={outputPane.startDrag}
+                                        onTouchStart={outputPane.startDrag}
+                                        className={cn(
+                                            "shrink-0 h-1 cursor-row-resize bg-[var(--border-color)] hover:bg-[var(--accent-primary)] transition-colors",
+                                            outputPane.dragging && "bg-[var(--accent-primary)]"
                                         )}
+                                        role="separator"
+                                        aria-orientation="horizontal"
+                                    />
+                                    <div
+                                        className="border-t border-[var(--border-color)] bg-[var(--bg-primary)] flex flex-col shrink-0"
+                                        style={{ height: isDesktop ? outputPane.size : 192 }}
+                                    >
+                                        <div className="h-8 border-b border-[var(--border-color)] bg-[var(--bg-secondary)] flex items-center justify-between px-4 shrink-0">
+                                            <div className="flex items-center gap-2 text-[var(--text-secondary)]">
+                                                <Terminal className="w-3.5 h-3.5" />
+                                                <span className="text-xs font-medium uppercase tracking-wider">Output</span>
+                                            </div>
+                                            <button onClick={() => setShowOutput(false)} className="text-[var(--text-secondary)] hover:text-white transition-colors">
+                                                <X className="w-3.5 h-3.5" />
+                                            </button>
+                                        </div>
+                                        <div className="flex-1 overflow-auto p-4 custom-scrollbar">
+                                            {running ? (
+                                                <div className="flex items-center gap-3 text-[var(--text-secondary)] text-sm">
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                    Running...
+                                                </div>
+                                            ) : (
+                                                <pre className={cn("text-sm font-mono whitespace-pre-wrap", outputError ? "text-red-400" : "text-emerald-300")}>{output}</pre>
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                </>
                             )}
                         </div>
 

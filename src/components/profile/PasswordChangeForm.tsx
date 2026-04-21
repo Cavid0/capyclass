@@ -38,6 +38,7 @@ export function PasswordChangeForm({ email, onSuccess }: PasswordChangeFormProps
         if (newPassword.length < 8) { setError("Password must be at least 8 characters"); return; }
         if (!/[a-zA-Z]/.test(newPassword)) { setError("Password must contain at least one letter"); return; }
         if (!/[0-9]/.test(newPassword)) { setError("Password must contain at least one number"); return; }
+        if (!confirmPassword) { setError("Please confirm your password"); return; }
         if (newPassword !== confirmPassword) { setError("Passwords do not match"); return; }
 
         setOtpLoading(true);
@@ -107,7 +108,10 @@ export function PasswordChangeForm({ email, onSuccess }: PasswordChangeFormProps
                 <Lock className="w-4 h-4" /> Change Password
             </h3>
 
-            {step === "form" && (
+            {step === "form" && (() => {
+                const passwordsMismatch = confirmPassword.length > 0 && newPassword !== confirmPassword;
+                const passwordsMatch = confirmPassword.length > 0 && newPassword === confirmPassword;
+                return (
                 <form onSubmit={handleSendOtp} className="space-y-4">
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
@@ -116,7 +120,19 @@ export function PasswordChangeForm({ email, onSuccess }: PasswordChangeFormProps
                         </div>
                         <div>
                             <label className="block text-xs font-medium text-[var(--text-secondary)] mb-1.5">Confirm Password</label>
-                            <input type="password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} className="input-field" placeholder="••••••••" />
+                            <input
+                                type="password"
+                                value={confirmPassword}
+                                onChange={(e) => setConfirmPassword(e.target.value)}
+                                className={`input-field ${passwordsMismatch ? "!border-red-500/60" : passwordsMatch ? "!border-emerald-500/60" : ""}`}
+                                placeholder="••••••••"
+                            />
+                            {passwordsMismatch && (
+                                <p className="mt-1 text-[11px] text-red-400 flex items-center gap-1"><span>✗</span> Passwords do not match</p>
+                            )}
+                            {passwordsMatch && (
+                                <p className="mt-1 text-[11px] text-emerald-400 flex items-center gap-1"><span>✓</span> Passwords match</p>
+                            )}
                         </div>
                     </div>
 
@@ -127,11 +143,16 @@ export function PasswordChangeForm({ email, onSuccess }: PasswordChangeFormProps
                         </div>
                     )}
 
-                    <button type="submit" disabled={otpLoading} className="glow-btn w-full py-2.5 flex items-center justify-center gap-2 text-sm">
+                    <button
+                        type="submit"
+                        disabled={otpLoading || passwordsMismatch || !newPassword || !confirmPassword}
+                        className="glow-btn w-full py-2.5 flex items-center justify-center gap-2 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
                         {otpLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : <><KeyRound className="w-4 h-4" /> Send OTP Code</>}
                     </button>
                 </form>
-            )}
+                );
+            })()}
 
             {step === "otp" && (
                 <form onSubmit={handleVerify} className="space-y-4">
