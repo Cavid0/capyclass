@@ -93,6 +93,9 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         } else {
             setCode("");
         }
+        setOutput(null);
+        setOutputError(false);
+        setShowOutput(false);
     }, [activeWorkspace?.id, activeWorkspace]);
 
     /* ── Helpers ── */
@@ -104,6 +107,9 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         if (isDefault) {
             setLanguage(newLang);
             setCode(DEFAULT_CODE[newLang] || "");
+            setOutput(null);
+            setOutputError(false);
+            setShowOutput(false);
         } else {
             setPendingLanguage(newLang);
         }
@@ -113,6 +119,9 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         if (pendingLanguage) {
             setLanguage(pendingLanguage);
             setCode(DEFAULT_CODE[pendingLanguage] || "");
+            setOutput(null);
+            setOutputError(false);
+            setShowOutput(false);
             setPendingLanguage(null);
         }
     };
@@ -209,7 +218,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                 setOutput(data.output || "(No output)");
                 setOutputError(data.hasError);
             } else {
-                setOutput(data.error || "An error occurred");
+                setOutput(data.output || data.error || "An error occurred");
                 setOutputError(true);
             }
         } catch {

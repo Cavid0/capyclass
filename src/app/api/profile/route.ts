@@ -7,6 +7,9 @@ import { validatePasswordStrength, validateTextInput } from "@/lib/utils";
 import { verifyOtpToken } from "@/lib/server-utils";
 import { logAudit } from "@/lib/audit";
 
+export const runtime = "nodejs";
+export const dynamic = "force-dynamic";
+
 // GET: Get current user profile
 export async function GET() {
     try {

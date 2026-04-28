@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import {
     Users, ChevronLeft, Plus, ClipboardList, FileCode, Save, Send, Folder,
     Loader2, CheckCircle, ThumbsUp, ThumbsDown, XCircle, Play, Terminal,
@@ -58,6 +58,12 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
     const isDesktop = useIsDesktop();
     const sidebar = useResizable({ storageKey: "teacher-sidebar-width", defaultSize: 320, min: 220, max: 520, direction: "horizontal" });
     const outputPane = useResizable({ storageKey: "teacher-output-height", defaultSize: 192, min: 80, max: 600, direction: "vertical" });
+
+    useEffect(() => {
+        setOutput(null);
+        setOutputError(false);
+        setShowOutput(false);
+    }, [selectedWorkspaceId, activeWorkspaceData?.language, activeWorkspaceData?.updatedAt]);
 
     const analytics = useMemo(() => {
         const totalStudents = enrollments.length;
@@ -150,7 +156,7 @@ export function TeacherView({ classroom, tasks, selectedWorkspaceId, onSelectWor
                 setOutput(data.output || "(No output)");
                 setOutputError(data.hasError);
             } else {
-                setOutput(data.error || "An error occurred");
+                setOutput(data.output || data.error || "An error occurred");
                 setOutputError(true);
             }
         } catch {
