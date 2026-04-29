@@ -47,7 +47,9 @@ export async function POST(
             return NextResponse.json({ error: "Code exceeds 500KB limit" }, { status: 400 });
         }
 
+        const nextLanguage = language || workspace.language;
         const codeChanged = workspace.code !== code;
+        const submissionChanged = codeChanged || workspace.language !== nextLanguage;
 
         // Update workspace + create version in one transaction (one round-trip)
         const updated = codeChanged
@@ -61,12 +63,20 @@ export async function POST(
                 }),
                 prisma.workspace.update({
                     where: { id: workspaceId },
-                    data: { code, language: language || workspace.language },
+                    data: {
+                        code,
+                        language: nextLanguage,
+                        ...(submissionChanged ? { reviewStatus: null, reviewNote: null, status: "PENDING" as const } : {}),
+                    },
                 }),
             ]).then(([, ws]) => ws)
             : await prisma.workspace.update({
                 where: { id: workspaceId },
-                data: { code, language: language || workspace.language },
+                data: {
+                    code,
+                    language: nextLanguage,
+                    ...(submissionChanged ? { reviewStatus: null, reviewNote: null, status: "PENDING" as const } : {}),
+                },
             });
 
         // Prune old versions in background (don't block response)
