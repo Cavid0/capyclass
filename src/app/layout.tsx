@@ -16,12 +16,12 @@ export const metadata: Metadata = {
     template: "%s | CapyClass",
   },
   description:
-    "CapyClass is the interactive coding classroom platform where teachers create classrooms, assign coding tasks, and students write & run code in real-time with AI-powered analysis. Free online code editor for education.",
+    "CapyClass is the interactive coding classroom platform where teachers create classrooms, assign coding tasks, and students write, run, and review code in real time. Free online code editor for education.",
   keywords: [
     "CapyClass", "capyclass", "capy class", "capy", "capyclass.com",
     "interactive coding platform", "online code editor", "classroom coding",
     "coding education", "learn programming", "code environment",
-    "AI code analysis", "classroom platform", "online classroom",
+    "classroom platform", "online classroom",
     "programming education", "coding tasks", "student coding",
     "teacher coding platform", "Monaco editor", "real-time coding",
     "free coding platform", "education technology", "edtech",

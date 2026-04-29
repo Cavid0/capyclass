@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import {
     ChevronLeft, Plus, ClipboardList, FileCode, Save, Folder,
     Loader2, CheckCircle, ThumbsUp, ThumbsDown, Play, Terminal,
@@ -70,7 +70,11 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
     const [running, setRunning] = useState(false);
     const [output, setOutput] = useState<string | null>(null);
     const [outputError, setOutputError] = useState(false);
+    const [terminalInput, setTerminalInput] = useState("");
+    const [terminalLine, setTerminalLine] = useState("");
     const [showOutput, setShowOutput] = useState(false);
+    const [needsInput, setNeedsInput] = useState(false);
+    const terminalInputRef = useRef<HTMLInputElement>(null);
 
     // New file modal
     const [showNewFileModal, setShowNewFileModal] = useState(false);
@@ -96,7 +100,12 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         setOutput(null);
         setOutputError(false);
         setShowOutput(false);
+        setNeedsInput(false);
     }, [activeWorkspace?.id, activeWorkspace]);
+
+    useEffect(() => {
+        if (needsInput && !running) terminalInputRef.current?.focus();
+    }, [needsInput, running]);
 
     /* ── Helpers ── */
 
@@ -110,6 +119,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
             setOutput(null);
             setOutputError(false);
             setShowOutput(false);
+            setNeedsInput(false);
         } else {
             setPendingLanguage(newLang);
         }
@@ -122,6 +132,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
             setOutput(null);
             setOutputError(false);
             setShowOutput(false);
+            setNeedsInput(false);
             setPendingLanguage(null);
         }
     };
@@ -201,32 +212,50 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
         });
     };
 
-    const handleRun = async () => {
+    const handleRun = async (stdin = "", keepExistingInput = false) => {
         if (!code.trim() || language === "html") return;
+        const runInput = keepExistingInput ? stdin : "";
         setRunning(true);
-        setOutput(null);
+        if (!keepExistingInput) {
+            setTerminalInput("");
+            setTerminalLine("");
+        }
+        if (!runInput) setOutput(null);
         setOutputError(false);
+        setNeedsInput(false);
         setShowOutput(true);
         try {
             const res = await fetch("/api/execute", {
                 method: "POST",
                 headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ code, language }),
+                body: JSON.stringify({ code, language, input: runInput }),
             });
             const data = await res.json();
             if (res.ok) {
                 setOutput(data.output || "(No output)");
                 setOutputError(data.hasError);
+                setNeedsInput(Boolean(data.needsInput));
             } else {
                 setOutput(data.output || data.error || "An error occurred");
                 setOutputError(true);
+                setNeedsInput(false);
             }
         } catch {
             setOutput("Network error. Please try again.");
             setOutputError(true);
+            setNeedsInput(false);
         } finally {
             setRunning(false);
         }
+    };
+
+    const submitTerminalLine = (e: React.FormEvent) => {
+        e.preventDefault();
+        if (!terminalLine.trim() || running) return;
+        const nextInput = `${terminalInput}${terminalInput ? "\n" : ""}${terminalLine}`;
+        setTerminalInput(nextInput);
+        setTerminalLine("");
+        void handleRun(nextInput, true);
     };
 
     /* ── Render ── */
@@ -385,7 +414,7 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
 
                                 {language !== "html" && (
                                     <button
-                                        onClick={handleRun}
+                                        onClick={() => handleRun()}
                                         disabled={running}
                                         className="px-3 py-1.5 text-xs flex items-center justify-center gap-1.5 rounded transition-all bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:bg-blue-500/20 flex-1 sm:flex-none"
                                     >
@@ -445,15 +474,41 @@ export function StudentView({ classroomId, workspaces, tasks, selectedWorkspaceI
                                         </button>
                                     </div>
                                     <div className="flex-1 overflow-auto p-3 custom-scrollbar">
-                                        {running ? (
+                                        {output !== null ? (
+                                            <pre className={cn("text-xs font-mono whitespace-pre-wrap leading-relaxed", outputError ? "text-red-400" : "text-emerald-300")}>{output}</pre>
+                                        ) : running ? (
                                             <div className="flex items-center gap-2 text-[var(--text-secondary)] text-xs">
                                                 <Loader2 className="w-3.5 h-3.5 animate-spin" />
                                                 Running...
                                             </div>
-                                        ) : output !== null ? (
-                                            <pre className={cn("text-xs font-mono whitespace-pre-wrap leading-relaxed", outputError ? "text-red-400" : "text-emerald-300")}>{output}</pre>
                                         ) : (
                                             <p className="text-xs text-[var(--text-secondary)]">Press Run to execute</p>
+                                        )}
+                                        {running && output !== null && (
+                                            <div className="mt-2 flex items-center gap-2 text-[var(--text-secondary)] text-xs">
+                                                <Loader2 className="w-3 h-3 animate-spin" />
+                                                Running...
+                                            </div>
+                                        )}
+                                        {needsInput && !running && (
+                                        <form onSubmit={submitTerminalLine} className="mt-1 flex items-center gap-1 text-xs font-mono">
+                                            <span className="text-emerald-400 shrink-0">›</span>
+                                            <input
+                                                ref={terminalInputRef}
+                                                value={terminalLine}
+                                                onChange={(e) => setTerminalLine(e.target.value)}
+                                                onKeyDown={(e) => {
+                                                    if (e.key === "Escape") e.currentTarget.blur();
+                                                }}
+                                                className="flex-1 bg-transparent text-xs font-mono text-emerald-300 outline-none placeholder:text-[var(--text-secondary)] disabled:opacity-60"
+                                                placeholder="Dəyəri yazıb Enter basın..."
+                                            />
+                                            {terminalInput && (
+                                                <button type="button" onClick={() => { setTerminalInput(""); setTerminalLine(""); setOutput(null); setNeedsInput(false); }} className="text-[10px] text-[var(--text-secondary)] hover:text-white shrink-0">
+                                                    Clear
+                                                </button>
+                                            )}
+                                        </form>
                                         )}
                                     </div>
                                 </div>
